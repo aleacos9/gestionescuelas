@@ -16,8 +16,8 @@ INSERT INTO apex_objeto (proyecto, objeto, anterior, identificador, reflexivo, c
 	'toba', --clase_proyecto
 	'toba_cn', --clase
 	'82000001', --punto_montaje
-	NULL, --subclase
-	NULL, --subclase_archivo
+	'cn_generar_cargos_alumnos', --subclase
+	'gestion_archivos_cobros/generar_cargos_alumnos/cn_generar_cargos_alumnos.php', --subclase_archivo
 	NULL, --objeto_categoria_proyecto
 	NULL, --objeto_categoria
 	'Generar cargos mensuales', --nombre

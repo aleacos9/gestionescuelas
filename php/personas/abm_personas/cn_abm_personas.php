@@ -11,7 +11,7 @@ class cn_abm_personas extends gestionescuelas_cn
 	{
         $this->validar();
 
-        if (isset ($this->datos_persona['id_persona'])) {
+        if (isset($this->datos_persona['id_persona'])) {
             $persona = new persona($this->datos_persona['id_persona']);
         } else {
             $persona = new persona();

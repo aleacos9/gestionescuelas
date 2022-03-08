@@ -50,6 +50,13 @@ class persona
     protected $nombre_titular;
     protected $activo_tarjeta;
 
+    protected $cargo_a_generar;
+    protected $descripcion_cuota;
+    protected $cuota;
+    protected $anio_cuota;
+    protected $cuota_completa;
+    protected $importe_cuota;
+
     protected $datos = array();
     protected $datos_alumno = array();
     protected $persona_documentos = array();
@@ -57,6 +64,7 @@ class persona
     protected $persona_allegados = array();
     protected $datos_academicos = array();
     protected $datos_formas_cobro = array();
+    protected $datos_generacion_cargos = array();
 
     public function __construct($persona = null)
     {
@@ -140,6 +148,31 @@ class persona
         $this->set_pago_inscripcion($datos_academicos['pago_inscripcion']);
 
         $this->datos_academicos = $datos_academicos;
+    }
+
+    public function set_datos_generacion_cargos($datos_generacion_cargos)
+    {
+        toba::logger()->info("set_datos_generacion_cargos");
+
+        $this->set_cargo_a_generar($datos_generacion_cargos['cargo_a_generar']);
+        $this->set_cuota($datos_generacion_cargos['cuota']);
+        $this->set_anio_cuota($datos_generacion_cargos['anio']);
+
+        if ($datos_generacion_cargos['cargo_a_generar'] == 1) { //inscripcion anual
+            $descripcion = 'Inscrpción anual del Año ' .$datos_generacion_cargos['anio'];
+            $this->set_descripcion_cuota($descripcion);
+        } elseif($datos_generacion_cargos['cargo_a_generar'] == 2) { //cuota mensual
+            $descripcion = 'Cuota mensual '.$datos_generacion_cargos['cuota'].' del Año ' .$datos_generacion_cargos['anio'];
+            $this->set_descripcion_cuota($descripcion);
+            if ($datos_generacion_cargos['cuota'] < 10) {
+                $datos_generacion_cargos['cuota'] = '0'.$datos_generacion_cargos['cuota'];
+            }
+            $cuota = $datos_generacion_cargos['cuota'].$datos_generacion_cargos['anio'];
+            $this->set_cuota_completa($cuota);
+        }
+        $this->set_importe_cuota($datos_generacion_cargos['importe_cuota']);
+
+        $this->datos_generacion_cargos = $datos_generacion_cargos;
     }
 
     public function set_persona($persona)
@@ -386,6 +419,42 @@ class persona
     {
         toba::logger()->info("set_allegados");
         $this->persona_allegados = $persona_allegados;
+    }
+
+    public function set_cargo_a_generar($cargo_a_generar)
+    {
+        toba::logger()->info("set_cargo_a_generar = " .$cargo_a_generar);
+        $this->cargo_a_generar = $cargo_a_generar;
+    }
+
+    public function set_descripcion_cuota($descripcion_cuota)
+    {
+        toba::logger()->info("set_descripcion_cuota = " .$descripcion_cuota);
+        $this->descripcion_cuota = $descripcion_cuota;
+    }
+
+    public function set_cuota($cuota)
+    {
+        toba::logger()->info("set_cuota = " .$cuota);
+        $this->cuota = $cuota;
+    }
+
+    public function set_anio_cuota($anio)
+    {
+        toba::logger()->info("set_anio_cuota = " .$anio);
+        $this->anio_cuota = $anio;
+    }
+
+    public function set_cuota_completa($cuota_completa)
+    {
+        toba::logger()->info("set_cuota_completa = " .$cuota_completa);
+        $this->cuota_completa = $cuota_completa;
+    }
+
+    public function set_importe_cuota($importe_cuota)
+    {
+        toba::logger()->info("set_importe_cuota = " .$importe_cuota);
+        $this->importe_cuota = $importe_cuota;
     }
 
 
@@ -1002,7 +1071,7 @@ class persona
 
             $fecha = new fecha();
             $hoy = $fecha->get_timestamp_db();
-            $usuario_modif = toba::usuario()->get_id();
+            $usuario = toba::usuario()->get_id();
 
             if ($datos == null) {
                 $sql = "INSERT INTO persona_allegado (id_alumno, id_persona, id_tipo_allegado, id_estudio_alcanzado, id_ocupacion
@@ -1017,7 +1086,7 @@ class persona
                            ,tutor = '{$persona_allegado['tutor']}'
                            ,activo = '{$persona_allegado['activo']}'
                            ,fecha_ultima_modificacion = '{$hoy}'
-                           ,usuario_ultima_modificacion = '{$usuario_modif}'
+                           ,usuario_ultima_modificacion = '{$usuario}'
 						WHERE id_alumno = {$this->persona} 
 						    AND	id_persona = '{$persona_allegado['id_persona']}'
 					   ";
@@ -1126,4 +1195,88 @@ class persona
         }
     }
 
+    public function generar_cargos_persona()
+    {
+        toba::logger()->info("persona.generar_cargos_persona()");
+
+        $alumnos_con_error = array();
+        $fecha = new fecha();
+        $hoy = $fecha->get_timestamp_db();
+        $usuario = toba::usuario()->get_id();
+
+        //Valido por cada persona que ya no tenga ese cargo generado para ese mes/año
+        if ($this->validar_generacion_cargo($this->datos_generacion_cargos)) {
+            $sql = "INSERT INTO alumno_cuenta_corriente (id_alumno, usuario_alta, fecha_generacion_cc, cuota, descripcion, id_cargo_cuenta_corriente, importe) 
+				    VALUES ({$this->persona},'{$usuario}', '{$hoy}', '{$this->cuota_completa}', '{$this->descripcion_cuota}', '{$this->cargo_a_generar}', '{$this->importe_cuota}')
+			   ";
+
+            toba::logger()->debug(__METHOD__ . " : " . $sql);
+            ejecutar_fuente($sql);
+        } else {
+            $alumnos_con_error['id_persona'] = $this->persona;
+        }
+        if (!empty($alumnos_con_error)) {
+            $this->mostrar_mensajes($alumnos_con_error);
+        } else {
+            toba::notificacion()->agregar('Los cargos en los alumnos fueron generados con éxito.', 'info');
+        }
+    }
+
+    /*
+     * Valida que para ese alumno ya no se haya generado ese cargo para un año y cuota determinado
+     */
+    protected function validar_generacion_cargo()
+    {
+        $salida = true;
+        $sql = "SELECT ''
+                FROM alumno_cuenta_corriente
+                WHERE id_alumno = {$this->persona}
+                    AND cuota = '{$this->cuota_completa}'
+                    AND id_cargo_cuenta_corriente = '{$this->cargo_a_generar}'
+               ";
+
+        toba::logger()->debug(__METHOD__ . " : " . $sql);
+        $datos = consultar_fuente($sql);
+
+        if ($datos) {
+            $salida = false;
+        }
+        return $salida;
+    }
+
+    protected function mostrar_mensajes($datos = null)
+    {
+        $errores = $this->cargar_mensajes_error($datos);
+
+        //Se prepara el mensaje de error para la notificación
+        if (!empty($errores)) {
+            $str_error = '';
+            foreach ($errores as $error) {
+                $str_error .= $error."<br />";
+            }
+            toba::notificacion()->agregar($str_error, 'error');
+        }
+    }
+
+    protected function cargar_mensajes_error($array_datos_invalidos)
+    {
+        $mensaje = '';
+        $errores = [];
+        if (isset($array_datos_invalidos['id_persona'])) {
+            foreach ($array_datos_invalidos as $clave => $id_persona) {
+                $filtro['id_alumno'] = $id_persona;
+                $filtro['solo_alumnos'] = true;
+                $persona = dao_consultas::get_nombres_persona($filtro);
+                if ($persona) {
+                    $nombre_persona = $persona[0]['nombre_completo'];
+                    $mensaje .= $nombre_persona. "<br />";
+                } else {
+                    $mensaje .= $id_persona. "<br />";
+                }
+            }
+            $errores[] = "Los siguientes alumnos ya tienen el cargo generado para el período seleccionado: <br />" . $mensaje;
+            unset($mensaje);
+        }
+        return $errores;
+    }
 }

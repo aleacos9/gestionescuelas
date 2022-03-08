@@ -30,6 +30,15 @@ class ci_vincular_allegados extends ci_abm_personas
         return dao_consultas::get_ocupaciones();
     }
 
+    /*
+     * Retorna los nombres de las personas que NO son alumnos
+     */
+    public function get_nombres_personas_ci()
+    {
+        $filtro['solo_alumnos'] = false;
+        return dao_consultas::get_nombres_persona($filtro);
+    }
+
     public function cargar_datos()
     {
         if (!empty($this->s__alumno_editar)) {

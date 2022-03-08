@@ -16,8 +16,8 @@ INSERT INTO apex_objeto (proyecto, objeto, anterior, identificador, reflexivo, c
 	'toba', --clase_proyecto
 	'toba_ci', --clase
 	'82000001', --punto_montaje
-	NULL, --subclase
-	NULL, --subclase_archivo
+	'ci_generar_cargos_alumnos', --subclase
+	'gestion_archivos_cobros/generar_cargos_alumnos/ci_generar_cargos_alumnos.php', --subclase_archivo
 	NULL, --objeto_categoria_proyecto
 	NULL, --objeto_categoria
 	'Generar cargos mensuales', --nombre
@@ -38,6 +38,79 @@ INSERT INTO apex_objeto (proyecto, objeto, anterior, identificador, reflexivo, c
 	NULL, --usuario
 	'2022-03-02 15:35:40', --creacion
 	'abajo'  --posicion_botonera
+);
+--- FIN Grupo de desarrollo 82
+
+------------------------------------------------------------
+-- apex_objeto_eventos
+------------------------------------------------------------
+
+--- INICIO Grupo de desarrollo 82
+INSERT INTO apex_objeto_eventos (proyecto, evento_id, objeto, identificador, etiqueta, maneja_datos, sobre_fila, confirmacion, estilo, imagen_recurso_origen, imagen, en_botonera, ayuda, orden, ci_predep, implicito, defecto, display_datos_cargados, grupo, accion, accion_imphtml_debug, accion_vinculo_carpeta, accion_vinculo_item, accion_vinculo_objeto, accion_vinculo_popup, accion_vinculo_popup_param, accion_vinculo_target, accion_vinculo_celda, accion_vinculo_servicio, es_seleccion_multiple, es_autovinculo) VALUES (
+	'gestionescuelas', --proyecto
+	'82000050', --evento_id
+	'82000032', --objeto
+	'procesar', --identificador
+	'&Procesar', --etiqueta
+	'1', --maneja_datos
+	NULL, --sobre_fila
+	'¿Está seguro de generar los cargos?', --confirmacion
+	'ei-boton-der', --estilo
+	'apex', --imagen_recurso_origen
+	NULL, --imagen
+	'1', --en_botonera
+	NULL, --ayuda
+	'1', --orden
+	NULL, --ci_predep
+	'0', --implicito
+	'0', --defecto
+	NULL, --display_datos_cargados
+	NULL, --grupo
+	NULL, --accion
+	'0', --accion_imphtml_debug
+	NULL, --accion_vinculo_carpeta
+	NULL, --accion_vinculo_item
+	NULL, --accion_vinculo_objeto
+	'0', --accion_vinculo_popup
+	NULL, --accion_vinculo_popup_param
+	NULL, --accion_vinculo_target
+	NULL, --accion_vinculo_celda
+	NULL, --accion_vinculo_servicio
+	'0', --es_seleccion_multiple
+	'0'  --es_autovinculo
+);
+INSERT INTO apex_objeto_eventos (proyecto, evento_id, objeto, identificador, etiqueta, maneja_datos, sobre_fila, confirmacion, estilo, imagen_recurso_origen, imagen, en_botonera, ayuda, orden, ci_predep, implicito, defecto, display_datos_cargados, grupo, accion, accion_imphtml_debug, accion_vinculo_carpeta, accion_vinculo_item, accion_vinculo_objeto, accion_vinculo_popup, accion_vinculo_popup_param, accion_vinculo_target, accion_vinculo_celda, accion_vinculo_servicio, es_seleccion_multiple, es_autovinculo) VALUES (
+	'gestionescuelas', --proyecto
+	'82000051', --evento_id
+	'82000032', --objeto
+	'cancelar', --identificador
+	'&Cancelar', --etiqueta
+	'0', --maneja_datos
+	NULL, --sobre_fila
+	NULL, --confirmacion
+	'ei-boton-izq', --estilo
+	'apex', --imagen_recurso_origen
+	NULL, --imagen
+	'1', --en_botonera
+	NULL, --ayuda
+	'2', --orden
+	NULL, --ci_predep
+	'0', --implicito
+	'0', --defecto
+	NULL, --display_datos_cargados
+	NULL, --grupo
+	NULL, --accion
+	'0', --accion_imphtml_debug
+	NULL, --accion_vinculo_carpeta
+	NULL, --accion_vinculo_item
+	NULL, --accion_vinculo_objeto
+	'0', --accion_vinculo_popup
+	NULL, --accion_vinculo_popup_param
+	NULL, --accion_vinculo_target
+	NULL, --accion_vinculo_celda
+	NULL, --accion_vinculo_servicio
+	'0', --es_seleccion_multiple
+	'0'  --es_autovinculo
 );
 --- FIN Grupo de desarrollo 82
 
@@ -68,6 +141,25 @@ INSERT INTO apex_objeto_mt_me (objeto_mt_me_proyecto, objeto_mt_me, ev_procesar_
 );
 
 ------------------------------------------------------------
+-- apex_objeto_dependencias
+------------------------------------------------------------
+
+--- INICIO Grupo de desarrollo 82
+INSERT INTO apex_objeto_dependencias (proyecto, dep_id, objeto_consumidor, objeto_proveedor, identificador, parametros_a, parametros_b, parametros_c, inicializar, orden) VALUES (
+	'gestionescuelas', --proyecto
+	'82000023', --dep_id
+	'82000032', --objeto_consumidor
+	'82000034', --objeto_proveedor
+	'formulario', --identificador
+	NULL, --parametros_a
+	NULL, --parametros_b
+	NULL, --parametros_c
+	NULL, --inicializar
+	NULL  --orden
+);
+--- FIN Grupo de desarrollo 82
+
+------------------------------------------------------------
 -- apex_objeto_ci_pantalla
 ------------------------------------------------------------
 
@@ -92,3 +184,30 @@ INSERT INTO apex_objeto_ci_pantalla (objeto_ci_proyecto, objeto_ci, pantalla, id
 	NULL  --punto_montaje
 );
 --- FIN Grupo de desarrollo 82
+
+------------------------------------------------------------
+-- apex_objetos_pantalla
+------------------------------------------------------------
+INSERT INTO apex_objetos_pantalla (proyecto, pantalla, objeto_ci, orden, dep_id) VALUES (
+	'gestionescuelas', --proyecto
+	'82000016', --pantalla
+	'82000032', --objeto_ci
+	'0', --orden
+	'82000023'  --dep_id
+);
+
+------------------------------------------------------------
+-- apex_eventos_pantalla
+------------------------------------------------------------
+INSERT INTO apex_eventos_pantalla (pantalla, objeto_ci, evento_id, proyecto) VALUES (
+	'82000016', --pantalla
+	'82000032', --objeto_ci
+	'82000050', --evento_id
+	'gestionescuelas'  --proyecto
+);
+INSERT INTO apex_eventos_pantalla (pantalla, objeto_ci, evento_id, proyecto) VALUES (
+	'82000016', --pantalla
+	'82000032', --objeto_ci
+	'82000051', --evento_id
+	'gestionescuelas'  --proyecto
+);

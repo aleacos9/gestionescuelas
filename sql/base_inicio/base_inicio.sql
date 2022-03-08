@@ -782,6 +782,30 @@ CREATE TABLE motivo_rechazo
 ALTER TABLE motivo_rechazo OWNER TO postgres;
 
 
+CREATE SEQUENCE sq_id_cargo_cuenta_corriente
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER TABLE sq_id_cargo_cuenta_corriente OWNER TO postgres;
+
+CREATE TABLE cargo_cuenta_corriente
+(
+    id_cargo_cuenta_corriente integer DEFAULT nextval(('sq_id_cargo_cuenta_corriente')::regclass) NOT NULL,
+    nombre character varying(120) NOT NULL,
+    nombre_corto character varying(50) NOT NULL,
+    observaciones character varying(120),
+    CONSTRAINT id_cargo_cuenta_corriente PRIMARY KEY (id_cargo_cuenta_corriente)
+)
+    WITH (
+        OIDS=FALSE
+    );
+
+ALTER TABLE cargo_cuenta_corriente OWNER TO postgres;
+
+
 CREATE SEQUENCE sq_id_alumno_cc
     START WITH 1
     INCREMENT BY 1
@@ -795,13 +819,18 @@ CREATE TABLE alumno_cuenta_corriente
 (
     id_alumno_cc integer DEFAULT nextval(('sq_id_alumno_cc')::regclass) NOT NULL,
     id_alumno integer NOT NULL,
+    id_cargo_cuenta_corriente integer NOT NULL,
     usuario_alta character varying(120),
     fecha_generacion_cc timestamp without time zone,
     cuota character(6) NOT NULL,
     descripcion character varying(120),
+    importe numeric(15,2),
     CONSTRAINT id_alumno_cc PRIMARY KEY (id_alumno_cc),
     CONSTRAINT id_alumno FOREIGN KEY (id_alumno)
         REFERENCES alumno(id_alumno) MATCH FULL
+        ON UPDATE NO ACTION ON DELETE NO ACTION,
+    CONSTRAINT id_cargo_cuenta_corriente FOREIGN KEY (id_cargo_cuenta_corriente)
+        REFERENCES cargo_cuenta_corriente(id_cargo_cuenta_corriente) MATCH FULL
         ON UPDATE NO ACTION ON DELETE NO ACTION
 )
     WITH (
@@ -907,15 +936,39 @@ CREATE TABLE liquidacion_cuerpo
 
 ALTER TABLE liquidacion_cuerpo OWNER TO postgres;
 
+
+CREATE SEQUENCE sq_id_anio
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER TABLE sq_id_anio OWNER TO postgres;
+
+CREATE TABLE anio
+(
+    id_anio integer DEFAULT nextval(('sq_id_anio')::regclass) NOT NULL,
+    anio integer NOT NULL,
+    CONSTRAINT id_anio PRIMARY KEY (id_anio)
+)
+    WITH (
+        OIDS=FALSE
+    );
+
+ALTER TABLE anio OWNER TO postgres;
+
 ---
 --- INSERT DE LAS TABLAS MAESTRAS
 ---
 INSERT INTO parametros_sistema (parametro, descripcion, desc_corta, valor, version_publicacion) VALUES ('numero_establecimiento_debito_visa', 'Número de establecimiento para débito automático Visa', 'Num. establec. deb.', '0071227300', '1.0.0');
 INSERT INTO parametros_sistema (parametro, descripcion, desc_corta, valor, version_publicacion) VALUES ('numero_establecimiento_debito_mc', 'Número de establecimiento para débito automático MC', 'Num. establec. deb.', '0071227318', '1.0.0');
 INSERT INTO parametros_sistema (parametro, descripcion, desc_corta, valor, version_publicacion) VALUES ('importe_mensual_cuota', 'Importe mensual de la cuota', 'Importe cuota', 2500, '1.0.0');
+INSERT INTO parametros_sistema (parametro, descripcion, desc_corta, valor, version_publicacion) VALUES ('importe_inscripcion_anual', 'Importe de la inscripción anual', 'Importe inscripcion anual', 5000, '1.0.0');
 INSERT INTO parametros_sistema (parametro, descripcion, desc_corta, valor, version_publicacion) VALUES ('importe_inscripcion_inicial', 'Importe inscripción Nivel Incial', 'Criterio de cuota', 'ultima_generada', '1.0.0');
 INSERT INTO parametros_sistema (parametro, descripcion, desc_corta, valor, version_publicacion) VALUES ('importe_inscripcion_primario', 'Importe inscripción Nivel Primario', 'Criterio de cuota', 'ultima_generada', '1.0.0');
 INSERT INTO parametros_sistema (parametro, descripcion, desc_corta, valor, version_publicacion) VALUES ('criterio_generacion_cuota', 'Criterio de generación de cuota', 'Criterio de cuota', 'ultima_generada', '1.0.0');
+INSERT INTO parametros_sistema (parametro, descripcion, desc_corta, valor, version_publicacion) VALUES ('importe_mensual_cuota_x_grado', 'Cobra valores de cuota mensual diferente por grado', 'Cobra valores diferentes x grado', 'NO', '1.0.0');
 --Vamos a tener 3 opciones en este último parámetro, que serán: primer_cuota_adeudada, ultima_cuota_adeudada y total_adeudado
 
 INSERT INTO nivel (id_nivel, nombre, nombre_corto, observaciones) VALUES (NEXTVAL('sq_id_nivel'), 'Nivel Inicial', 'NI', '');
@@ -1354,3 +1407,8 @@ INSERT INTO motivo_desercion (id_motivo_desercion, nombre, nombre_corto, observa
 INSERT INTO motivo_desercion (id_motivo_desercion, nombre, nombre_corto, observaciones) VALUES (nextval('sq_id_motivo_desercion'), 'Pase', 'Pase', '');
 INSERT INTO motivo_desercion (id_motivo_desercion, nombre, nombre_corto, observaciones) VALUES (nextval('sq_id_motivo_desercion'), 'Falta de pago', 'Falta de pago', '');
 
+INSERT INTO cargo_cuenta_corriente (id_cargo_cuenta_corriente, nombre, nombre_corto, observaciones) VALUES (nextval('sq_id_cargo_cuenta_corriente'), 'Inscripción Anual', 'Insc. Anual', 'Inscripción Anual');
+INSERT INTO cargo_cuenta_corriente (id_cargo_cuenta_corriente, nombre, nombre_corto, observaciones) VALUES (nextval('sq_id_cargo_cuenta_corriente'), 'Cuota Mensual', 'Cuota Mensual', 'Cuota Mensual');
+
+INSERT INTO anio (id_anio, anio) VALUES (nextval('sq_id_anio'), '2021');
+INSERT INTO anio (id_anio, anio) VALUES (nextval('sq_id_anio'), '2022');

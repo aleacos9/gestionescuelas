@@ -1,5 +1,5 @@
 ------------------------------------------------------------
---[82000011]--  Generar cargos mensuales 
+--[82000011]--  Generar cargos a alumnos 
 ------------------------------------------------------------
 
 ------------------------------------------------------------
@@ -23,7 +23,7 @@ INSERT INTO apex_item (item_id, proyecto, item, padre_id, padre_proyecto, padre,
 	NULL, --actividad_buffer
 	NULL, --actividad_patron_proyecto
 	NULL, --actividad_patron
-	'Generar cargos mensuales', --nombre
+	'Generar cargos a alumnos', --nombre
 	NULL, --descripcion
 	'82000001', --punto_montaje
 	NULL, --actividad_accion
