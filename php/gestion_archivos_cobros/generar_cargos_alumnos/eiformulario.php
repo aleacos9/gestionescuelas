@@ -23,16 +23,6 @@ class eiformulario extends gestionescuelas_ei_formulario
 		//---- Procesamiento de EFs --------------------------------
 		{$this->objeto_js}.evt__forma_generacion__procesar = function(es_inicial)
 		{
-		    /*if (this.ef('forma_generacion').get_estado() == 'I') {
-			    this.ef('id_persona').mostrar();
-			    this.ef('id_persona').set_obligatorio(1);
-			} else {
-			    alert('Tenga en cuenta que al seleccionar la opción Grupal se le generará el costo a todos los alumnos activos cargados en el sistema');
-			    this.ef('id_persona').set_obligatorio(0);
-			    this.ef('id_persona').resetear_estado();
-			    this.ef('id_persona').ocultar();
-			}*/
-			
 			if (!es_inicial) {
 			    if (this.ef('forma_generacion').get_estado() == 'G') {
 			        alert('Tenga en cuenta que al seleccionar la opción Grupal se le generará el costo a todos los alumnos activos cargados en el sistema');

@@ -1206,12 +1206,26 @@ class persona
 
         //Valido por cada persona que ya no tenga ese cargo generado para ese mes/año
         if ($this->validar_generacion_cargo($this->datos_generacion_cargos)) {
-            $sql = "INSERT INTO alumno_cuenta_corriente (id_alumno, usuario_alta, fecha_generacion_cc, cuota, descripcion, id_cargo_cuenta_corriente, importe) 
-				    VALUES ({$this->persona},'{$usuario}', '{$hoy}', '{$this->cuota_completa}', '{$this->descripcion_cuota}', '{$this->cargo_a_generar}', '{$this->importe_cuota}')
+            //Primero, inserto en la tabla alumno_cuenta_corriente
+            $sql = "INSERT INTO alumno_cuenta_corriente (id_alumno, usuario_alta, fecha_generacion_cc, cuota, descripcion, id_cargo_cuenta_corriente) 
+				    VALUES ({$this->persona},'{$usuario}', '{$hoy}', '{$this->cuota_completa}', '{$this->descripcion_cuota}', '{$this->cargo_a_generar}')
 			   ";
 
             toba::logger()->debug(__METHOD__ . " : " . $sql);
             ejecutar_fuente($sql);
+
+            //Obtengo el id del cuenta_corriente generado
+            $sql = "SELECT currval('sq_id_alumno_cc') as seq";
+            $datos = consultar_fuente($sql);
+            $id_alumno_cc = $datos[0]['seq'];
+
+            //Segundo, inserto en la tabla transaccion_cuenta_corriente
+            $sql1 = "INSERT INTO transaccion_cuenta_corriente (id_alumno_cc, fecha_transaccion, id_estado_cuota, importe, usuario_ultima_modificacion, fecha_ultima_modificacion)
+                     VALUES ({$id_alumno_cc}, '{$hoy}', 1, '{$this->importe_cuota}', '{$usuario}', '{$hoy}');                                        
+                   ";
+
+            toba::logger()->debug(__METHOD__ . " : " . $sql1);
+            ejecutar_fuente($sql1);
         } else {
             $alumnos_con_error['id_persona'] = $this->persona;
         }
