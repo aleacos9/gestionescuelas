@@ -957,6 +957,61 @@ CREATE TABLE anio
 
 ALTER TABLE anio OWNER TO postgres;
 
+CREATE SEQUENCE sq_id_archivo_respuesta
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER TABLE sq_id_archivo_respuesta OWNER TO postgres;
+
+CREATE TABLE archivo_respuesta
+(
+    id_archivo_respuesta integer DEFAULT nextval(('sq_id_archivo_respuesta')::regclass) NOT NULL,
+    id_marca_tarjeta integer NOT NULL,
+    id_medio_pago integer NOT NULL,
+    nombre_archivo character varying,
+    fecha_generacion date,
+    usuario character varying,
+    CONSTRAINT id_archivo_respuesta PRIMARY KEY (id_archivo_respuesta),
+    CONSTRAINT id_marca_tarjeta FOREIGN KEY (id_marca_tarjeta)
+        REFERENCES marca_tarjeta (id_marca_tarjeta) MATCH FULL
+        ON UPDATE NO ACTION ON DELETE NO ACTION,
+    CONSTRAINT id_medio_pago FOREIGN KEY (id_medio_pago)
+        REFERENCES medio_pago (id_medio_pago) MATCH FULL
+        ON UPDATE NO ACTION ON DELETE NO ACTION
+)
+    WITH (
+        OIDS=FALSE
+    );
+ALTER TABLE archivo_respuesta OWNER TO postgres;
+
+
+CREATE SEQUENCE sq_id_archivo_respuesta_detalle
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER TABLE sq_id_archivo_respuesta_detalle OWNER TO postgres;
+
+CREATE TABLE archivo_respuesta_detalle
+(
+    id_archivo_respuesta_detalle integer DEFAULT nextval(('sq_id_archivo_respuesta_detalle')::regclass) NOT NULL,
+    id_archivo_respuesta integer NOT NULL,
+    contenido character varying,
+    CONSTRAINT id_archivo_respuesta_detalle PRIMARY KEY (id_archivo_respuesta_detalle),
+    CONSTRAINT id_archivo_respuesta FOREIGN KEY (id_archivo_respuesta)
+        REFERENCES archivo_respuesta (id_archivo_respuesta) MATCH FULL
+        ON UPDATE NO ACTION ON DELETE NO ACTION
+)
+    WITH (
+        OIDS=FALSE
+    );
+ALTER TABLE archivo_respuesta_detalle OWNER TO postgres;
+
 ---
 --- INSERT DE LAS TABLAS MAESTRAS
 ---
