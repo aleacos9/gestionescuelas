@@ -322,25 +322,149 @@ class dao_consultas
      */
     public static function get_nombres_persona($filtro=null)
     {
+        $select = $from = '';
         $where = 'WHERE 1=1';
 
         if (isset($filtro)) {
             if (isset($filtro['id_persona'])) {
-                $where .= " AND id_persona = '{$filtro['id_persona']}'";
+                $where .= " AND p.id_persona = '{$filtro['id_persona']}'";
+            }
+
+            if (isset($filtro['solo_alumnos'])) {
+                if ($filtro['solo_alumnos'] == 0) {
+                    $where .= " AND p.es_alumno = 'N'";
+                }
+                if ($filtro['solo_alumnos'] == 1) {
+                    if (isset($filtro['id_alumno'])) {
+                        $where .= " AND a.id_alumno = '{$filtro['id_alumno']}'";
+                    }
+
+                    $select .= ",a.id_alumno";
+                    $from .= "LEFT OUTER JOIN alumno a on a.id_persona = p.id_persona";
+                    $where .= " AND p.es_alumno = 'S' 
+                                AND p.activo != 'B'
+                              ";
+                }
             }
         }
 
-        $sql = "SELECT id_persona
-                      ,nombres
-                      ,apellidos
-                      ,(apellidos || ', ' || nombres) as nombre_completo
-				FROM persona
+        $sql = "SELECT p.id_persona
+                      ,p.nombres
+                      ,p.apellidos
+                      ,(p.apellidos || ', ' || p.nombres) as nombre_completo
+                      $select  
+				FROM persona p
+				    $from
                 $where
-                    AND es_alumno = 'N'
-                ORDER BY apellidos, nombres
+                ORDER BY p.apellidos, p.nombres
 			   ";
 
         toba::logger()->debug(__METHOD__." : ".$sql);
         return toba::db()->consultar($sql);
+    }
+
+    /*
+     * Retorna la lista de cargos en la cuenta corriente dadas de alta
+     */
+    public static function get_cargos_cuenta_corriente($filtro=null)
+    {
+        $where = 'WHERE 1=1';
+
+        if (isset($filtro)) {
+            if (isset($filtro['id_cargo_cuenta_corriente'])) {
+                $where .= " AND id_cargo_cuenta_corriente = '{$filtro['id_cargo_cuenta_corriente']}'";
+            }
+        }
+
+        $sql = "SELECT id_cargo_cuenta_corriente
+                      ,nombre
+                      ,nombre_corto
+                      ,observaciones
+				FROM cargo_cuenta_corriente
+                $where
+			   ";
+
+        toba::logger()->debug(__METHOD__." : ".$sql);
+        return toba::db()->consultar($sql);
+    }
+
+    /*
+     * Retorna la lista de años dados de alta
+     */
+    public static function get_anios($filtro=null)
+    {
+        $where = 'WHERE 1=1';
+
+        if (isset($filtro)) {
+            if (isset($filtro['id_anio'])) {
+                $where .= " AND id_anio = '{$filtro['id_anio']}'";
+            }
+        }
+
+        $sql = "SELECT id_anio
+                      ,anio
+				FROM anio
+                $where
+			   ";
+
+        toba::logger()->debug(__METHOD__." : ".$sql);
+        return toba::db()->consultar($sql);
+    }
+
+    public function get_meses_del_anio()
+    {
+        $meses[0]['id'] = 1;
+        $meses[0]['mes'] = "Enero";
+        $meses[1]['id'] = 2;
+        $meses[1]['mes'] = "Febrero";
+        $meses[2]['id'] = 3;
+        $meses[2]['mes'] = "Marzo";
+        $meses[3]['id'] = 4;
+        $meses[3]['mes'] = "Abril";
+        $meses[4]['id'] = 5;
+        $meses[4]['mes'] = "Mayo";
+        $meses[5]['id'] = 6;
+        $meses[5]['mes'] = "Junio";
+        $meses[6]['id'] = 7;
+        $meses[6]['mes'] = "Julio";
+        $meses[7]['id'] = 8;
+        $meses[7]['mes'] = "Agosto";
+        $meses[8]['id'] = 9;
+        $meses[8]['mes'] = "Septiembre";
+        $meses[9]['id'] = 10;
+        $meses[9]['mes'] = "Octubre";
+        $meses[10]['id'] = 11;
+        $meses[10]['mes'] = "Noviembre";
+        $meses[11]['id'] = 12;
+        $meses[11]['mes'] = "Diciembre";
+
+        return $meses;
+    }
+
+    public static function catalogo_de_parametros($id, $fuente_datos = null)
+    {
+        if ($fuente_datos) {
+            $base = $fuente_datos;
+        } else {
+            $base = 'gestionescuelas';
+        }
+
+        $where = 'WHERE 1=1';
+        $par_personalizados = toba::db($base)->consultar("SELECT parametro, valor FROM parametros_sistema $where");
+
+        if ($par_personalizados) {
+            foreach (array_keys($par_personalizados) as $key) {
+                $clave = $par_personalizados[$key]["parametro"];
+                $valor = $par_personalizados[$key]["valor"];
+                $par_personalizados[$clave] = $valor;
+                unset($par_personalizados[$key]);
+            }
+        }
+
+        if (isset($par_personalizados[$id]) && !is_null($par_personalizados[$id])) {
+            return $par_personalizados[$id];	/* el 'parametro=valor' no existe en la tabla de parametros personalizados*/
+        } else {
+            throw new toba_error("Se solicito un PARAMETRO inexistente o su valor no está establecido: '$id'");
+        }
     }
 }

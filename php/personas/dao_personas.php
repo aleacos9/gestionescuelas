@@ -188,6 +188,29 @@ class dao_personas
 			   ";
 
         toba::logger()->debug(__METHOD__." : ".$sql);
-        return toba::db()->consultar($sql);
+        $datos = toba::db()->consultar($sql);
+
+        if (isset($datos)) {
+            if ($filtro['solo_ids'] == true) {
+                return dao_personas::retornar_solo_ids($datos);
+            } else {
+                return $datos;
+            }
+        }
+    }
+
+    /*
+     * Retorna los id_persona en un arreglo posicional
+     */
+    public static function retornar_solo_ids($datos)
+    {
+        if (isset($datos)) {
+            $alumnos = array();
+            $cant = count($datos);
+            for ($i = 0; $i < $cant; $i++) {			//Recorro los valores formando un arreglo posicional.
+                $alumnos[] = $datos[$i]['id_alumno'];
+            }
+            return $alumnos;
+        }
     }
 }
