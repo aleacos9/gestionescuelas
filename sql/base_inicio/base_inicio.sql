@@ -824,7 +824,6 @@ CREATE TABLE alumno_cuenta_corriente
     fecha_generacion_cc timestamp without time zone,
     cuota character(6) NOT NULL,
     descripcion character varying(120),
-    importe numeric(15,2),
     CONSTRAINT id_alumno_cc PRIMARY KEY (id_alumno_cc),
     CONSTRAINT id_alumno FOREIGN KEY (id_alumno)
         REFERENCES alumno(id_alumno) MATCH FULL
