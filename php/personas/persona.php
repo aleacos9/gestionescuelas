@@ -65,6 +65,7 @@ class persona
     protected $datos_academicos = array();
     protected $datos_formas_cobro = array();
     protected $datos_generacion_cargos = array();
+    protected $datos_cuenta_corriente = array();
 
     public function __construct($persona = null)
     {
@@ -173,6 +174,13 @@ class persona
         $this->set_importe_cuota($datos_generacion_cargos['importe_cuota']);
 
         $this->datos_generacion_cargos = $datos_generacion_cargos;
+    }
+
+    public function set_datos_cuenta_corriente($datos_cuenta_corriente)
+    {
+        toba::logger()->info("set_datos_cuenta_corriente");
+
+        $this->datos_cuenta_corriente = $datos_cuenta_corriente;
     }
 
     public function set_persona($persona)
@@ -633,6 +641,12 @@ class persona
         return $this->datos_formas_cobro;
     }
 
+    public function get_datos_cuenta_corriente()
+    {
+        toba::logger()->info("get_datos_cuenta_corriente");
+        return $this->datos_cuenta_corriente;
+    }
+
     //---------------------------------------------------------------------
     //                     MÉTODOS
     //---------------------------------------------------------------------
@@ -843,6 +857,54 @@ class persona
 
         toba::logger()->debug(__METHOD__." : ".$sql);
         $this->datos_formas_cobro = consultar_fuente($sql);
+
+        // Obtiene los datos de la cuenta corriente asociada a la persona ---------------------------------
+        // Este método obtiene los datos con el id_alumno en lugar del id_persona
+        $sql = "SELECT acc.id_alumno_cc
+                      ,acc.id_alumno
+                      ,acc.usuario_alta
+                      ,(CASE WHEN subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL THEN ''
+                             ELSE acc.cuota
+                        END) AS cuota
+                      ,(CASE WHEN subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL THEN 'Pago de cuota ' || acc.cuota
+                             ELSE acc.descripcion
+                        END) AS descripcion
+                      ,(CASE WHEN subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL THEN subconsulta_cuenta_corriente.fecha_pago
+                             ELSE acc.fecha_generacion_cc
+                        END) AS fecha
+                      ,acc.id_cargo_cuenta_corriente
+                      ,subconsulta_cuenta_corriente.id_medio_pago
+                      ,(CASE WHEN subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL THEN mp.nombre
+                             ELSE ''
+                        END) AS medio_pago
+                      ,subconsulta_cuenta_corriente.id_marca_tarjeta
+                      ,(CASE WHEN subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL THEN mt.nombre
+                             ELSE ''
+                        END) AS marca_tarjeta
+                      ,subconsulta_cuenta_corriente.id_estado_cuota  
+                      ,ec.nombre as estado_cuota
+                      ,subconsulta_cuenta_corriente.importe
+                      ,subconsulta_cuenta_corriente.id_motivo_rechazo
+                      ,mr.nombre AS motivo_rechazo
+                      ,subconsulta_cuenta_corriente.numero_comprobante
+                      ,subconsulta_cuenta_corriente.numero_autorizacion
+                      ,subconsulta_cuenta_corriente.numero_lote
+                FROM alumno_cuenta_corriente acc
+                    INNER JOIN alumno a on acc.id_alumno = a.id_alumno
+                    INNER JOIN (select id_alumno_cc, id_transaccion_cc, fecha_transaccion, id_estado_cuota, importe, fecha_pago
+                                      ,fecha_respuesta_prisma, id_motivo_rechazo, numero_comprobante, numero_autorizacion, numero_lote
+                                      ,id_medio_pago, id_marca_tarjeta
+                                from transaccion_cuenta_corriente) as subconsulta_cuenta_corriente ON subconsulta_cuenta_corriente.id_alumno_cc = acc.id_alumno_cc
+                    INNER JOIN estado_cuota ec on ec.id_estado_cuota = subconsulta_cuenta_corriente.id_estado_cuota
+                    LEFT OUTER JOIN motivo_rechazo mr on mr.id_motivo_rechazo = subconsulta_cuenta_corriente.id_motivo_rechazo
+                    LEFT OUTER JOIN medio_pago mp on mp.id_medio_pago = subconsulta_cuenta_corriente.id_medio_pago
+                    LEFT OUTER JOIN marca_tarjeta mt on mt.id_marca_tarjeta = subconsulta_cuenta_corriente.id_marca_tarjeta
+                WHERE a.id_alumno = {$this->persona}
+                ORDER BY acc.id_alumno_cc
+               ";
+
+        toba::logger()->debug(__METHOD__." : ".$sql);
+        $this->datos_cuenta_corriente = consultar_fuente($sql);
     }
 
     /*public function es_alumno()

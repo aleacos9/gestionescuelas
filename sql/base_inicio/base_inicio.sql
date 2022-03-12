@@ -629,6 +629,7 @@ CREATE TABLE medio_pago
     id_medio_pago integer DEFAULT nextval(('sq_id_medio_pago')::regclass) NOT NULL,
     nombre character varying(80) NOT NULL,
     nombre_corto character varying(30) NOT NULL,
+    se_muestra_alta_manual character(1) DEFAULT 'N'::bpchar,
     observaciones character varying(120),
     jerarquia integer,
     CONSTRAINT id_medio_pago PRIMARY KEY (id_medio_pago)
@@ -654,6 +655,7 @@ CREATE TABLE marca_tarjeta
     id_marca_tarjeta integer DEFAULT nextval(('sq_id_marca_tarjeta')::regclass) NOT NULL,
     nombre character varying(80) NOT NULL,
     nombre_corto character varying(30) NOT NULL,
+    permite_posnet character(1) DEFAULT 'N'::bpchar,
     observaciones character varying(120),
     jerarquia integer,
     CONSTRAINT id_marca_tarjeta PRIMARY KEY (id_marca_tarjeta)
@@ -855,6 +857,8 @@ CREATE TABLE transaccion_cuenta_corriente
     id_transaccion_cc integer DEFAULT nextval(('sq_id_transaccion_cc')::regclass) NOT NULL,
     id_alumno_cc integer NOT NULL,
     fecha_transaccion timestamp without time zone,
+    id_medio_pago integer NOT NULL,
+    id_marca_tarjeta integer NOT NULL,
     id_estado_cuota integer NOT NULL,
     importe numeric(15,2),
     fecha_pago date,
@@ -865,6 +869,12 @@ CREATE TABLE transaccion_cuenta_corriente
     CONSTRAINT id_transaccion_cc PRIMARY KEY (id_transaccion_cc),
     CONSTRAINT id_alumno_cc FOREIGN KEY (id_alumno_cc)
         REFERENCES alumno_cuenta_corriente(id_alumno_cc) MATCH FULL
+        ON UPDATE NO ACTION ON DELETE NO ACTION,
+    CONSTRAINT id_medio_pago FOREIGN KEY (id_medio_pago)
+        REFERENCES medio_pago (id_medio_pago) MATCH FULL
+        ON UPDATE NO ACTION ON DELETE NO ACTION,
+    CONSTRAINT id_marca_tarjeta FOREIGN KEY (id_marca_tarjeta)
+        REFERENCES marca_tarjeta (id_marca_tarjeta) MATCH FULL
         ON UPDATE NO ACTION ON DELETE NO ACTION,
     CONSTRAINT id_estado_cuota FOREIGN KEY (id_estado_cuota)
         REFERENCES estado_cuota(id_estado_cuota) MATCH FULL
@@ -1366,16 +1376,16 @@ INSERT INTO nacionalidad (id_nacionalidad, nombre, nombre_corto) VALUES (nextval
 INSERT INTO nacionalidad (id_nacionalidad, nombre, nombre_corto) VALUES (nextval('sq_id_nacionalidad'), 'Chileno', 'CH');
 
 
-INSERT INTO medio_pago (id_medio_pago, nombre, nombre_corto, observaciones, jerarquia) VALUES (nextval('sq_id_medio_pago'), 'Efectivo', 'Efectivo', '', 1);
-INSERT INTO medio_pago (id_medio_pago, nombre, nombre_corto, observaciones, jerarquia) VALUES (nextval('sq_id_medio_pago'), 'Transferencia', 'Transferencia', '', 2);
-INSERT INTO medio_pago (id_medio_pago, nombre, nombre_corto, observaciones, jerarquia) VALUES (nextval('sq_id_medio_pago'), 'Tarjeta de Débito', 'Débito', '', 3);
-INSERT INTO medio_pago (id_medio_pago, nombre, nombre_corto, observaciones, jerarquia) VALUES (nextval('sq_id_medio_pago'), 'Tarjeta de Crédito', 'Crédito', '', 4);
-INSERT INTO medio_pago (id_medio_pago, nombre, nombre_corto, observaciones, jerarquia) VALUES (nextval('sq_id_medio_pago'), 'Postnet', 'Postnet', '', 5);
+INSERT INTO medio_pago (id_medio_pago, nombre, nombre_corto, se_muestra_alta_manual, observaciones, jerarquia) VALUES (nextval('sq_id_medio_pago'), 'Efectivo', 'Efectivo', 'N', '', 1);
+INSERT INTO medio_pago (id_medio_pago, nombre, nombre_corto, se_muestra_alta_manual, observaciones, jerarquia) VALUES (nextval('sq_id_medio_pago'), 'Transferencia', 'Transferencia', 'S', '', 2);
+INSERT INTO medio_pago (id_medio_pago, nombre, nombre_corto, se_muestra_alta_manual, observaciones, jerarquia) VALUES (nextval('sq_id_medio_pago'), 'Tarjeta de Débito', 'Débito', 'N', '', 3);
+INSERT INTO medio_pago (id_medio_pago, nombre, nombre_corto, se_muestra_alta_manual, observaciones, jerarquia) VALUES (nextval('sq_id_medio_pago'), 'Tarjeta de Crédito', 'Crédito', 'N', '', 4);
+INSERT INTO medio_pago (id_medio_pago, nombre, nombre_corto, se_muestra_alta_manual, observaciones, jerarquia) VALUES (nextval('sq_id_medio_pago'), 'Postnet', 'Postnet', 'S', '', 5);
 
 
-INSERT INTO marca_tarjeta (id_marca_tarjeta, nombre, nombre_corto, observaciones, jerarquia) VALUES (nextval('sq_id_marca_tarjeta'), 'Visa', 'Visa', '', 1);
-INSERT INTO marca_tarjeta (id_marca_tarjeta, nombre, nombre_corto, observaciones, jerarquia) VALUES (nextval('sq_id_marca_tarjeta'), 'MasterCard', 'MasterCard', '', 2);
-INSERT INTO marca_tarjeta (id_marca_tarjeta, nombre, nombre_corto, observaciones, jerarquia) VALUES (nextval('sq_id_marca_tarjeta'), 'Cabal', 'Cabal', '', 3);
+INSERT INTO marca_tarjeta (id_marca_tarjeta, nombre, nombre_corto, observaciones, jerarquia, permite_posnet) VALUES (nextval('sq_id_marca_tarjeta'), 'Visa', 'Visa', '', 1, 'S');
+INSERT INTO marca_tarjeta (id_marca_tarjeta, nombre, nombre_corto, observaciones, jerarquia, permite_posnet) VALUES (nextval('sq_id_marca_tarjeta'), 'MasterCard', 'MasterCard', '', 2, 'S');
+INSERT INTO marca_tarjeta (id_marca_tarjeta, nombre, nombre_corto, observaciones, jerarquia, permite_posnet) VALUES (nextval('sq_id_marca_tarjeta'), 'Cabal', 'Cabal', '', 3, 'N');
 
 
 INSERT INTO entidad_bancaria (id_entidad_bancaria, nombre, nombre_corto, observaciones) VALUES (nextval('sq_id_entidad_bancaria'), 'Banco Nación Argentina', 'BNA', '');

@@ -222,15 +222,25 @@ class dao_consultas
             if (isset($filtro['id_medio_pago'])) {
                 $where .= " AND id_medio_pago = '{$filtro['id_medio_pago']}'";
             }
+
+            if (isset($filtro['se_muestra_alta_manual'])) {
+                if ($filtro['se_muestra_alta_manual'] == 'S') {
+                    $where .= " AND se_muestra_alta_manual = 'S'";
+                } else {
+                    $where .= " AND se_muestra_alta_manual = 'N'";
+                }
+            }
         }
 
         $sql = "SELECT id_medio_pago
                       ,nombre
                       ,nombre_corto
+                      ,se_muestra_alta_manual
                       ,observaciones
                       ,jerarquia
 				FROM medio_pago
                 $where
+                ORDER BY jerarquia
 			   ";
 
         toba::logger()->debug(__METHOD__." : ".$sql);
@@ -248,15 +258,25 @@ class dao_consultas
             if (isset($filtro['id_marca_tarjeta'])) {
                 $where .= " AND id_marca_tarjeta = '{$filtro['id_marca_tarjeta']}'";
             }
+
+            if (isset($filtro['permite_posnet'])) {
+                if ($filtro['permite_posnet'] == 'S') {
+                    $where .= " AND permite_posnet = 'S'";
+                } else {
+                    $where .= " AND permite_posnet = 'N'";
+                }
+            }
         }
 
         $sql = "SELECT id_marca_tarjeta
                       ,nombre
                       ,nombre_corto
+                      ,permite_posnet  
                       ,observaciones
                       ,jerarquia
 				FROM marca_tarjeta
                 $where
+                ORDER BY jerarquia
 			   ";
 
         toba::logger()->debug(__METHOD__." : ".$sql);

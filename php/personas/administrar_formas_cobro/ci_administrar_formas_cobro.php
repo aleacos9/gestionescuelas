@@ -8,9 +8,9 @@ class ci_administrar_formas_cobro extends ci_vincular_allegados
     /*
     * Retorna los medios de pagos
     */
-    public function get_medios_pagos_ci()
+    public function get_medios_pagos_ci($filtro = null)
     {
-        return dao_consultas::get_medios_pagos();
+        return dao_consultas::get_medios_pagos($filtro);
     }
 
     /*
@@ -18,7 +18,8 @@ class ci_administrar_formas_cobro extends ci_vincular_allegados
     */
     public function get_marcas_tarjetas_ci()
     {
-        return dao_consultas::get_marcas_tarjetas();
+        $filtro['permite_posnet'] = true;
+        return dao_consultas::get_marcas_tarjetas($filtro);
     }
 
     /*
