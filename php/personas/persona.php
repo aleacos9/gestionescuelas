@@ -57,6 +57,17 @@ class persona
     protected $cuota_completa;
     protected $importe_cuota;
 
+    protected $id_alumno_cc;
+    protected $fecha_pago;
+    protected $fecha_respuesta_prisma;
+    protected $id_estado_cuota;
+    protected $id_motivo_rechazo;
+    protected $numero_comprobante;
+    protected $numero_lote;
+    protected $numero_autorizacion;
+    protected $importe_pago;
+    protected $mostrar_mensaje_individual;
+
     protected $datos = array();
     protected $datos_alumno = array();
     protected $persona_documentos = array();
@@ -180,6 +191,26 @@ class persona
     {
         toba::logger()->info("set_datos_cuenta_corriente");
 
+        $this->set_id_alumno_cc($datos_cuenta_corriente['id_alumno_cc']);
+        $this->set_id_medio_pago($datos_cuenta_corriente['id_medio_pago']);
+        $id_marca_tarjeta = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['id_marca_tarjeta'], constantes::get_valor_constante('TIPO_DATO_INT'));
+        $this->set_id_marca_tarjeta($id_marca_tarjeta);
+        $this->set_id_estado_cuota($datos_cuenta_corriente['id_estado_cuota']);
+        $this->set_fecha_pago($datos_cuenta_corriente['fecha_pago']);
+        $fecha_respuesta_prisma = isset($datos_cuenta_corriente['fecha_respuesta_prisma']) ? "'" . $datos_cuenta_corriente['fecha_respuesta_prisma'] . "'" : 'null';
+        $this->set_fecha_respuesta_prisma($fecha_respuesta_prisma);
+        $id_motivo_rechazo = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['id_motivo_rechazo'], constantes::get_valor_constante('TIPO_DATO_INT'));
+        $this->set_id_motivo_rechazo($id_motivo_rechazo);
+        $this->set_numero_comprobante($datos_cuenta_corriente['numero_comprobante']);
+        $numero_lote = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['numero_lote'], constantes::get_valor_constante('TIPO_DATO_INT'));
+        $this->set_numero_lote($numero_lote);
+        $numero_autorizacion = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['numero_autorizacion'], constantes::get_valor_constante('TIPO_DATO_INT'));
+        $this->set_numero_autorizacion($numero_autorizacion);
+        $this->set_importe_pago($datos_cuenta_corriente['importe']);
+        $this->set_usuario_ultima_modificacion($datos_cuenta_corriente['usuario_ultima_modificacion']);
+        $this->set_fecha_ultima_modificacion($datos_cuenta_corriente['fecha_ultima_modificacion']);
+        $this->set_mostrar_mensaje_individual($datos_cuenta_corriente['mostrar_mensaje_individual']);
+
         $this->datos_cuenta_corriente = $datos_cuenta_corriente;
     }
 
@@ -285,6 +316,12 @@ class persona
         $this->fecha_ultima_modificacion = $fecha_ultima_modificacion;
     }
 
+    public function set_mostrar_mensaje_individual($mostrar_mensaje_individual)
+    {
+        toba::logger()->info("set_mostrar_mensaje_individual = " .$mostrar_mensaje_individual);
+        $this->mostrar_mensaje_individual = $mostrar_mensaje_individual;
+    }
+
     public function set_usuario_ultima_modificacion($usuario_ultima_modificacion)
     {
         toba::logger()->info("set_usuario_ultima_modificacion = " .$usuario_ultima_modificacion);
@@ -381,6 +418,12 @@ class persona
         $this->pago_inscripcion = $pago_inscripcion;
     }
 
+    public function set_id_alumno_cc($id_alumno_cc)
+    {
+        toba::logger()->info("set_id_alumno_cc = " .$id_alumno_cc);
+        $this->id_alumno_cc = $id_alumno_cc;
+    }
+
     public function set_id_medio_pago($id_medio_pago)
     {
         toba::logger()->info("set_id_medio_pago = " .$id_medio_pago);
@@ -391,6 +434,24 @@ class persona
     {
         toba::logger()->info("set_id_marca_tarjeta = " .$id_marca_tarjeta);
         $this->id_marca_tarjeta = $id_marca_tarjeta;
+    }
+
+    public function set_id_estado_cuota($id_estado_cuota)
+    {
+        toba::logger()->info("set_id_estado_cuota = " .$id_estado_cuota);
+        $this->id_estado_cuota = $id_estado_cuota;
+    }
+
+    public function set_fecha_respuesta_prisma($fecha_respuesta_prisma)
+    {
+        toba::logger()->info("set_fecha_respuesta_prisma = " .$fecha_respuesta_prisma);
+        $this->fecha_respuesta_prisma = $fecha_respuesta_prisma;
+    }
+
+    public function set_id_motivo_rechazo($id_motivo_rechazo)
+    {
+        toba::logger()->info("set_id_motivo_rechazo = " .$id_motivo_rechazo);
+        $this->id_motivo_rechazo = $id_motivo_rechazo;
     }
 
     public function set_id_entidad_bancaria($id_entidad_bancaria)
@@ -415,6 +476,36 @@ class persona
     {
         toba::logger()->info("set_activo_tarjeta = " .$activo_tarjeta);
         $this->activo_tarjeta = $activo_tarjeta;
+    }
+
+    public function set_fecha_pago($fecha_pago)
+    {
+        toba::logger()->info("set_fecha_pago = " .$fecha_pago);
+        $this->fecha_pago = $fecha_pago;
+    }
+
+    public function set_numero_comprobante($numero_comprobante)
+    {
+        toba::logger()->info("set_numero_comprobante = " .$numero_comprobante);
+        $this->numero_comprobante = $numero_comprobante;
+    }
+
+    public function set_numero_autorizacion($numero_autorizacion)
+    {
+        toba::logger()->info("set_numero_autorizacion = " .$numero_autorizacion);
+        $this->numero_autorizacion = $numero_autorizacion;
+    }
+
+    public function set_numero_lote($numero_lote)
+    {
+        toba::logger()->info("set_numero_lote = " .$numero_lote);
+        $this->numero_lote = $numero_lote;
+    }
+
+    public function set_importe_pago($importe_pago)
+    {
+        toba::logger()->info("set_importe_pago = " .$importe_pago);
+        $this->importe_pago = $importe_pago;
     }
 
     public function set_persona_documentos($persona_documentos)
@@ -863,12 +954,14 @@ class persona
         $sql = "SELECT acc.id_alumno_cc
                       ,acc.id_alumno
                       ,acc.usuario_alta
-                      ,(CASE WHEN subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL THEN ''
-                             ELSE acc.cuota
-                        END) AS cuota
-                      ,(CASE WHEN subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL THEN 'Pago de cuota ' || acc.cuota
+                      /*,(CASE WHEN acc.id_cargo_cuenta_corriente = 1 THEN 'Insc. Anual'
+                             WHEN subconsulta_cuenta_corriente.numero_comprobante IS NULL THEN 'Cuota'
+                             ELSE 'Pago'
+                        END) AS concepto*/
+                      ,(CASE WHEN (subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL AND acc.id_cargo_cuenta_corriente = 1) THEN 'Pago de Inscripción Anual ' --|| acc.cuota
+                             WHEN (subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL AND acc.id_cargo_cuenta_corriente = 2) THEN 'Pago de cuota ' || acc.cuota
                              ELSE acc.descripcion
-                        END) AS descripcion
+                        END) AS concepto
                       ,(CASE WHEN subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL THEN subconsulta_cuenta_corriente.fecha_pago
                              ELSE acc.fecha_generacion_cc
                         END) AS fecha
@@ -1354,5 +1447,28 @@ class persona
             unset($mensaje);
         }
         return $errores;
+    }
+
+    public function grabar_pago_persona()
+    {
+        toba::logger()->info("persona.grabar_pago_persona()");
+
+        $sql = "INSERT INTO transaccion_cuenta_corriente (id_alumno_cc, id_estado_cuota, importe, fecha_pago, fecha_respuesta_prisma
+                                                         ,id_motivo_rechazo, usuario_ultima_modificacion, fecha_ultima_modificacion
+                                                         ,numero_comprobante, numero_lote, numero_autorizacion, id_medio_pago
+                                                         ,id_marca_tarjeta) 
+				VALUES ({$this->id_alumno_cc}, '{$this->id_estado_cuota}', '{$this->importe_pago}', '{$this->fecha_pago}', {$this->fecha_respuesta_prisma}
+				       ,{$this->id_motivo_rechazo}, '{$this->usuario_ultima_modificacion}', '{$this->fecha_ultima_modificacion}'
+				       ,'{$this->numero_comprobante}', {$this->numero_lote}, {$this->numero_autorizacion}, '{$this->id_medio_pago}'
+				       ,{$this->id_marca_tarjeta})
+			   ";
+
+        toba::logger()->debug(__METHOD__ . " : " . $sql);
+        ejecutar_fuente($sql);
+
+        if ($this->mostrar_mensaje_individual) {
+            echo('entra al if');
+            toba::notificacion()->agregar('El alta del pago fue realizada con éxito.', 'info');
+        }
     }
 }

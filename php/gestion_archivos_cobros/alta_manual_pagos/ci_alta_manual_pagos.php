@@ -2,6 +2,7 @@
 class ci_alta_manual_pagos extends ci_administrar_formas_cobro
 {
     protected $s__datos_alta_manual_pago;
+    protected $s__id_alumno_cc_seleccionado;
 
     //---- Funciones ---------------------------------------------------------------------
 
@@ -24,7 +25,9 @@ class ci_alta_manual_pagos extends ci_administrar_formas_cobro
 
     public function set_datos_cn()
     {
-        $this->cn()->set_datos_pago($this->s__datos_alta_manual_pago);
+        if (isset($this->s__id_alumno_cc_seleccionado)) {
+            $this->cn()->set_datos_pago($this->s__datos_alta_manual_pago);
+        }
     }
 
     //---- cuadro -----------------------------------------------------------------------
@@ -43,28 +46,72 @@ class ci_alta_manual_pagos extends ci_administrar_formas_cobro
 
 	function conf__formulario($form)
 	{
-        //$form->set_datos($this->s__datos_persona);
+        $form->set_solo_lectura();
+
+	    if (isset($this->s__id_alumno_cc_seleccionado)) {
+            /*
+             * Busco los datos de la cuenta corriente en los datos que obtuve en la
+             * function carga_datos (a través del id_alumno_cc que seleccioné en el cuadro)
+             */
+            $datos = array();
+            if (isset($this->s__datos_alta_manual_pago)) {
+                foreach ($this->s__datos_alta_manual_pago as $clave => $fila) {
+                    if ($fila['id_alumno_cc'] == $this->s__id_alumno_cc_seleccionado['id_alumno_cc']) {
+                        $datos = $fila;
+                    }
+                }
+            }
+            $form->set_solo_lectura(null, false);
+            $form->set_datos($datos);
+        }
 	}
 
 	function evt__formulario__modificacion($datos)
 	{
-        $datos['id_alumno'] = $this->s__alumno_editar;
-	    $this->s__datos_alta_manual_pago = $datos;
+        /*if ( ((isset($datos['id_medio_pago'])) && (isset($this->s__alumno_editar)))
+	        && (isset($this->s__id_alumno_cc_seleccionado)) ) {*/
+        if (isset($this->s__id_alumno_cc_seleccionado)) {
+            $fecha = new fecha();
+            $hoy = $fecha->get_timestamp_db();
+            $usuario = toba::usuario()->get_id();
+
+            $datos['id_alumno'] = $this->s__alumno_editar;
+            $datos['id_alumno_cc'] = $this->s__id_alumno_cc_seleccionado['id_alumno_cc'];
+            $datos['id_estado_cuota'] = 3; //por el momento le seteo x defecto el estado de pago de cuota Aprobado
+            $datos['importe'] = $datos['importe'] * -1;
+            $datos['usuario_ultima_modificacion'] = $usuario;
+            $datos['fecha_ultima_modificacion'] = $hoy;
+            $datos['mostrar_mensaje_individual'] = true;
+
+            $this->s__datos_alta_manual_pago = $datos;
+        }
 	}
+
+    function evt__formulario__cancelar()
+    {
+        unset($this->s__id_alumno_cc_seleccionado);
+    }
 
 	//---- cuadro_cuenta_corriente ------------------------------------------------------
 
 	function conf__cuadro_cuenta_corriente($cuadro)
 	{
-        if (!empty($this->s__datos_alta_manual_pago)) {
-            $cuadro->set_datos($this->s__datos_alta_manual_pago);
+	    if (!empty($this->s__datos_alta_manual_pago)) {
+	        $cuadro->set_datos($this->s__datos_alta_manual_pago);
         }
 	}
 
 	function evt__cuadro_cuenta_corriente__seleccion($seleccion)
 	{
-
+        $this->s__id_alumno_cc_seleccionado = $seleccion;
 	}
 
+    function conf_evt__cuadro_cuenta_corriente__seleccion(toba_evento_usuario $evento, $fila)
+    {
+        if ($this->s__datos_alta_manual_pago[$fila]['importe'] < 0) {
+            $evento->desactivar();
+        } else {
+            $evento->activar();
+        }
+    }
 }
-?>

@@ -95,14 +95,11 @@ class dao_personas
                 if ($filtro['con_saldo_actual'] == 'S') {
                     $select .= ",(COALESCE(subconsulta_saldo.saldo, 0)) as saldo_actual";
                     $from .= " LEFT OUTER JOIN (SELECT acc.id_alumno
-                                                     ,tcc.id_alumno_cc
-                                                     ,COALESCE(SUM(tcc.importe), 0) as saldo
+                                                      ,COALESCE(SUM(tcc.importe), 0) as saldo
                                                FROM transaccion_cuenta_corriente tcc
                                                     INNER JOIN alumno_cuenta_corriente acc on tcc.id_alumno_cc = acc.id_alumno_cc
-                                               GROUP BY tcc.id_alumno_cc
-                                                       ,acc.id_alumno
-                                               ORDER BY acc.id_alumno
-                                                       ,tcc.id_alumno_cc) AS subconsulta_saldo ON subconsulta_saldo.id_alumno = a.id_alumno 
+                                               GROUP BY acc.id_alumno
+                                               ORDER BY acc.id_alumno) AS subconsulta_saldo ON subconsulta_saldo.id_alumno = a.id_alumno 
                              ";
                 }
             }
