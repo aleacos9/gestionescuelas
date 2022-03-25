@@ -13,3 +13,30 @@
 	position: absolute;
 	opacity: 90;
 }
+
+.titulo_alumno {
+	background: transparent;
+	border-bottom: 2px solid #214A4F;
+	color: #214A4F;
+	display: block;
+	font-size: 1.5rem;
+	font-weight: bold;
+	margin: auto;
+	margin-bottom: 20px;
+	max-width: 1100px;
+	width: 100%;
+	text-align: center;
+	padding: 2px;
+}
+
+/*****************************************************************
+ Cambia el color de la fila en la que está el cursor en un cuadro
+******************************************************************/
+
+.ei-cuadro-celda-impar:hover {
+	background-color: #DCE1FA;
+}
+
+.ei-cuadro-celda-par:hover {
+	background-color: #CDD5FA;
+}

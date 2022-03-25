@@ -2,6 +2,7 @@
 class ci_vincular_allegados extends ci_abm_personas
 {
     protected $s__alumno_editar;
+    protected $s__nombre_alumno;
     protected $s__datos_allegados = array();
 
     //---- Funciones ---------------------------------------------------------------------
@@ -44,6 +45,7 @@ class ci_vincular_allegados extends ci_abm_personas
         if (!empty($this->s__alumno_editar)) {
             $persona = new persona($this->s__alumno_editar);
             $this->s__datos_allegados = $persona->get_persona_allegados();
+            $this->s__nombre_alumno = $persona->get_nombre_completo_alumno();
         }
     }
 
@@ -74,6 +76,10 @@ class ci_vincular_allegados extends ci_abm_personas
 
     function conf__formulario_ml($form_ml)
     {
+        if ($this->s__alumno_editar) {
+            $form_ml->set_titulo('<div class="titulo_alumno">'.$this->s__nombre_alumno.'</div>');
+        }
+
         if (!empty($this->s__datos_allegados)) {
             foreach (array_keys($this->s__datos_allegados) as $id) {
                 if ($this->s__datos_allegados[$id]['apex_ei_analisis_fila'] == 'B') {

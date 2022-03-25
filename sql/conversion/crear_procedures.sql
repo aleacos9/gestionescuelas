@@ -67,3 +67,26 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE 'plpgsql';
+
+
+
+--Alejandro feature/alta-manual-pagos 10/03/2022
+CREATE OR REPLACE FUNCTION cambios_tablas_archivo_respuesta() RETURNS VOID AS
+$$
+BEGIN
+    IF NOT EXISTS ( SELECT '' FROM information_schema.columns WHERE table_name = 'archivo_respuesta' and column_name = 'cuota') THEN
+
+        --agrego en la tabla archivo_respuesta el campo cuota
+        ALTER TABLE archivo_respuesta
+            ADD COLUMN cuota character(6) NOT NULL;
+
+        ALTER TABLE archivo_respuesta_detalle
+            ADD COLUMN codigo_error_debito character(3);
+        ALTER TABLE archivo_respuesta_detalle
+            ADD COLUMN descripcion_error_debito character(40);
+        ALTER TABLE archivo_respuesta_detalle
+            ADD COLUMN fecha_origen_venc_debito character(8);
+
+END IF;
+END;
+$$ LANGUAGE 'plpgsql';

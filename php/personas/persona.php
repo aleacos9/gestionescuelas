@@ -7,6 +7,8 @@ class persona
     protected $id_persona;
     protected $apellidos;
     protected $nombres;
+    protected $nombre_completo_persona;
+    protected $nombre_completo_alumno;
     protected $sexo;
     protected $fecha_nacimiento;
     protected $correo_electronico;
@@ -575,6 +577,18 @@ class persona
         return $this->nombres;
     }
 
+    public function get_nombre_completo_persona()
+    {
+        toba::logger()->info("get_nombre_completo_persona");
+        return $this->nombre_completo_persona;
+    }
+
+    public function get_nombre_completo_alumno()
+    {
+        toba::logger()->info("get_nombre_completo_alumno");
+        return $this->nombre_completo_alumno;
+    }
+
     public function get_fecha_nacimiento()
     {
         toba::logger()->info("get_fecha_nacimiento");
@@ -773,6 +787,7 @@ class persona
         $this->id_persona = $resultado[0]['id_persona'];
         $this->apellidos = $resultado[0]['apellidos'];
         $this->nombres = $resultado[0]['nombres'];
+        $this->nombre_completo_persona = $resultado[0]['apellidos']. ', '. $resultado[0]['nombres'];
         $this->fecha_nacimiento = $resultado[0]['fecha_nacimiento'];
         $this->correo_electronico = $resultado[0]['correo_electronico'];
         $this->recibe_notif_x_correo = $resultado[0]['recibe_notif_x_correo'];
@@ -791,9 +806,11 @@ class persona
         $this->datos = $resultado[0];
 
         // Obtiene los datos del alumno, solo si está marcado como alumno
-        if ($this->es_alumno == 'S'){
+        if ($this->es_alumno == 'S') {
             $sql = "SELECT a.id_alumno
                           ,a.id_persona
+                          ,p.nombres
+                          ,p.apellidos
                           ,a.legajo
                           ,a.extranjero
                           ,a.regular
@@ -806,7 +823,8 @@ class persona
                           ,a.direccion_depto
                     FROM alumno a
                         LEFT OUTER JOIN motivo_desercion md on a.id_motivo_desercion = md.id_motivo_desercion
-                    WHERE a.id_persona = {$this->persona}
+                        INNER JOIN persona p on p.id_persona = a.id_persona
+                    WHERE a.id_alumno = {$this->persona}
                    ";
 
             toba::logger()->debug(__METHOD__." : ".$sql);
@@ -822,6 +840,7 @@ class persona
             $this->direccion_numero = $resultado_alumno[0]['direccion_numero'];
             $this->direccion_piso = $resultado_alumno[0]['direccion_piso'];
             $this->direccion_depto = $resultado_alumno[0]['direccion_depto'];
+            $this->nombre_completo_alumno = $resultado_alumno[0]['apellidos']. ', '. $resultado_alumno[0]['nombres'];
         }
 
         // Obtiene los documentos asociados a la persona -----------------------------
@@ -1123,7 +1142,7 @@ class persona
         $id_localidad_nacimiento = conversion_tipo_datos::convertir_null_a_cadena($this->id_localidad_nacimiento, constantes::get_valor_constante('TIPO_DATO_INT'));
         $id_localidad_residencia = conversion_tipo_datos::convertir_null_a_cadena($this->id_localidad_residencia, constantes::get_valor_constante('TIPO_DATO_INT'));
         $id_nacionalidad = conversion_tipo_datos::convertir_null_a_cadena($this->id_nacionalidad, constantes::get_valor_constante('TIPO_DATO_INT'));
-        $activo = conversion_tipo_datos::convertir_null_a_cadena($this->estado, constantes::get_valor_constante('TIPO_DATO_STR')) ?? conversion_tipo_datos::convertir_null_a_cadena($this->activo, constantes::get_valor_constante('TIPO_DATO_STR'));
+        $activo = conversion_tipo_datos::convertir_null_a_cadena($this->activo, constantes::get_valor_constante('TIPO_DATO_STR')) ?? conversion_tipo_datos::convertir_null_a_cadena($this->activo, constantes::get_valor_constante('TIPO_DATO_STR'));
         $es_alumno = conversion_tipo_datos::convertir_null_a_cadena($this->es_alumno, constantes::get_valor_constante('TIPO_DATO_STR'));
         $usuario = conversion_tipo_datos::convertir_null_a_cadena($this->usuario, constantes::get_valor_constante('TIPO_DATO_STR'));
         $sexo = conversion_tipo_datos::convertir_null_a_cadena($this->sexo, constantes::get_valor_constante('TIPO_DATO_INT'));

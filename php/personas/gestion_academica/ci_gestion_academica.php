@@ -18,6 +18,7 @@ class ci_gestion_academica extends ci_vincular_allegados
         if (!empty($this->s__alumno_editar)) {
             $persona = new persona($this->s__alumno_editar);
             $this->s__datos_gestion_academica = $persona->get_datos_academicos();
+            $this->s__nombre_alumno = $persona->get_nombre_completo_alumno();
         }
     }
 
@@ -30,6 +31,10 @@ class ci_gestion_academica extends ci_vincular_allegados
 
     function conf__formulario_ml($form_ml)
     {
+        if ($this->s__alumno_editar) {
+            $form_ml->set_titulo('<div class="titulo_alumno">'.$this->s__nombre_alumno.'</div>');
+        }
+
         if (!empty($this->s__datos_gestion_academica)) {
             $form_ml->set_datos($this->s__datos_gestion_academica);
         }
