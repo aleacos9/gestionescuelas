@@ -3,6 +3,7 @@ class ci_abm_personas_interno extends ci_abm_personas
 {
     protected $s__persona_seleccionada;
     protected $s__documento_seleccionado;
+    protected $s__datos_allegados;
 
     public function conf()
     {
@@ -48,6 +49,7 @@ class ci_abm_personas_interno extends ci_abm_personas
                 }
             }
 
+            $this->s__datos_allegados = $persona->get_alumnos_vinculados();
         }
     }
 
@@ -71,14 +73,21 @@ class ci_abm_personas_interno extends ci_abm_personas
         $this->activar_pestanias();
     }
 
+    public function conf__pant_datos_allegados()
+    {
+        $this->activar_pestanias();
+    }
+
     public function activar_pestanias()
     {
         //Activo/desactivo la pantalla Alumno en función del valor del ef es_alumno
         if (!empty($this->s__datos_persona)) {
             if ($this->s__datos_persona['es_alumno'] == 'N') {
                 $this->pantalla()->tab('pant_datos_alumno')->desactivar();
+                $this->pantalla()->tab('pant_datos_allegados')->activar();
             } else {
                 $this->pantalla()->tab('pant_datos_alumno')->activar();
+                $this->pantalla()->tab('pant_datos_allegados')->desactivar();
             }
         }
     }
@@ -183,6 +192,17 @@ class ci_abm_personas_interno extends ci_abm_personas
     }
 
     //---- FIN pant_datos_alumno ---------------------------------------------------------
+
+    //---- cuadro_alumnos_vinculados -----------------------------------------------------
+
+    public function conf__cuadro_alumnos_vinculados($cuadro)
+    {
+        if (!empty($this->s__datos_allegados)) {
+            $cuadro->set_datos($this->s__datos_allegados);
+        }
+    }
+
+    //---- FIN pant_datos_allegados ------------------------------------------------------
 
 	//---- Eventos ----------------------------------------------------------------------
 

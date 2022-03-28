@@ -32,8 +32,8 @@ class ci_administrar_formas_cobro extends ci_vincular_allegados
 
     public function cargar_datos()
     {
-        if (!empty($this->s__alumno_editar)) {
-            $persona = new persona($this->s__alumno_editar);
+        if (!empty($this->s__persona_editar)) {
+            $persona = new persona($this->s__persona_editar);
             $this->s__datos_formas_cobro = $persona->get_datos_formas_cobro();
             $this->s__nombre_alumno = $persona->get_nombre_completo_alumno();
         }
@@ -75,31 +75,11 @@ class ci_administrar_formas_cobro extends ci_vincular_allegados
 
     function evt__formulario_ml__modificacion($datos)
     {
-        /*foreach (array_keys($datos) as $ret => $key) {
-            if ($datos[$key]['apex_ei_analisis_fila'] == 'B') {
-                unset($datos[$key]);
-                break;
-            }
-        }
-        $this->s__retenciones = $datos;
-        ei_arbol($datos, 'entrada del ml');
-        foreach (array_keys($datos) as $formas_cobro => $key) {
-            if (empty($datos[$key]['id_alumno'])) {
-                $datos[$key]['id_alumno'] = $this->s__alumno_editar;
-            }
-            if ($datos[$key]['apex_ei_analisis_fila'] == 'B') {
-                unset($datos[$key]);
-                break;
-            }
-        }
-        $this->s__datos_formas_cobro = $datos;*/
-
-
         foreach (array_keys($this->s__datos_formas_cobro) as $formas_cobro) {
             if (empty($this->s__datos_formas_cobro[$formas_cobro]['id_alumno'])) {
                 $this->s__datos_formas_cobro[$formas_cobro]['id_alumno'] = $this->s__alumno_editar;
             }
         }
-        ei_arbol($this->s__datos_formas_cobro, 'datos q salen del ml');
+        $this->s__datos_formas_cobro = $datos;
     }
 }

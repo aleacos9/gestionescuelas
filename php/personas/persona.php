@@ -72,6 +72,7 @@ class persona
 
     protected $datos = array();
     protected $datos_alumno = array();
+    protected $datos_alumnos_vinculados = array();
     protected $persona_documentos = array();
     protected $persona_sexos = array();
     protected $persona_allegados = array();
@@ -734,6 +735,12 @@ class persona
         return $this->persona_allegados;
     }
 
+    public function get_alumnos_vinculados()
+    {
+        toba::logger()->info("get_alumnos_vinculados");
+        return $this->datos_alumnos_vinculados;
+    }
+
     public function get_datos_academicos()
     {
         toba::logger()->info("get_datos_academicos");
@@ -824,7 +831,7 @@ class persona
                     FROM alumno a
                         LEFT OUTER JOIN motivo_desercion md on a.id_motivo_desercion = md.id_motivo_desercion
                         INNER JOIN persona p on p.id_persona = a.id_persona
-                    WHERE a.id_alumno = {$this->persona}
+                    WHERE p.id_persona = {$this->persona}
                    ";
 
             toba::logger()->debug(__METHOD__." : ".$sql);
@@ -841,6 +848,37 @@ class persona
             $this->direccion_piso = $resultado_alumno[0]['direccion_piso'];
             $this->direccion_depto = $resultado_alumno[0]['direccion_depto'];
             $this->nombre_completo_alumno = $resultado_alumno[0]['apellidos']. ', '. $resultado_alumno[0]['nombres'];
+        } else {
+            //Obtengo los datos de los allegados asociados a esa persona que NO es alumno
+            $sql = "SELECT pa.id_persona_allegado
+                          ,p.id_persona
+                          ,(p.apellidos || ', ' || p.nombres) as nombre_persona
+                          ,pa.id_alumno
+                          ,subconsulta_nombre_alumno.nombre_alumno as nombre_alumno
+                          ,pa.id_tipo_allegado
+                          ,ta.nombre as allegado
+                          ,pa.tutor
+                          ,(CASE WHEN pa.tutor = 'S' THEN 'Si'
+                                 WHEN pa.tutor = 'N' THEN 'No'
+                           END) as tutor_completo
+                          ,pa.activo
+                          ,(CASE WHEN pa.activo = 'S' THEN 'Activo'
+                                 WHEN pa.activo = 'N' THEN 'Inactivo'
+                           END) as activo_completo
+                    FROM persona_allegado pa
+                             INNER JOIN alumno a on pa.id_alumno = a.id_alumno
+                             INNER JOIN persona p on p.id_persona = pa.id_persona
+                             INNER JOIN tipo_allegado ta on pa.id_tipo_allegado = ta.id_tipo_allegado
+                             LEFT OUTER JOIN (SELECT p.id_persona, id_alumno
+                                                   ,(p.apellidos || ', ' || p.nombres) as nombre_alumno
+                                              FROM persona p
+                                                       INNER JOIN alumno a on p.id_persona = a.id_persona) AS subconsulta_nombre_alumno ON subconsulta_nombre_alumno.id_alumno = a.id_alumno
+                    WHERE p.id_persona = {$this->persona}
+                        AND pa.activo = 'S'
+                   ";
+
+            toba::logger()->debug(__METHOD__." : ".$sql);
+            $this->datos_alumnos_vinculados = consultar_fuente($sql);
         }
 
         // Obtiene los documentos asociados a la persona -----------------------------
@@ -889,7 +927,6 @@ class persona
         $this->persona_sexos = consultar_fuente($sql);
 
         // Obtiene los alleagados asociados a la persona ---------------------------------
-        // Este método obtiene los datos con el id_alumno en lugar del id_persona
         $sql = "SELECT pa.id_persona_allegado
                       ,pa.id_persona
                       ,pa.id_alumno
@@ -910,10 +947,11 @@ class persona
                       ,pa.usuario_ultima_modificacion
                 FROM persona_allegado pa
                     INNER JOIN alumno a on pa.id_alumno = a.id_alumno
+                    INNER JOIN persona p on p.id_persona = a.id_persona
                     INNER JOIN tipo_allegado ta on pa.id_tipo_allegado = ta.id_tipo_allegado
                     INNER JOIN estudio_alcanzado ea on pa.id_estudio_alcanzado = ea.id_estudio_alcanzado
                     INNER JOIN ocupacion o on pa.id_ocupacion = o.id_ocupacion
-                WHERE pa.id_alumno = {$this->persona}
+                WHERE p.id_persona = {$this->persona}
                 ORDER BY ta.jerarquia, pa.id_tipo_allegado
                ";
 
@@ -921,7 +959,6 @@ class persona
         $this->persona_allegados = consultar_fuente($sql);
 
         // Obtiene los datos academicos asociados a la persona ---------------------------------
-        // Este método obtiene los datos con el id_alumno en lugar del id_persona
         $sql = "SELECT dc.id_alumno_dato_cursada
                       ,dc.id_alumno
                       ,dc.id_grado
@@ -932,7 +969,9 @@ class persona
                       ,dc.pago_inscripcion
                 FROM alumno_datos_cursada dc
                     INNER JOIN grado g on g.id_grado = dc.id_grado
-                WHERE dc.id_alumno = {$this->persona}
+                    INNER JOIN alumno a on a.id_alumno = dc.id_alumno
+                    INNER JOIN persona p on p.id_persona = a.id_persona
+                WHERE p.id_persona = {$this->persona} --dc.id_alumno = {$this->persona}
                 ORDER BY dc.anio_cursada DESC
                         ,dc.id_grado
                ";
@@ -941,7 +980,6 @@ class persona
         $this->datos_academicos = consultar_fuente($sql);
 
         // Obtiene los datos de las formas de cobro asociados a la persona ---------------------------------
-        // Este método obtiene los datos con el id_alumno en lugar del id_persona
         $sql = "SELECT at.id_alumno_tarjeta
                       ,at.id_alumno
                       ,at.numero_tarjeta
@@ -956,11 +994,13 @@ class persona
                       ,(CASE WHEN at.activo = 'S' THEN 'Activo'
                              WHEN at.activo = 'N' THEN 'Inactivo'
                     END) as activo_completo
-                FROM alumno_tarjeta at
+                FROM alumno_tarjeta at  
+                    INNER JOIN alumno a on a.id_alumno = at.id_alumno
+                    INNER JOIN persona p on p.id_persona = a.id_persona
                     INNER JOIN entidad_bancaria eb on eb.id_entidad_bancaria = at.id_entidad_bancaria
                     INNER JOIN medio_pago mp on at.id_medio_pago = mp.id_medio_pago
                     INNER JOIN marca_tarjeta mt on at.id_marca_tarjeta = mt.id_marca_tarjeta
-                WHERE at.id_alumno = {$this->persona}
+                WHERE p.id_persona = {$this->persona} --at.id_alumno = {$this->persona}
                 ORDER BY at.id_alumno
                         ,at.id_alumno_tarjeta
                ";
@@ -969,7 +1009,6 @@ class persona
         $this->datos_formas_cobro = consultar_fuente($sql);
 
         // Obtiene los datos de la cuenta corriente asociada a la persona ---------------------------------
-        // Este método obtiene los datos con el id_alumno en lugar del id_persona
         $sql = "SELECT acc.id_alumno_cc
                       ,acc.id_alumno
                       ,acc.usuario_alta
@@ -1002,7 +1041,8 @@ class persona
                       ,subconsulta_cuenta_corriente.numero_autorizacion
                       ,subconsulta_cuenta_corriente.numero_lote
                 FROM alumno_cuenta_corriente acc
-                    INNER JOIN alumno a on acc.id_alumno = a.id_alumno
+                    INNER JOIN alumno a on acc.id_alumno = a.id_alumno  
+                    INNER JOIN persona p on p.id_persona = a.id_persona
                     INNER JOIN (select id_alumno_cc, id_transaccion_cc, fecha_transaccion, id_estado_cuota, importe, fecha_pago
                                       ,fecha_respuesta_prisma, id_motivo_rechazo, numero_comprobante, numero_autorizacion, numero_lote
                                       ,id_medio_pago, id_marca_tarjeta
@@ -1011,7 +1051,7 @@ class persona
                     LEFT OUTER JOIN motivo_rechazo mr on mr.id_motivo_rechazo = subconsulta_cuenta_corriente.id_motivo_rechazo
                     LEFT OUTER JOIN medio_pago mp on mp.id_medio_pago = subconsulta_cuenta_corriente.id_medio_pago
                     LEFT OUTER JOIN marca_tarjeta mt on mt.id_marca_tarjeta = subconsulta_cuenta_corriente.id_marca_tarjeta
-                WHERE a.id_alumno = {$this->persona}
+                WHERE p.id_persona = {$this->persona} --a.id_alumno = {$this->persona}
                 ORDER BY acc.id_alumno_cc
                ";
 

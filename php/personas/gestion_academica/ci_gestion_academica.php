@@ -15,8 +15,8 @@ class ci_gestion_academica extends ci_vincular_allegados
 
     public function cargar_datos()
     {
-        if (!empty($this->s__alumno_editar)) {
-            $persona = new persona($this->s__alumno_editar);
+        if (!empty($this->s__persona_editar)) {
+            $persona = new persona($this->s__persona_editar);
             $this->s__datos_gestion_academica = $persona->get_datos_academicos();
             $this->s__nombre_alumno = $persona->get_nombre_completo_alumno();
         }

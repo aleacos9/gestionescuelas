@@ -42,8 +42,8 @@ class ci_vincular_allegados extends ci_abm_personas
 
     public function cargar_datos()
     {
-        if (!empty($this->s__alumno_editar)) {
-            $persona = new persona($this->s__alumno_editar);
+        if (!empty($this->s__persona_editar)) {
+            $persona = new persona($this->s__persona_editar);
             $this->s__datos_allegados = $persona->get_persona_allegados();
             $this->s__nombre_alumno = $persona->get_nombre_completo_alumno();
         }
@@ -67,6 +67,7 @@ class ci_vincular_allegados extends ci_abm_personas
 
     function evt__cuadro__seleccion($seleccion)
     {
+        $this->s__persona_editar = $seleccion['id_persona'];
         $this->s__alumno_editar = $seleccion['id_alumno'];
         $this->set_pantalla('edicion');
         $this->cargar_datos();

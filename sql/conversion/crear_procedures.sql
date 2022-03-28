@@ -87,6 +87,9 @@ BEGIN
         ALTER TABLE archivo_respuesta_detalle
             ADD COLUMN fecha_origen_venc_debito character(8);
 
+        --alta de un nuevo medio de pago
+        INSERT INTO medio_pago (id_medio_pago, nombre, nombre_corto, se_muestra_alta_manual, observaciones, jerarquia) VALUES (nextval('sq_id_medio_pago'), 'Depósito', 'Depósito', 'S', '', 6);
+
 END IF;
 END;
 $$ LANGUAGE 'plpgsql';

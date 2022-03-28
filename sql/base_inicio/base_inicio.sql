@@ -1381,6 +1381,7 @@ INSERT INTO medio_pago (id_medio_pago, nombre, nombre_corto, se_muestra_alta_man
 INSERT INTO medio_pago (id_medio_pago, nombre, nombre_corto, se_muestra_alta_manual, observaciones, jerarquia) VALUES (nextval('sq_id_medio_pago'), 'Tarjeta de Débito', 'Débito', 'N', '', 3);
 INSERT INTO medio_pago (id_medio_pago, nombre, nombre_corto, se_muestra_alta_manual, observaciones, jerarquia) VALUES (nextval('sq_id_medio_pago'), 'Tarjeta de Crédito', 'Crédito', 'N', '', 4);
 INSERT INTO medio_pago (id_medio_pago, nombre, nombre_corto, se_muestra_alta_manual, observaciones, jerarquia) VALUES (nextval('sq_id_medio_pago'), 'Postnet', 'Postnet', 'S', '', 5);
+INSERT INTO medio_pago (id_medio_pago, nombre, nombre_corto, se_muestra_alta_manual, observaciones, jerarquia) VALUES (nextval('sq_id_medio_pago'), 'Depósito', 'Depósito', 'S', '', 6);
 
 
 INSERT INTO marca_tarjeta (id_marca_tarjeta, nombre, nombre_corto, observaciones, jerarquia, permite_posnet) VALUES (nextval('sq_id_marca_tarjeta'), 'Visa', 'Visa', '', 1, 'S');
