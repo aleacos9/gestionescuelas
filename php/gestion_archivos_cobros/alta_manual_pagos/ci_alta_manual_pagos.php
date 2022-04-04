@@ -2,6 +2,7 @@
 class ci_alta_manual_pagos extends ci_administrar_formas_cobro
 {
     protected $s__datos_alta_manual_pago;
+    protected $s__datos_alta_manual_pago_alta;
     protected $s__id_alumno_cc_seleccionado;
 
     //---- Funciones ---------------------------------------------------------------------
@@ -26,7 +27,7 @@ class ci_alta_manual_pagos extends ci_administrar_formas_cobro
     public function set_datos_cn()
     {
         if (isset($this->s__id_alumno_cc_seleccionado)) {
-            $this->cn()->set_datos_pago($this->s__datos_alta_manual_pago);
+            $this->cn()->set_datos_pago($this->s__datos_alta_manual_pago_alta);
         }
     }
 
@@ -68,8 +69,6 @@ class ci_alta_manual_pagos extends ci_administrar_formas_cobro
 
 	function evt__formulario__modificacion($datos)
 	{
-        /*if ( ((isset($datos['id_medio_pago'])) && (isset($this->s__alumno_editar)))
-	        && (isset($this->s__id_alumno_cc_seleccionado)) ) {*/
         if (isset($this->s__id_alumno_cc_seleccionado)) {
             $fecha = new fecha();
             $hoy = $fecha->get_timestamp_db();
@@ -84,7 +83,7 @@ class ci_alta_manual_pagos extends ci_administrar_formas_cobro
             $datos['mostrar_mensaje_individual'] = true;
             $datos['estado'] = 'nuevo';
 
-            $this->s__datos_alta_manual_pago = $datos;
+            $this->s__datos_alta_manual_pago_alta = $datos;
         }
 	}
 

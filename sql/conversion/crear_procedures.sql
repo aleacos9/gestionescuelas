@@ -93,3 +93,46 @@ BEGIN
 END IF;
 END;
 $$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/alta-manual-pagos 04/04/2022
+CREATE OR REPLACE FUNCTION cambios_tablas_parametros_sistema() RETURNS VOID AS
+$$
+BEGIN
+    IF NOT EXISTS ( SELECT '' FROM information_schema.columns WHERE table_name = 'parametros_sistema' and column_name = 'id_parametro') THEN
+
+        -- Sequence: public.sq_id_parametro
+        -- DROP SEQUENCE public.sq_id_parametro;
+        CREATE SEQUENCE public.sq_id_parametro
+            INCREMENT 1
+            MINVALUE 1
+            MAXVALUE 9223372036854775807
+            START 1
+            CACHE 1;
+        ALTER TABLE public.sq_id_parametro
+            OWNER TO postgres;
+
+        ALTER TABLE parametros_sistema
+            ADD COLUMN id_parametro integer;
+
+        UPDATE parametros_sistema SET id_parametro = 1 WHERE parametro = 'numero_establecimiento_debito_visa';
+        UPDATE parametros_sistema SET id_parametro = 2 WHERE parametro = 'numero_establecimiento_debito_mc';
+        UPDATE parametros_sistema SET id_parametro = 3 WHERE parametro = 'importe_inscripcion_inicial';
+        UPDATE parametros_sistema SET id_parametro = 4 WHERE parametro = 'importe_inscripcion_primario';
+        UPDATE parametros_sistema SET id_parametro = 5 WHERE parametro = 'criterio_generacion_cuota';
+        UPDATE parametros_sistema SET id_parametro = 6 WHERE parametro = 'importe_mensual_cuota';
+        UPDATE parametros_sistema SET id_parametro = 7 WHERE parametro = 'importe_inscripcion_anual';
+        UPDATE parametros_sistema SET id_parametro = 8 WHERE parametro = 'importe_mensual_cuota_x_grado';
+
+        ALTER TABLE parametros_sistema
+            ALTER COLUMN id_parametro SET NOT NULL;
+
+        ALTER TABLE parametros_sistema
+            ALTER COLUMN id_parametro SET DEFAULT nextval('sq_id_parametro'::regclass);
+
+        ALTER TABLE parametros_sistema
+            ADD PRIMARY KEY (id_parametro);
+
+    END IF;
+END;
+$$ LANGUAGE 'plpgsql';

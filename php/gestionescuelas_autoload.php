@@ -18,8 +18,10 @@ class gestionescuelas_autoload
 	}
 
 	static protected $clases = array(
+		'ci_abm_parametros_sistema' => 'ABMs/abm_parametros_sistema/ci_abm_parametros_sistema.php',
 		'constantes' => 'constantes.php',
 		'dao_consultas' => 'consultas/dao_consultas.php',
+		'dt_parametros_sistema' => 'datos/dt_parametros_sistema.php',
 		'gestionescuelas_ci' => 'extension_toba/componentes/gestionescuelas_ci.php',
 		'gestionescuelas_cn' => 'extension_toba/componentes/gestionescuelas_cn.php',
 		'gestionescuelas_datos_relacion' => 'extension_toba/componentes/gestionescuelas_datos_relacion.php',
