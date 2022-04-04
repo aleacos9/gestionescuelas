@@ -16,6 +16,7 @@ class cn_abm_personas extends gestionescuelas_cn
         } else {
             $persona = new persona();
         }
+
         $persona->set_datos_persona($this->datos_persona);
         $persona->set_persona_documentos($this->documentos);
         $persona->set_datos_alumno($this->datos_persona);

@@ -17,8 +17,8 @@ class ci_alta_manual_pagos extends ci_administrar_formas_cobro
 
     public function cargar_datos()
     {
-        if (!empty($this->s__alumno_editar)) {
-            $persona = new persona($this->s__alumno_editar);
+        if (!empty($this->s__persona_editar)) {
+            $persona = new persona($this->s__persona_editar);
             $this->s__datos_alta_manual_pago = $persona->get_datos_cuenta_corriente();
         }
     }
@@ -82,6 +82,7 @@ class ci_alta_manual_pagos extends ci_administrar_formas_cobro
             $datos['usuario_ultima_modificacion'] = $usuario;
             $datos['fecha_ultima_modificacion'] = $hoy;
             $datos['mostrar_mensaje_individual'] = true;
+            $datos['estado'] = 'nuevo';
 
             $this->s__datos_alta_manual_pago = $datos;
         }

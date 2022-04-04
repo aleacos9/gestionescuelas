@@ -1312,8 +1312,16 @@ class persona
 
     public function grabar_persona_documentos()
     {
+        //Primero borro todas los documentos de la persona
+        $sql = "DELETE FROM persona_tipo_documento
+                WHERE id_persona = {$this->persona}
+               ";
+        toba::logger()->debug(__METHOD__ . " : " . $sql);
+        ejecutar_fuente($sql);
+
+        //Luego recorro el array que recibo y voy insertando otra vez los datos
         foreach ($this->persona_documentos as $persona_documento) {
-            $numero = conversion_tipo_datos::convertir_null_a_cadena($persona_documento['identificacion'], constantes::get_valor_constante('TIPO_DATO_STR'));
+            /*$numero = conversion_tipo_datos::convertir_null_a_cadena($persona_documento['identificacion'], constantes::get_valor_constante('TIPO_DATO_STR'));
 
             $sql = "SELECT id_persona
                           ,numero
@@ -1321,17 +1329,17 @@ class persona
 					WHERE id_persona = {$this->persona} 
                         AND id_tipo_documento = '{$persona_documento['id']}'
 				   ";
-
-            $datos = consultar_fuente($sql);
+            toba::logger()->debug(__METHOD__ . " : " . $sql);
+            $datos = consultar_fuente($sql);*/
 
             $fecha = new fecha();
             $hoy = $fecha->get_timestamp_db();
             $usuario = toba::usuario()->get_id();
 
-            if ($datos == null) {
+            //if ($datos == null) {
                 $sql = "INSERT INTO persona_tipo_documento (id_persona, id_tipo_documento, numero, activo, fecha_alta, usuario_alta) 
 					    VALUES ({$this->persona},'{$persona_documento['id']}', '{$persona_documento['identificacion']}', '{$persona_documento['activo']}', '{$hoy}', '{$usuario}')";
-            } else {
+            /*} else {
                 $sql = "UPDATE persona_tipo_documento 
 						SET numero = $numero
                            ,id_tipo_documento = '{$persona_documento['id']}'
@@ -1340,7 +1348,7 @@ class persona
                             AND id_tipo_documento = '{$persona_documento['id']}'
                             AND numero <> '{$datos[0]['numero']}'
 					   ";
-            }
+            }*/
             toba::logger()->debug(__METHOD__ . " : " . $sql);
             ejecutar_fuente($sql);
         }

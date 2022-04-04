@@ -8,22 +8,22 @@ class cn_alta_manual_pagos extends gestionescuelas_cn
         $ok = 'ok';
 
         if ($this->datos_pago) {
-            ei_arbol($this->datos_pago, 'desde el cn');
-            $this->validar();
-            $persona = array();
+            if ($this->validar() == 'ok') {
+                $persona = array();
 
-            //if (is_array($this->datos_pago)) {
-            if (isset($this->datos_pago[0])) {
-                foreach ($this->datos_pago as $pago) {
-                    $persona = new persona($pago['id_alumno']);
-                    break;
+                //if (is_array($this->datos_pago)) {
+                if (isset($this->datos_pago[0])) {
+                    foreach ($this->datos_pago as $pago) {
+                        $persona = new persona($pago['id_alumno']);
+                        break;
+                    }
+                } else {
+                    $persona = new persona($this->datos_pago['id_alumno']);
                 }
-            } else {
-                $persona = new persona($this->datos_pago['id_alumno']);
+                $persona->set_datos_cuenta_corriente($this->datos_pago);
+                $persona->grabar_pago_persona();
+                return $ok;
             }
-            $persona->set_datos_cuenta_corriente($this->datos_pago);
-            $persona->grabar_pago_persona();
-            return $ok;
         } else {
             throw new toba_error('Para procesar debe ingresar datos.');
         }
@@ -34,7 +34,6 @@ class cn_alta_manual_pagos extends gestionescuelas_cn
     {
         //Obtengo los datos del cargo a pagar
         $datos_cargo_generado = dao_consultas::get_datos_cargo_generado($this->datos_pago);
-        //ei_arbol($datos_cargo_generado);
         if (isset($datos_cargo_generado)) {
             //valido que el importe del cargo sea igual al ingresado
             if ( $datos_cargo_generado[0]['importe'] != ($this->datos_pago['importe'] * -1) ) {
@@ -60,6 +59,7 @@ class cn_alta_manual_pagos extends gestionescuelas_cn
                 }
             }
         }
+        return 'ok';
     }
 
     public function set_datos_pago($datos)
