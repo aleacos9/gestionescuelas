@@ -2,6 +2,7 @@
 class ci_vincular_allegados extends ci_abm_personas
 {
     protected $s__alumno_editar;
+    protected $s__nombre_alumno;
     protected $s__datos_allegados = array();
 
     //---- Funciones ---------------------------------------------------------------------
@@ -41,9 +42,10 @@ class ci_vincular_allegados extends ci_abm_personas
 
     public function cargar_datos()
     {
-        if (!empty($this->s__alumno_editar)) {
-            $persona = new persona($this->s__alumno_editar);
+        if (!empty($this->s__persona_editar)) {
+            $persona = new persona($this->s__persona_editar);
             $this->s__datos_allegados = $persona->get_persona_allegados();
+            $this->s__nombre_alumno = $persona->get_nombre_completo_alumno();
         }
     }
 
@@ -65,6 +67,7 @@ class ci_vincular_allegados extends ci_abm_personas
 
     function evt__cuadro__seleccion($seleccion)
     {
+        $this->s__persona_editar = $seleccion['id_persona'];
         $this->s__alumno_editar = $seleccion['id_alumno'];
         $this->set_pantalla('edicion');
         $this->cargar_datos();
@@ -74,6 +77,10 @@ class ci_vincular_allegados extends ci_abm_personas
 
     function conf__formulario_ml($form_ml)
     {
+        if ($this->s__alumno_editar) {
+            $form_ml->set_titulo('<div class="titulo_alumno">'.$this->s__nombre_alumno.'</div>');
+        }
+
         if (!empty($this->s__datos_allegados)) {
             foreach (array_keys($this->s__datos_allegados) as $id) {
                 if ($this->s__datos_allegados[$id]['apex_ei_analisis_fila'] == 'B') {

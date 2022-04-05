@@ -52,3 +52,23 @@ INSERT INTO apex_item (item_id, proyecto, item, padre_id, padre_proyecto, padre,
 	'0'  --retrasar_headers
 );
 --- FIN Grupo de desarrollo 82
+
+------------------------------------------------------------
+-- apex_item_objeto
+------------------------------------------------------------
+INSERT INTO apex_item_objeto (item_id, proyecto, item, objeto, orden, inicializar) VALUES (
+	NULL, --item_id
+	'gestionescuelas', --proyecto
+	'82000014', --item
+	'82000035', --objeto
+	'0', --orden
+	NULL  --inicializar
+);
+INSERT INTO apex_item_objeto (item_id, proyecto, item, objeto, orden, inicializar) VALUES (
+	NULL, --item_id
+	'gestionescuelas', --proyecto
+	'82000014', --item
+	'82000040', --objeto
+	'0', --orden
+	NULL  --inicializar
+);

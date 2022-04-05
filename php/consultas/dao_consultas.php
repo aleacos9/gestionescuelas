@@ -222,15 +222,25 @@ class dao_consultas
             if (isset($filtro['id_medio_pago'])) {
                 $where .= " AND id_medio_pago = '{$filtro['id_medio_pago']}'";
             }
+
+            if (isset($filtro['se_muestra_alta_manual'])) {
+                if ($filtro['se_muestra_alta_manual'] == 'S') {
+                    $where .= " AND se_muestra_alta_manual = 'S'";
+                } else {
+                    $where .= " AND se_muestra_alta_manual = 'N'";
+                }
+            }
         }
 
         $sql = "SELECT id_medio_pago
                       ,nombre
                       ,nombre_corto
+                      ,se_muestra_alta_manual
                       ,observaciones
                       ,jerarquia
 				FROM medio_pago
                 $where
+                ORDER BY jerarquia
 			   ";
 
         toba::logger()->debug(__METHOD__." : ".$sql);
@@ -248,15 +258,25 @@ class dao_consultas
             if (isset($filtro['id_marca_tarjeta'])) {
                 $where .= " AND id_marca_tarjeta = '{$filtro['id_marca_tarjeta']}'";
             }
+
+            if (isset($filtro['permite_posnet'])) {
+                if ($filtro['permite_posnet'] == 'S') {
+                    $where .= " AND permite_posnet = 'S'";
+                } else {
+                    $where .= " AND permite_posnet = 'N'";
+                }
+            }
         }
 
         $sql = "SELECT id_marca_tarjeta
                       ,nombre
                       ,nombre_corto
+                      ,permite_posnet  
                       ,observaciones
                       ,jerarquia
 				FROM marca_tarjeta
                 $where
+                ORDER BY jerarquia
 			   ";
 
         toba::logger()->debug(__METHOD__." : ".$sql);
@@ -466,5 +486,41 @@ class dao_consultas
         } else {
             throw new toba_error("Se solicito un PARAMETRO inexistente o su valor no está establecido: '$id'");
         }
+    }
+
+    /*
+     * Retorna los datos de un cargo generado
+     */
+    public static function get_datos_cargo_generado($filtro=null)
+    {
+        $where = 'WHERE 1=1';
+
+        if (isset($filtro)) {
+            if (isset($filtro['id_alumno_cc'])) {
+                $where .= " AND id_alumno_cc = '{$filtro['id_alumno_cc']}'";
+            }
+        }
+
+        $sql = "SELECT id_transaccion_cc
+                      ,id_alumno_cc
+                      ,to_char(fecha_transaccion,'YYYY-MM-dd') AS fecha_transaccion
+                      ,id_estado_cuota
+                      ,(COALESCE(importe, 0)) AS importe
+                      ,fecha_pago
+                      ,fecha_respuesta_prisma
+                      ,id_motivo_rechazo
+                      ,usuario_ultima_modificacion
+                      ,fecha_ultima_modificacion
+                      ,numero_comprobante
+                      ,numero_lote
+                      ,numero_autorizacion
+                      ,id_medio_pago
+                      ,id_marca_tarjeta
+				FROM transaccion_cuenta_corriente 
+				$where
+			   ";
+
+        toba::logger()->debug(__METHOD__." : ".$sql);
+        return toba::db()->consultar($sql);
     }
 }

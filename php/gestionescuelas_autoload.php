@@ -18,8 +18,10 @@ class gestionescuelas_autoload
 	}
 
 	static protected $clases = array(
+		'ci_abm_parametros_sistema' => 'ABMs/abm_parametros_sistema/ci_abm_parametros_sistema.php',
 		'constantes' => 'constantes.php',
 		'dao_consultas' => 'consultas/dao_consultas.php',
+		'dt_parametros_sistema' => 'datos/dt_parametros_sistema.php',
 		'gestionescuelas_ci' => 'extension_toba/componentes/gestionescuelas_ci.php',
 		'gestionescuelas_cn' => 'extension_toba/componentes/gestionescuelas_cn.php',
 		'gestionescuelas_datos_relacion' => 'extension_toba/componentes/gestionescuelas_datos_relacion.php',
@@ -39,6 +41,11 @@ class gestionescuelas_autoload
 		'gestionescuelas_servicio_web' => 'extension_toba/componentes/gestionescuelas_servicio_web.php',
 		'gestionescuelas_comando' => 'extension_toba/gestionescuelas_comando.php',
 		'gestionescuelas_modelo' => 'extension_toba/gestionescuelas_modelo.php',
+		'ci_alta_manual_pagos' => 'gestion_archivos_cobros/alta_manual_pagos/ci_alta_manual_pagos.php',
+		'cn_alta_manual_pagos' => 'gestion_archivos_cobros/alta_manual_pagos/cn_alta_manual_pagos.php',
+		'eiformulario' => 'gestion_archivos_cobros/alta_manual_pagos/eiformulario.php',
+		'ci_generar_cargos_alumnos' => 'gestion_archivos_cobros/generar_cargos_alumnos/ci_generar_cargos_alumnos.php',
+		'cn_generar_cargos_alumnos' => 'gestion_archivos_cobros/generar_cargos_alumnos/cn_generar_cargos_alumnos.php',
 		'gestionescuelas_autoload' => 'gestionescuelas_autoload.php',
 		'gestionescuelas_ext_ci' => 'gestionescuelas_ext_ci.php',
 		'ci_login' => 'login/ci_login.php',
@@ -47,6 +54,8 @@ class gestionescuelas_autoload
 		'ci_abm_personas' => 'personas/abm_personas/ci_abm_personas.php',
 		'ci_abm_personas_interno' => 'personas/abm_personas/ci_abm_personas_interno.php',
 		'cn_abm_personas' => 'personas/abm_personas/cn_abm_personas.php',
+		'ci_administrar_formas_cobro' => 'personas/administrar_formas_cobro/ci_administrar_formas_cobro.php',
+		'cn_administrar_formas_cobro' => 'personas/administrar_formas_cobro/cn_administrar_formas_cobro.php',
 		'dao_personas' => 'personas/dao_personas.php',
 		'ci_gestion_academica' => 'personas/gestion_academica/ci_gestion_academica.php',
 		'cn_gestion_academica' => 'personas/gestion_academica/cn_gestion_academica.php',
