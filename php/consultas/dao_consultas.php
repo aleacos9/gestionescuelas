@@ -523,4 +523,416 @@ class dao_consultas
         toba::logger()->debug(__METHOD__." : ".$sql);
         return toba::db()->consultar($sql);
     }
+
+    public static function get_registros_a_procesar_alta_masiva_pagos($filtro = null)
+    {
+        $where = '';
+
+        if (isset($filtro)) {
+            if (isset($filtro['cuota'])) {
+                $where .= " AND cuota = '{$filtro['cuota']}'";
+            }
+        }
+
+        $sql = "SELECT ar.id_archivo_respuesta
+                      ,ar.id_marca_tarjeta
+                      ,ar.id_medio_pago
+                      ,ar.nombre_archivo
+                      ,ar.numero_establecimiento
+                      ,ar.usuario_alta
+                      ,ar.fecha_generacion
+                      ,ar.cantidad_total_debitos
+                      ,ar.importe_total_debitos
+                      ,ar.cuota
+                      ,ard.id_archivo_respuesta_detalle
+                      ,ard.registro
+                      ,ard.numero_codigo_banco_pagador
+                      ,ard.numero_sucursal_banco_pagador
+                      ,ard.numero_lote
+                      ,ard.codigo_transaccion
+                      ,ard.numero_establecimiento
+                      ,ard.numero_tarjeta
+                      ,ard.id_alumno_cc
+                      ,ard.fecha_presentacion
+                      ,ard.importe
+                      ,ard.id_alumno
+                      ,ard.codigo_alta_identificador
+                      ,ard.cuenta_debito_fondos
+                      ,ard.estado_movimiento
+                      ,ard.rechazo1
+                      ,ard.descripcion_rechazo1
+                      ,ard.rechazo2
+                      ,ard.descripcion_rechazo2
+                      ,ard.numero_tarjeta_nueva
+                      ,ard.fecha_devolucion_respuesta
+                      ,ard.fecha_pago
+                      ,ard.numero_cartera_cliente
+                      ,ard.fecha_generacion
+                      ,ard.contenido
+                      ,ard.usuario_alta
+                      ,ard.codigo_error_debito
+                      ,ard.descripcion_error_debito
+                      ,ard.fecha_origen_venc_debito
+                FROM archivo_respuesta ar
+                    INNER JOIN archivo_respuesta_detalle ard on ar.id_archivo_respuesta = ard.id_archivo_respuesta 
+				WHERE 1=1 AND procesado = 0 
+				    $where
+			   ";
+
+        toba::logger()->debug(__METHOD__." : ".$sql);
+        return toba::db()->consultar($sql);
+    }
+
+    public static function get_datos_cuadro_control_mensual($filtro = null)
+    {
+        $sql = "SELECT /*(CASE WHEN substring(cuota, 1, 2) = '01' THEN 'ENERO'
+                             WHEN substring(cuota, 1, 2) = '02' THEN 'FEBRERO'
+                             WHEN substring(cuota, 1, 2) = '03' THEN 'MARZO'
+                             WHEN substring(cuota, 1, 2) = '04' THEN 'ABRIL'
+                             WHEN substring(cuota, 1, 2) = '05' THEN 'MAYO'
+                             WHEN substring(cuota, 1, 2) = '06' THEN 'JUNIO'
+                             WHEN substring(cuota, 1, 2) = '07' THEN 'JULIO'
+                             WHEN substring(cuota, 1, 2) = '07' THEN 'AGOSTO'
+                             WHEN substring(cuota, 1, 2) = '07' THEN 'SEPTIEMBRE'
+                             WHEN substring(cuota, 1, 2) = '07' THEN 'OCTUBRE'
+                             WHEN substring(cuota, 1, 2) = '07' THEN 'NOVIEMBRE'
+                             WHEN substring(cuota, 1, 2) = '07' THEN 'DICIEMBRE'
+                        END) AS mes*/
+                      'MARZO' AS mes  
+                      ,COALESCE ((SELECT count(id_alumno_cc) as cargo_mensual_inscripcion
+                                  FROM alumno_cuenta_corriente
+                                  WHERE 1=1 AND substring(cuota, 1, 2) = '03'
+                                    AND id_cargo_cuenta_corriente = 1), 0) AS cargo_mensual_inscripcion
+                      ,COALESCE ((SELECT count(id_alumno_cc) as cargo_mensual_cuota
+                                  FROM alumno_cuenta_corriente
+                                  WHERE 1=1 AND substring(cuota, 1, 2) = '03'
+                                    AND id_cargo_cuenta_corriente = 2), 0) AS cargo_mensual_cuota
+                      ,COALESCE ((SELECT count(id_alumno_cc) as total_cargo_mensual
+                                  FROM alumno_cuenta_corriente
+                                  WHERE 1=1 AND substring(cuota, 1, 2) = '03'), 0) AS total_cargo_mensual
+                      ,COALESCE ((SELECT count(DISTINCT(b.id_alumno_cc)) AS cuotas_impagas_generadas
+                                  FROM transaccion_cuenta_corriente trcc
+                                       LEFT OUTER JOIN alumno_cuenta_corriente acc on trcc.id_alumno_cc = acc.id_alumno_cc
+                                       INNER JOIN alumno a on a.id_alumno = acc.id_alumno
+                                       INNER JOIN persona p on p.id_persona = a.id_persona
+                                       LEFT OUTER JOIN (SELECT estado_actual.id_alumno_cc
+                                                              ,ultimo_cambio
+                                                              ,e.id_estado_cuota
+                                                              ,e.nombre AS estado_actual
+                                                              ,tcc.id_motivo_rechazo
+                                                              ,mr.nombre AS motivo_rechazo
+                                                         FROM (SELECT id_alumno_cc
+                                                                     ,MAX(tcc.fecha_transaccion) AS ultimo_cambio
+                                                               FROM transaccion_cuenta_corriente tcc
+                                                               GROUP BY id_alumno_cc) AS estado_actual
+                                                                   INNER JOIN transaccion_cuenta_corriente tcc on (estado_actual.id_alumno_cc = tcc.id_alumno_cc AND tcc.fecha_transaccion = estado_actual.ultimo_cambio)
+                                                                   INNER JOIN alumno_cuenta_corriente acc on tcc.id_alumno_cc = acc.id_alumno_cc
+                                                                   LEFT OUTER JOIN motivo_rechazo mr on tcc.id_motivo_rechazo = mr.id_motivo_rechazo
+                                                                   LEFT OUTER JOIN estado_cuota e on e.id_estado_cuota = tcc.id_estado_cuota
+                                                          ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
+                                WHERE 1=1 AND substring(acc.cuota, 1, 2) = '03'
+                                  AND b.id_estado_cuota IN (1)), 0) AS cuotas_impagas_generadas
+                      ,COALESCE ((SELECT count(DISTINCT(b.id_alumno_cc)) AS cuotas_impagas_liquidadas
+                                   FROM transaccion_cuenta_corriente trcc
+                                            LEFT OUTER JOIN alumno_cuenta_corriente acc on trcc.id_alumno_cc = acc.id_alumno_cc
+                                            INNER JOIN alumno a on a.id_alumno = acc.id_alumno
+                                            INNER JOIN persona p on p.id_persona = a.id_persona
+                                            LEFT OUTER JOIN (SELECT estado_actual.id_alumno_cc
+                                                                  ,ultimo_cambio
+                                                                  ,e.id_estado_cuota
+                                                                  ,e.nombre AS estado_actual
+                                                                  ,tcc.id_motivo_rechazo
+                                                                  ,mr.nombre AS motivo_rechazo
+                                                             FROM (SELECT id_alumno_cc
+                                                                        ,MAX(tcc.fecha_transaccion) AS ultimo_cambio
+                                                                   FROM transaccion_cuenta_corriente tcc
+                                                                   GROUP BY id_alumno_cc) AS estado_actual
+                                                                      INNER JOIN transaccion_cuenta_corriente tcc on (estado_actual.id_alumno_cc = tcc.id_alumno_cc AND tcc.fecha_transaccion = estado_actual.ultimo_cambio)
+                                                                      INNER JOIN alumno_cuenta_corriente acc on tcc.id_alumno_cc = acc.id_alumno_cc
+                                                                      LEFT OUTER JOIN motivo_rechazo mr on tcc.id_motivo_rechazo = mr.id_motivo_rechazo
+                                                                      LEFT OUTER JOIN estado_cuota e on e.id_estado_cuota = tcc.id_estado_cuota
+                                                             ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
+                                   WHERE 1=1 AND substring(acc.cuota, 1, 2) = '03'
+                                     AND b.id_estado_cuota IN (2)), 0) AS cuotas_impagas_liquidadas
+                      ,COALESCE ((SELECT count(DISTINCT(b.id_alumno_cc)) AS cuotas_impagas_rechazadas
+                                  FROM transaccion_cuenta_corriente trcc
+                                           LEFT OUTER JOIN alumno_cuenta_corriente acc on trcc.id_alumno_cc = acc.id_alumno_cc
+                                           INNER JOIN alumno a on a.id_alumno = acc.id_alumno
+                                           INNER JOIN persona p on p.id_persona = a.id_persona
+                                           LEFT OUTER JOIN (SELECT estado_actual.id_alumno_cc
+                                                                 ,ultimo_cambio
+                                                                 ,e.id_estado_cuota
+                                                                 ,e.nombre AS estado_actual
+                                                                 ,tcc.id_motivo_rechazo
+                                                                 ,mr.nombre AS motivo_rechazo
+                                                            FROM (SELECT id_alumno_cc
+                                                                       ,MAX(tcc.fecha_transaccion) AS ultimo_cambio
+                                                                  FROM transaccion_cuenta_corriente tcc
+                                                                  GROUP BY id_alumno_cc) AS estado_actual
+                                                                     INNER JOIN transaccion_cuenta_corriente tcc on (estado_actual.id_alumno_cc = tcc.id_alumno_cc AND tcc.fecha_transaccion = estado_actual.ultimo_cambio)
+                                                                     INNER JOIN alumno_cuenta_corriente acc on tcc.id_alumno_cc = acc.id_alumno_cc
+                                                                     LEFT OUTER JOIN motivo_rechazo mr on tcc.id_motivo_rechazo = mr.id_motivo_rechazo
+                                                                     LEFT OUTER JOIN estado_cuota e on e.id_estado_cuota = tcc.id_estado_cuota
+                                                            ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
+                                  WHERE 1=1 AND substring(acc.cuota, 1, 2) = '03'
+                                    AND b.id_estado_cuota IN (4)), 0) AS cuotas_impagas_rechazadas
+                      ,COALESCE ((SELECT count(DISTINCT(b.id_alumno_cc)) AS total_cuotas_impagas
+                                 FROM transaccion_cuenta_corriente trcc
+                                          LEFT OUTER JOIN alumno_cuenta_corriente acc on trcc.id_alumno_cc = acc.id_alumno_cc
+                                          INNER JOIN alumno a on a.id_alumno = acc.id_alumno
+                                          INNER JOIN persona p on p.id_persona = a.id_persona
+                                          LEFT OUTER JOIN (SELECT estado_actual.id_alumno_cc
+                                                                ,ultimo_cambio
+                                                                ,e.id_estado_cuota
+                                                                ,e.nombre AS estado_actual
+                                                                ,tcc.id_motivo_rechazo
+                                                                ,mr.nombre AS motivo_rechazo
+                                                           FROM (SELECT id_alumno_cc
+                                                                      ,MAX(tcc.fecha_transaccion) AS ultimo_cambio
+                                                                 FROM transaccion_cuenta_corriente tcc
+                                                                 GROUP BY id_alumno_cc) AS estado_actual
+                                                                    INNER JOIN transaccion_cuenta_corriente tcc on (estado_actual.id_alumno_cc = tcc.id_alumno_cc AND tcc.fecha_transaccion = estado_actual.ultimo_cambio)
+                                                                    INNER JOIN alumno_cuenta_corriente acc on tcc.id_alumno_cc = acc.id_alumno_cc
+                                                                    LEFT OUTER JOIN motivo_rechazo mr on tcc.id_motivo_rechazo = mr.id_motivo_rechazo
+                                                                    LEFT OUTER JOIN estado_cuota e on e.id_estado_cuota = tcc.id_estado_cuota
+                                                           ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
+                                 WHERE 1=1 AND substring(acc.cuota, 1, 2) = '03'
+                                   AND b.id_estado_cuota IN (1, 2, 4)), 0) AS total_cuotas_impagas
+                      ,COALESCE ((SELECT count(DISTINCT(b.id_alumno_cc)) AS cantidad_pagadores_transferencia
+                                  FROM transaccion_cuenta_corriente trcc
+                                           LEFT OUTER JOIN alumno_cuenta_corriente acc on trcc.id_alumno_cc = acc.id_alumno_cc
+                                           INNER JOIN alumno a on a.id_alumno = acc.id_alumno
+                                           INNER JOIN persona p on p.id_persona = a.id_persona
+                                           LEFT OUTER JOIN (SELECT estado_actual.id_alumno_cc
+                                                                  ,ultimo_cambio
+                                                                  ,e.id_estado_cuota
+                                                                  ,e.nombre AS estado_actual
+                                                                  ,tcc.id_medio_pago
+                                                                  ,mp.nombre AS medio_pago
+                                                                  ,tcc.id_marca_tarjeta
+                                                                  ,mt.nombre AS marca_tarjeta
+                                                                  ,tcc.numero_comprobante
+                                                                  ,tcc.numero_lote
+                                                                  ,tcc.numero_autorizacion
+                                                             FROM (SELECT id_alumno_cc
+                                                                        ,MAX(tcc.fecha_transaccion) AS ultimo_cambio
+                                                                   FROM transaccion_cuenta_corriente tcc
+                                                                   GROUP BY id_alumno_cc) AS estado_actual
+                                                                      INNER JOIN transaccion_cuenta_corriente tcc on (estado_actual.id_alumno_cc = tcc.id_alumno_cc AND tcc.fecha_transaccion = estado_actual.ultimo_cambio)
+                                                                      INNER JOIN alumno_cuenta_corriente acc on tcc.id_alumno_cc = acc.id_alumno_cc
+                                                                      LEFT OUTER JOIN estado_cuota e on e.id_estado_cuota = tcc.id_estado_cuota
+                                                                      INNER JOIN marca_tarjeta mt on tcc.id_marca_tarjeta = mt.id_marca_tarjeta
+                                                                      INNER JOIN medio_pago mp on tcc.id_medio_pago = mp.id_medio_pago
+                                                             ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
+                                   WHERE 1=1 AND substring(acc.cuota, 1, 2) = '03'
+                                     AND b.id_estado_cuota = 3 --PAGAS
+                                     AND b.id_medio_pago = 2), 0) AS cantidad_pagadores_transferencia
+                      ,COALESCE ((SELECT count(DISTINCT(b.id_alumno_cc)) AS cantidad_pagadores_debito
+                                  FROM transaccion_cuenta_corriente trcc
+                                            LEFT OUTER JOIN alumno_cuenta_corriente acc on trcc.id_alumno_cc = acc.id_alumno_cc
+                                            INNER JOIN alumno a on a.id_alumno = acc.id_alumno
+                                            INNER JOIN persona p on p.id_persona = a.id_persona
+                                            LEFT OUTER JOIN (SELECT estado_actual.id_alumno_cc
+                                                                  ,ultimo_cambio
+                                                                  ,e.id_estado_cuota
+                                                                  ,e.nombre AS estado_actual
+                                                                  ,tcc.id_medio_pago
+                                                                  ,mp.nombre AS medio_pago
+                                                                  ,tcc.id_marca_tarjeta
+                                                                  ,mt.nombre AS marca_tarjeta
+                                                                  ,tcc.numero_comprobante
+                                                                  ,tcc.numero_lote
+                                                                  ,tcc.numero_autorizacion
+                                                             FROM (SELECT id_alumno_cc
+                                                                        ,MAX(tcc.fecha_transaccion) AS ultimo_cambio
+                                                                   FROM transaccion_cuenta_corriente tcc
+                                                                   GROUP BY id_alumno_cc) AS estado_actual
+                                                                      INNER JOIN transaccion_cuenta_corriente tcc on (estado_actual.id_alumno_cc = tcc.id_alumno_cc AND tcc.fecha_transaccion = estado_actual.ultimo_cambio)
+                                                                      INNER JOIN alumno_cuenta_corriente acc on tcc.id_alumno_cc = acc.id_alumno_cc
+                                                                      LEFT OUTER JOIN estado_cuota e on e.id_estado_cuota = tcc.id_estado_cuota
+                                                                      INNER JOIN marca_tarjeta mt on tcc.id_marca_tarjeta = mt.id_marca_tarjeta
+                                                                      INNER JOIN medio_pago mp on tcc.id_medio_pago = mp.id_medio_pago
+                                                             ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
+                                   WHERE 1=1 AND substring(acc.cuota, 1, 2) = '03'
+                                     AND b.id_estado_cuota = 3 --PAGAS
+                                     AND b.id_medio_pago = 3), 0) AS cantidad_pagadores_debito
+                      ,COALESCE ((SELECT count(DISTINCT(b.id_alumno_cc)) AS cantidad_pagadores_credito
+                                  FROM transaccion_cuenta_corriente trcc
+                                             LEFT OUTER JOIN alumno_cuenta_corriente acc on trcc.id_alumno_cc = acc.id_alumno_cc
+                                             INNER JOIN alumno a on a.id_alumno = acc.id_alumno
+                                             INNER JOIN persona p on p.id_persona = a.id_persona
+                                             LEFT OUTER JOIN (SELECT estado_actual.id_alumno_cc
+                                                                   ,ultimo_cambio
+                                                                   ,e.id_estado_cuota
+                                                                   ,e.nombre AS estado_actual
+                                                                   ,tcc.id_medio_pago
+                                                                   ,mp.nombre AS medio_pago
+                                                                   ,tcc.id_marca_tarjeta
+                                                                   ,mt.nombre AS marca_tarjeta
+                                                                   ,tcc.numero_comprobante
+                                                                   ,tcc.numero_lote
+                                                                   ,tcc.numero_autorizacion
+                                                              FROM (SELECT id_alumno_cc
+                                                                         ,MAX(tcc.fecha_transaccion) AS ultimo_cambio
+                                                                    FROM transaccion_cuenta_corriente tcc
+                                                                    GROUP BY id_alumno_cc) AS estado_actual
+                                                                       INNER JOIN transaccion_cuenta_corriente tcc on (estado_actual.id_alumno_cc = tcc.id_alumno_cc AND tcc.fecha_transaccion = estado_actual.ultimo_cambio)
+                                                                       INNER JOIN alumno_cuenta_corriente acc on tcc.id_alumno_cc = acc.id_alumno_cc
+                                                                       LEFT OUTER JOIN estado_cuota e on e.id_estado_cuota = tcc.id_estado_cuota
+                                                                       INNER JOIN marca_tarjeta mt on tcc.id_marca_tarjeta = mt.id_marca_tarjeta
+                                                                       INNER JOIN medio_pago mp on tcc.id_medio_pago = mp.id_medio_pago
+                                                              ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
+                                    WHERE 1=1 AND substring(acc.cuota, 1, 2) = '03'
+                                      AND b.id_estado_cuota = 3 --PAGAS
+                                      AND b.id_medio_pago = 4), 0) AS cantidad_pagadores_credito
+                      ,COALESCE ((SELECT count(DISTINCT(b.id_alumno_cc)) AS cantidad_pagadores_posnet
+                                  FROM transaccion_cuenta_corriente trcc
+                                             LEFT OUTER JOIN alumno_cuenta_corriente acc on trcc.id_alumno_cc = acc.id_alumno_cc
+                                             INNER JOIN alumno a on a.id_alumno = acc.id_alumno
+                                             INNER JOIN persona p on p.id_persona = a.id_persona
+                                             LEFT OUTER JOIN (SELECT estado_actual.id_alumno_cc
+                                                                   ,ultimo_cambio
+                                                                   ,e.id_estado_cuota
+                                                                   ,e.nombre AS estado_actual
+                                                                   ,tcc.id_medio_pago
+                                                                   ,mp.nombre AS medio_pago
+                                                                   ,tcc.id_marca_tarjeta
+                                                                   ,mt.nombre AS marca_tarjeta
+                                                                   ,tcc.numero_comprobante
+                                                                   ,tcc.numero_lote
+                                                                   ,tcc.numero_autorizacion
+                                                              FROM (SELECT id_alumno_cc
+                                                                         ,MAX(tcc.fecha_transaccion) AS ultimo_cambio
+                                                                    FROM transaccion_cuenta_corriente tcc
+                                                                    GROUP BY id_alumno_cc) AS estado_actual
+                                                                       INNER JOIN transaccion_cuenta_corriente tcc on (estado_actual.id_alumno_cc = tcc.id_alumno_cc AND tcc.fecha_transaccion = estado_actual.ultimo_cambio)
+                                                                       INNER JOIN alumno_cuenta_corriente acc on tcc.id_alumno_cc = acc.id_alumno_cc
+                                                                       LEFT OUTER JOIN estado_cuota e on e.id_estado_cuota = tcc.id_estado_cuota
+                                                                       INNER JOIN marca_tarjeta mt on tcc.id_marca_tarjeta = mt.id_marca_tarjeta
+                                                                       INNER JOIN medio_pago mp on tcc.id_medio_pago = mp.id_medio_pago
+                                                              ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
+                                    WHERE 1=1 AND substring(acc.cuota, 1, 2) = '03'
+                                      AND b.id_estado_cuota = 3 --PAGAS
+                                      AND b.id_medio_pago = 5), 0) AS cantidad_pagadores_posnet
+                      ,COALESCE ((SELECT count(DISTINCT(b.id_alumno_cc)) AS cantidad_pagadores_deposito
+                                  FROM transaccion_cuenta_corriente trcc
+                                             LEFT OUTER JOIN alumno_cuenta_corriente acc on trcc.id_alumno_cc = acc.id_alumno_cc
+                                             INNER JOIN alumno a on a.id_alumno = acc.id_alumno
+                                             INNER JOIN persona p on p.id_persona = a.id_persona
+                                             LEFT OUTER JOIN (SELECT estado_actual.id_alumno_cc
+                                                                   ,ultimo_cambio
+                                                                   ,e.id_estado_cuota
+                                                                   ,e.nombre AS estado_actual
+                                                                   ,tcc.id_medio_pago
+                                                                   ,mp.nombre AS medio_pago
+                                                                   ,tcc.id_marca_tarjeta
+                                                                   ,mt.nombre AS marca_tarjeta
+                                                                   ,tcc.numero_comprobante
+                                                                   ,tcc.numero_lote
+                                                                   ,tcc.numero_autorizacion
+                                                              FROM (SELECT id_alumno_cc
+                                                                         ,MAX(tcc.fecha_transaccion) AS ultimo_cambio
+                                                                    FROM transaccion_cuenta_corriente tcc
+                                                                    GROUP BY id_alumno_cc) AS estado_actual
+                                                                       INNER JOIN transaccion_cuenta_corriente tcc on (estado_actual.id_alumno_cc = tcc.id_alumno_cc AND tcc.fecha_transaccion = estado_actual.ultimo_cambio)
+                                                                       INNER JOIN alumno_cuenta_corriente acc on tcc.id_alumno_cc = acc.id_alumno_cc
+                                                                       LEFT OUTER JOIN estado_cuota e on e.id_estado_cuota = tcc.id_estado_cuota
+                                                                       INNER JOIN marca_tarjeta mt on tcc.id_marca_tarjeta = mt.id_marca_tarjeta
+                                                                       INNER JOIN medio_pago mp on tcc.id_medio_pago = mp.id_medio_pago
+                                                              ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
+                                    WHERE 1=1 AND substring(acc.cuota, 1, 2) = '03'
+                                      AND b.id_estado_cuota = 3 --PAGAS
+                                      AND b.id_medio_pago = 6), 0) AS cantidad_pagadores_deposito
+                      ,COALESCE ((SELECT count(DISTINCT(b.id_alumno_cc)) AS total_cuotas_pagas
+                                  FROM transaccion_cuenta_corriente trcc
+                                             LEFT OUTER JOIN alumno_cuenta_corriente acc on trcc.id_alumno_cc = acc.id_alumno_cc
+                                             INNER JOIN alumno a on a.id_alumno = acc.id_alumno
+                                             INNER JOIN persona p on p.id_persona = a.id_persona
+                                             LEFT OUTER JOIN (SELECT estado_actual.id_alumno_cc
+                                                                   ,ultimo_cambio
+                                                                   ,e.id_estado_cuota
+                                                                   ,e.nombre AS estado_actual
+                                                                   ,tcc.id_medio_pago
+                                                                   ,mp.nombre AS medio_pago
+                                                                   ,tcc.id_marca_tarjeta
+                                                                   ,mt.nombre AS marca_tarjeta
+                                                                   ,tcc.numero_comprobante
+                                                                   ,tcc.numero_lote
+                                                                   ,tcc.numero_autorizacion
+                                                              FROM (SELECT id_alumno_cc
+                                                                         ,MAX(tcc.fecha_transaccion) AS ultimo_cambio
+                                                                    FROM transaccion_cuenta_corriente tcc
+                                                                    GROUP BY id_alumno_cc) AS estado_actual
+                                                                       INNER JOIN transaccion_cuenta_corriente tcc on (estado_actual.id_alumno_cc = tcc.id_alumno_cc AND tcc.fecha_transaccion = estado_actual.ultimo_cambio)
+                                                                       INNER JOIN alumno_cuenta_corriente acc on tcc.id_alumno_cc = acc.id_alumno_cc
+                                                                       LEFT OUTER JOIN estado_cuota e on e.id_estado_cuota = tcc.id_estado_cuota
+                                                                       INNER JOIN marca_tarjeta mt on tcc.id_marca_tarjeta = mt.id_marca_tarjeta
+                                                                       INNER JOIN medio_pago mp on tcc.id_medio_pago = mp.id_medio_pago
+                                                              ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
+                                    WHERE 1=1 AND substring(acc.cuota, 1, 2) = '03'
+                                      AND b.id_estado_cuota = 3), 0) AS total_cuotas_pagas
+                FROM alumno_cuenta_corriente
+                WHERE 1 = 1
+                GROUP BY 1
+               ";
+
+        toba::logger()->debug(__METHOD__." : ".$sql);
+        return toba::db()->consultar($sql);
+    }
+
+    public static function get_detalle_pagadores_por_periodo($filtro = null)
+    {
+        $where = 'WHERE 1=1';
+
+        if (isset($filtro)) {
+            if (isset($filtro['id_mes'])) {
+                $where .= " AND substring(acc.cuota, 1, 2) = '{$filtro['id_mes']}'";
+            }
+        }
+
+        $sql = "SELECT DISTINCT(b.id_alumno_cc)
+                              ,p.id_persona
+                              ,(p.apellidos || ', ' || p.nombres) as nombre_persona
+                              ,b.ultimo_cambio
+                              ,b.estado_actual
+                              ,b.id_medio_pago
+                              ,b.medio_pago
+                              ,b.id_medio_pago
+                              ,b.id_marca_tarjeta
+                              ,b.marca_tarjeta
+                              ,b.numero_comprobante
+                              ,b.numero_lote
+                              ,b.numero_autorizacion
+                FROM transaccion_cuenta_corriente trcc
+                         LEFT OUTER JOIN alumno_cuenta_corriente acc on trcc.id_alumno_cc = acc.id_alumno_cc
+                         INNER JOIN alumno a on a.id_alumno = acc.id_alumno
+                         INNER JOIN persona p on p.id_persona = a.id_persona
+                         LEFT OUTER JOIN (SELECT estado_actual.id_alumno_cc
+                                               ,ultimo_cambio
+                                               ,e.id_estado_cuota
+                                               ,e.nombre AS estado_actual
+                                               ,tcc.id_medio_pago
+                                               ,mp.nombre AS medio_pago
+                                               ,tcc.id_marca_tarjeta
+                                               ,mt.nombre AS marca_tarjeta
+                                               ,tcc.numero_comprobante
+                                               ,tcc.numero_lote
+                                               ,tcc.numero_autorizacion
+                                          FROM (SELECT id_alumno_cc
+                                                     ,MAX(tcc.fecha_transaccion) AS ultimo_cambio
+                                                FROM transaccion_cuenta_corriente tcc
+                                                GROUP BY id_alumno_cc) AS estado_actual
+                                             INNER JOIN transaccion_cuenta_corriente tcc on (estado_actual.id_alumno_cc = tcc.id_alumno_cc AND tcc.fecha_transaccion = estado_actual.ultimo_cambio)
+                                             INNER JOIN alumno_cuenta_corriente acc on tcc.id_alumno_cc = acc.id_alumno_cc
+                                             LEFT OUTER JOIN estado_cuota e on e.id_estado_cuota = tcc.id_estado_cuota
+                                             INNER JOIN marca_tarjeta mt on tcc.id_marca_tarjeta = mt.id_marca_tarjeta
+                                             INNER JOIN medio_pago mp on tcc.id_medio_pago = mp.id_medio_pago
+                                          ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
+                $where
+                  AND b.id_estado_cuota = 3 --solo las pagas
+               ";
+
+        toba::logger()->debug(__METHOD__." : ".$sql);
+        return toba::db()->consultar($sql);
+    }
 }

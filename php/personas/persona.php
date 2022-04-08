@@ -61,6 +61,7 @@ class persona
 
     protected $id_alumno_cc;
     protected $fecha_pago;
+    protected $fecha_transaccion;
     protected $fecha_respuesta_prisma;
     protected $id_estado_cuota;
     protected $id_motivo_rechazo;
@@ -69,6 +70,7 @@ class persona
     protected $numero_autorizacion;
     protected $importe_pago;
     protected $mostrar_mensaje_individual;
+    protected $modo;
 
     protected $datos = array();
     protected $datos_alumno = array();
@@ -198,13 +200,22 @@ class persona
         $this->set_id_medio_pago($datos_cuenta_corriente['id_medio_pago']);
         $id_marca_tarjeta = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['id_marca_tarjeta'], constantes::get_valor_constante('TIPO_DATO_INT'));
         $this->set_id_marca_tarjeta($id_marca_tarjeta);
-        $this->set_id_estado_cuota($datos_cuenta_corriente['id_estado_cuota']);
-        $this->set_fecha_pago($datos_cuenta_corriente['fecha_pago']);
-        $fecha_respuesta_prisma = isset($datos_cuenta_corriente['fecha_respuesta_prisma']) ? "'" . $datos_cuenta_corriente['fecha_respuesta_prisma'] . "'" : 'null';
+
+        if (!empty($datos_cuenta_corriente['id_estado_cuota'])) {
+            $this->set_id_estado_cuota($datos_cuenta_corriente['id_estado_cuota']);
+        } else {
+            $this->set_id_estado_cuota(3);
+        }
+
+        $fecha_pago = '2022-04-08';
+        //$fecha_pago = isset($datos_cuenta_corriente['fecha_pago']) ? "" . $datos_cuenta_corriente['fecha_pago'] . "" : 'null';
+        $this->set_fecha_pago($fecha_pago);
+        $fecha_respuesta_prisma = isset($datos_cuenta_corriente['fecha_devolucion_respuesta']) ? "'" . $datos_cuenta_corriente['fecha_devolucion_respuesta'] . "'" : 'null';
         $this->set_fecha_respuesta_prisma($fecha_respuesta_prisma);
         $id_motivo_rechazo = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['id_motivo_rechazo'], constantes::get_valor_constante('TIPO_DATO_INT'));
         $this->set_id_motivo_rechazo($id_motivo_rechazo);
-        $this->set_numero_comprobante($datos_cuenta_corriente['numero_comprobante']);
+        $numero_comprobante = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['numero_comprobante'], constantes::get_valor_constante('TIPO_DATO_INT'));
+        $this->set_numero_comprobante($numero_comprobante);
         $numero_lote = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['numero_lote'], constantes::get_valor_constante('TIPO_DATO_INT'));
         $this->set_numero_lote($numero_lote);
         $numero_autorizacion = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['numero_autorizacion'], constantes::get_valor_constante('TIPO_DATO_INT'));
@@ -213,6 +224,7 @@ class persona
         $this->set_usuario_ultima_modificacion($datos_cuenta_corriente['usuario_ultima_modificacion']);
         $this->set_fecha_ultima_modificacion($datos_cuenta_corriente['fecha_ultima_modificacion']);
         $this->set_mostrar_mensaje_individual($datos_cuenta_corriente['mostrar_mensaje_individual']);
+        $this->set_cuota_completa($datos_cuenta_corriente['cuota']);
 
         $this->datos_cuenta_corriente = $datos_cuenta_corriente;
     }
@@ -451,6 +463,12 @@ class persona
         $this->fecha_respuesta_prisma = $fecha_respuesta_prisma;
     }
 
+    public function set_fecha_transaccion($fecha_transaccion)
+    {
+        toba::logger()->info("set_fecha_transaccion = " .$fecha_transaccion);
+        $this->fecha_transaccion = $fecha_transaccion;
+    }
+
     public function set_id_motivo_rechazo($id_motivo_rechazo)
     {
         toba::logger()->info("set_id_motivo_rechazo = " .$id_motivo_rechazo);
@@ -557,6 +575,12 @@ class persona
     {
         toba::logger()->info("set_importe_cuota = " .$importe_cuota);
         $this->importe_cuota = $importe_cuota;
+    }
+
+    public function set_modo($modo)
+    {
+        toba::logger()->info("set_modo = " .$modo);
+        $this->modo = $modo;
     }
 
 
@@ -757,6 +781,18 @@ class persona
     {
         toba::logger()->info("get_datos_cuenta_corriente");
         return $this->datos_cuenta_corriente;
+    }
+
+    public function get_fecha_transaccion()
+    {
+        toba::logger()->info("get_fecha_transaccion");
+        return $this->fecha_transaccion;
+    }
+
+    public function get_modo()
+    {
+        toba::logger()->info("get_modo");
+        return $this->modo;
     }
 
     //---------------------------------------------------------------------
@@ -1025,11 +1061,11 @@ class persona
                         END) AS fecha
                       ,acc.id_cargo_cuenta_corriente
                       ,subconsulta_cuenta_corriente.id_medio_pago
-                      ,(CASE WHEN subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL THEN mp.nombre
+                      ,(CASE WHEN subconsulta_cuenta_corriente.id_medio_pago IS NOT NULL THEN mp.nombre
                              ELSE ''
                         END) AS medio_pago
                       ,subconsulta_cuenta_corriente.id_marca_tarjeta
-                      ,(CASE WHEN subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL THEN mt.nombre
+                      ,(CASE WHEN subconsulta_cuenta_corriente.id_marca_tarjeta IS NOT NULL THEN mt.nombre
                              ELSE ''
                         END) AS marca_tarjeta
                       ,subconsulta_cuenta_corriente.id_estado_cuota  
@@ -1520,21 +1556,36 @@ class persona
     {
         toba::logger()->info("persona.grabar_pago_persona()");
 
-        $sql = "INSERT INTO transaccion_cuenta_corriente (id_alumno_cc, id_estado_cuota, importe, fecha_pago, fecha_respuesta_prisma
+        $sql = "INSERT INTO transaccion_cuenta_corriente (id_alumno_cc, fecha_transaccion, id_estado_cuota, importe, fecha_pago, fecha_respuesta_prisma
                                                          ,id_motivo_rechazo, usuario_ultima_modificacion, fecha_ultima_modificacion
                                                          ,numero_comprobante, numero_lote, numero_autorizacion, id_medio_pago
                                                          ,id_marca_tarjeta) 
-				VALUES ({$this->id_alumno_cc}, '{$this->id_estado_cuota}', '{$this->importe_pago}', '{$this->fecha_pago}', {$this->fecha_respuesta_prisma}
-				       ,{$this->id_motivo_rechazo}, '{$this->usuario_ultima_modificacion}', '{$this->fecha_ultima_modificacion}'
-				       ,'{$this->numero_comprobante}', {$this->numero_lote}, {$this->numero_autorizacion}, '{$this->id_medio_pago}'
+				VALUES ({$this->id_alumno_cc}, now(),'{$this->id_estado_cuota}', '{$this->importe_pago}', '{$this->fecha_pago}', to_date({$this->fecha_respuesta_prisma},'YYYY-MM-DD')
+				       ,{$this->id_motivo_rechazo}, '{$this->usuario_ultima_modificacion}', now()
+				       ,{$this->numero_comprobante}, {$this->numero_lote}, {$this->numero_autorizacion}, '{$this->id_medio_pago}'
 				       ,{$this->id_marca_tarjeta})
 			   ";
 
         toba::logger()->debug(__METHOD__ . " : " . $sql);
         ejecutar_fuente($sql);
 
+        //Actualizo el campo procesado de la tabla archivo_respuesta_detalle solo si viene del alta masiva
+        if ($this->modo == 'alta_masiva') {
+            $sql = "UPDATE archivo_respuesta_detalle 
+                    SET procesado = 1
+                    FROM (SELECT ard.id_archivo_respuesta_detalle
+                          FROM archivo_respuesta_detalle ard
+                            INNER JOIN archivo_respuesta ar on ard.id_archivo_respuesta = ar.id_archivo_respuesta
+                          WHERE id_alumno_cc = {$this->id_alumno_cc} 
+                            AND ar.cuota = '{$this->cuota_completa}') AS subconsulta
+                    WHERE archivo_respuesta_detalle.id_archivo_respuesta_detalle = subconsulta.id_archivo_respuesta_detalle
+               ";
+
+            toba::logger()->debug(__METHOD__ . " : " . $sql);
+            ejecutar_fuente($sql);
+        }
+
         if ($this->mostrar_mensaje_individual) {
-            echo('entra al if');
             toba::notificacion()->agregar('El alta del pago fue realizada con éxito.', 'info');
         }
     }

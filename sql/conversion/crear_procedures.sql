@@ -90,6 +90,13 @@ BEGIN
         --alta de un nuevo medio de pago
         INSERT INTO medio_pago (id_medio_pago, nombre, nombre_corto, se_muestra_alta_manual, observaciones, jerarquia) VALUES (nextval('sq_id_medio_pago'), 'Depósito', 'Depósito', 'S', '', 6);
 
+        --cambio de tipo de dato a 2 columnas de archivo_respuesta
+        ALTER TABLE archivo_respuesta
+            ALTER COLUMN importe_total_debitos TYPE numeric(15,2) USING (importe_total_debitos::integer);
+
+        ALTER TABLE archivo_respuesta
+            ALTER COLUMN cantidad_total_debitos TYPE numeric(7,0) USING (cantidad_total_debitos::integer);
+
 END IF;
 END;
 $$ LANGUAGE 'plpgsql';
@@ -136,3 +143,409 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/alta-manual-pagos 05/04/2022
+CREATE OR REPLACE FUNCTION alta_nuevo_parametro_sistema() RETURNS VOID AS
+$$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM parametros_sistema WHERE parametro = 'permite_pagos_parciales') THEN
+
+        INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
+        VALUES (NEXTVAL('sq_id_parametro'), 'permite_pagos_parciales', 'Permite el cobro parcial de cuotas', 'Permite cobro parical', 'SI', '1.0.0');
+
+    END IF;
+END;
+$$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/alta-manual-pagos 06/04/2022
+CREATE OR REPLACE FUNCTION spAfectacionArchivoDebito() RETURNS void AS $$
+DECLARE idArchivoRespuesta INTEGER;
+BEGIN
+
+    --SE CREAN TABLAS TEMPORALES PARA ALMACENAR CONTENIDOS DE LOS ARCHIVOS
+    IF EXISTS(SELECT table_name FROM information_schema.tables
+              WHERE table_name LIKE 'temparchivordeblimc') THEN
+        DROP TABLE tempArchivoRDEBLIMC;
+    END IF;
+
+    IF EXISTS(SELECT table_name FROM information_schema.columns
+              WHERE table_name='temparchivordebliqc') THEN
+        DROP TABLE tempArchivoRDEBLIQC;
+    END IF;
+
+    IF EXISTS(SELECT table_name FROM information_schema.columns
+              WHERE table_name='temparchivoldebliqd') THEN
+        DROP TABLE tempArchivoLDEBLIQD;
+    END IF;
+
+/*
+IF EXISTS(SELECT table_name FROM information_schema.columns
+		WHERE table_name='temparchivordebliqd') THEN
+	DROP TABLE tempArchivoRDEBLIQD;
+END IF;*/
+
+    CREATE TABLE tempArchivoRDEBLIMC(
+        contenido VARCHAR(300)
+    );
+
+
+    CREATE TABLE tempArchivoRDEBLIQC(
+        contenido character varying(300)
+    );
+
+    CREATE TABLE tempArchivoLDEBLIQD(
+        contenido character varying(300)
+    );
+
+    /*CREATE TABLE tempArchivoRDEBLIQD(
+        contenido character varying(300)
+    );*/
+
+
+
+--SE COMPIAN LOS DATOS DE LOS ARCHIVOS RECIBIDOS A LAS TABLAS TEMPORALES
+    COPY tempArchivoRDEBLIMC (contenido)
+        FROM    '/home/ale/Escritorio/RDEBLIMC.txt';
+--FROM    'C:\Archivos Debito\recibido\RDEBLIMC.txt';
+
+    COPY tempArchivoRDEBLIQC (contenido)
+        FROM    '/home/ale/Escritorio/RDEBLIQC.txt';
+--FROM    'C:\Archivos Debito\recibido\RDEBLIQC.txt';
+
+    COPY tempArchivoLDEBLIQD (contenido)
+        FROM    '/home/ale/Escritorio/LDEBLIQD.txt';
+    --FROM    'C:\Archivos Debito\recibido\LDEBLIQD.txt';
+
+/*COPY tempArchivoRDEBLIQD (contenido)
+FROM    'C:\Archivos Debito\recibido\RDEBLIQD.txt';*/
+
+
+--SE INSERTAN DATOS DE LAS TABLAS TEMPORALES DE CADA ARCHIVO EN TABLAS archivo_respuesta Y archivo_respuesta_detalle
+
+--RDEBLIQC - RDEBLIMC
+
+--RDEBLIMC
+--INSERTO EN archivo_respuesta
+    INSERT INTO archivo_respuesta (id_marca_tarjeta, id_medio_pago,
+                                   nombre_archivo, numero_establecimiento,
+                                   cantidad_total_debitos, importe_total_debitos,
+                                   usuario_alta, fecha_generacion, cuota)
+    SELECT 	   CASE WHEN SUBSTRING(contenido from 2 for 8) = 'RDEBLIQC' THEN 1
+                      WHEN SUBSTRING(contenido from 2 for 8) = 'RDEBLIMC' THEN 2
+                     END AS id_marca_tarjeta,
+                 4 AS id_medio_pago,
+                 CONCAT(SUBSTRING(contenido from 2 for 8), '_',
+                        SUBSTRING(contenido from 30 for 12)) AS nombre_archivo,
+                 SUBSTRING(contenido from 20 for 10) AS numero_establecimiento,
+                 CAST(SUBSTRING(contenido from 42 for 7) AS INTEGER) AS cantidad_total_debitos,
+                 CAST(CONCAT(LPAD(SUBSTRING(contenido from 49 for 15), 13),
+                             '.',
+                             RPAD(SUBSTRING(contenido from 62 for 2), 13)) AS DECIMAL)
+                     AS importe_total_debitos,
+                 '25619133' AS usuario_alta,
+                 NOW() AS fecha_generacion,
+                 CONCAT(SUBSTRING(contenido from 34 for 2),
+                        SUBSTRING(contenido from 30 for 4)) AS cuota
+    FROM tempArchivoRDEBLIMC
+    WHERE lpad(contenido, 1) = '9';
+
+    SELECT  MAX(id_archivo_respuesta) INTO idArchivoRespuesta
+    FROM archivo_respuesta;
+
+--INSERTO EN archivo_respuesta_detalle
+    INSERT INTO archivo_respuesta_detalle (id_archivo_respuesta, registro, numero_codigo_banco_pagador,
+                                           numero_sucursal_banco_pagador, numero_lote,
+                                           codigo_transaccion, numero_establecimiento,
+                                           numero_tarjeta, id_alumno_cc,
+                                           fecha_presentacion, fecha_origen_venc_debito,
+                                           importe, id_alumno, codigo_alta_identificador,
+                                           cuenta_debito_fondos, estado_movimiento,
+                                           rechazo1, descripcion_rechazo1, rechazo2,
+                                           descripcion_rechazo2, codigo_error_debito,
+                                           descripcion_error_debito, numero_tarjeta_nueva,
+                                           fecha_devolucion_respuesta, fecha_pago,
+                                           numero_cartera_cliente, contenido, fecha_generacion,
+                                           usuario_alta)
+    SELECT  idArchivoRespuesta AS id_archivo_respuesta,
+            CAST(SUBSTRING(contenido from  1 for  1) AS SMALLINT) AS Registro,
+            SUBSTRING(contenido from  2 for  3)  AS numero_codigo_banco_pagador,
+            SUBSTRING(contenido from  5 for  3)  AS numero_sucursal_banco_pagador,
+            SUBSTRING(contenido from  8 for  4)  AS numero_lote,
+            SUBSTRING(contenido from 12 for  4)  AS codigo_transaccion,
+            SUBSTRING(contenido from 17 for 10)  AS numero_establecimiento,
+            SUBSTRING(contenido from 27 for 16)  AS numero_tarjeta,
+            CAST(SUBSTRING(contenido from 43 for  8) AS INTEGER)  AS id_alumno_cc,
+            LTRIM(RTRIM(SUBSTRING(contenido from 51 for  6)))  AS fecha_presentacion,
+            ''				     AS fecha_origen_venc_debito,
+            CAST(CONCAT(LPAD(SUBSTRING(contenido from 63 for 15), 13),
+                        '.',
+                        RPAD(SUBSTRING(contenido from 76 for 2), 13)) AS DECIMAL)
+                AS importe,
+            CAST(SUBSTRING(contenido from 95 for 15) AS INTEGER)  AS id_alumno,
+            SUBSTRING(contenido from 110 for 1)  AS codigo_alta_identificador,
+            SUBSTRING(contenido from 111 for 10) AS cuenta_debito_fondos,
+            SUBSTRING(contenido from 130 for 1)  AS estado_movimiento,
+            SUBSTRING(contenido from 131 for 2)  AS rechazo1,
+            SUBSTRING(contenido from 133 for 29) AS descripcion_rechazo1,
+            SUBSTRING(contenido from 162 for 2)  AS rechazo2,
+            SUBSTRING(contenido from 164 for 29) AS descripcion_rechazo2,
+            ''				     AS codigo_error_debito,
+            ''				     AS descripcion_error_debito,
+            SUBSTRING(contenido from 209 for 16) AS numero_tarjeta_nueva,
+            LTRIM(RTRIM(SUBSTRING(contenido from 225 for 6)))  AS fecha_devolucion_respuesta,
+            LTRIM(RTRIM(SUBSTRING(contenido from 231 for 6)))  AS fecha_pago,
+            SUBSTRING(contenido from 237 for 2)  AS numero_cartera_cliente,
+            contenido,
+            NOW() AS fecha_generacion,
+            '25619133' AS usuario_alta
+    FROM tempArchivoRDEBLIMC
+    WHERE lpad(contenido, 1) = '1';
+
+
+
+
+    ----RDEBLIQC
+--INSERTO EN archivo_respuesta
+    INSERT INTO archivo_respuesta (id_marca_tarjeta, id_medio_pago,
+                                   nombre_archivo, numero_establecimiento,
+                                   cantidad_total_debitos, importe_total_debitos,
+                                   usuario_alta, fecha_generacion, cuota)
+    SELECT 	   CASE WHEN SUBSTRING(contenido from 2 for 8) = 'RDEBLIQC' THEN 1
+                      WHEN SUBSTRING(contenido from 2 for 8) = 'RDEBLIMC' THEN 2
+                     END AS id_marca_tarjeta,
+                 4 AS id_medio_pago,
+                 CONCAT(SUBSTRING(contenido from 2 for 8), '_',
+                        SUBSTRING(contenido from 30 for 12)) AS nombre_archivo,
+                 SUBSTRING(contenido from 20 for 10) AS numero_establecimiento,
+                 CAST(SUBSTRING(contenido from 42 for 7) AS INTEGER) AS cantidad_total_debitos,
+                 CAST(CONCAT(LPAD(SUBSTRING(contenido from 49 for 15), 13),
+                             '.',
+                             RPAD(SUBSTRING(contenido from 62 for 2), 13)) AS DECIMAL)
+                     AS importe_total_debitos,
+                 '25619133' AS usuario_alta,
+                 NOW() AS fecha_generacion,
+                 CONCAT(SUBSTRING(contenido from 34 for 2),
+                        SUBSTRING(contenido from 30 for 4)) AS cuota
+    FROM tempArchivoRDEBLIQC
+    WHERE lpad(contenido, 1) = '9';
+
+
+    SELECT MAX(id_archivo_respuesta) INTO idArchivoRespuesta
+    FROM archivo_respuesta;
+
+--INSERTO EN archivo_respuesta_detalle
+    INSERT INTO archivo_respuesta_detalle (id_archivo_respuesta, registro, numero_codigo_banco_pagador,
+                                           numero_sucursal_banco_pagador, numero_lote,
+                                           codigo_transaccion, numero_establecimiento,
+                                           numero_tarjeta, id_alumno_cc,
+                                           fecha_presentacion,fecha_origen_venc_debito,
+                                           importe, id_alumno, codigo_alta_identificador,
+                                           cuenta_debito_fondos, estado_movimiento,
+                                           rechazo1, descripcion_rechazo1, rechazo2,
+                                           descripcion_rechazo2, codigo_error_debito,
+                                           descripcion_error_debito, numero_tarjeta_nueva,
+                                           fecha_devolucion_respuesta, fecha_pago,
+                                           numero_cartera_cliente, contenido, fecha_generacion,
+                                           usuario_alta)
+    SELECT  idArchivoRespuesta AS id_archivo_respuesta,
+            CAST(SUBSTRING(contenido from  1 for  1) AS SMALLINT) AS Registro,
+            SUBSTRING(contenido from  2 for  3)  AS numero_codigo_banco_pagador,
+            SUBSTRING(contenido from  5 for  3)  AS numero_sucursal_banco_pagador,
+            SUBSTRING(contenido from  8 for  4)  AS numero_lote,
+            SUBSTRING(contenido from 12 for  4)  AS codigo_transaccion,
+            SUBSTRING(contenido from 17 for 10)  AS numero_establecimiento,
+            SUBSTRING(contenido from 27 for 16)  AS numero_tarjeta,
+            CAST(SUBSTRING(contenido from 43 for  8) AS INTEGER)  AS id_alumno_cc,
+            LTRIM(RTRIM(SUBSTRING(contenido from 51 for  6)))  AS fecha_presentacion,
+            ''					AS fecha_origen_venc_debito,
+            CAST(CONCAT(LPAD(SUBSTRING(contenido from 63 for 15), 13),
+                        '.',
+                        RPAD(SUBSTRING(contenido from 76 for 2), 13)) AS DECIMAL)
+                AS importe,
+            CAST(SUBSTRING(contenido from 95 for 15) AS INTEGER)  AS id_alumno,
+            SUBSTRING(contenido from 110 for 1)  AS codigo_alta_identificador,
+            SUBSTRING(contenido from 111 for 10) AS cuenta_debito_fondos,
+            SUBSTRING(contenido from 130 for 1)  AS estado_movimiento,
+            SUBSTRING(contenido from 131 for 2)  AS rechazo1,
+            SUBSTRING(contenido from 133 for 29) AS descripcion_rechazo1,
+            SUBSTRING(contenido from 162 for 2)  AS rechazo2,
+            SUBSTRING(contenido from 164 for 29) AS descripcion_rechazo2,
+            ''				     AS codigo_error_debito,
+            ''				     AS descripcion_error_debito,
+            SUBSTRING(contenido from 209 for 16) AS numero_tarjeta_nueva,
+            LTRIM(RTRIM(SUBSTRING(contenido from 225 for 6))) AS fecha_devolucion_respuesta,
+            LTRIM(RTRIM(SUBSTRING(contenido from 231 for 6))) AS fecha_pago,
+            SUBSTRING(contenido from 237 for 2) AS numero_cartera_cliente,
+            contenido,
+            NOW() AS fecha_generacion,
+            '25619133' AS usuario_alta
+    FROM tempArchivoRDEBLIQC
+    WHERE lpad(contenido, 1) = '1';
+
+
+
+    ----RDEBLIQD - LDEBLIQD
+--=====================
+--RDEBLIQD
+--========
+--INSERTO EN archivo_respuesta
+--============================
+/*INSERT INTO archivo_respuesta (id_marca_tarjeta, id_medio_pago,
+				nombre_archivo, numero_establecimiento,
+				cantidad_total_debitos, importe_total_debitos,
+				usuario_alta, fecha_generacion)
+SELECT 	   CASE WHEN SUBSTRING(contenido from 2 for 8) = 'RDEBLIQD' THEN 1
+		WHEN SUBSTRING(contenido from 2 for 8) = 'LDEBLIQD' THEN 1
+	   END AS id_marca_tarjeta,
+	   3 AS id_medio_pago,
+	   SUBSTRING(contenido from 2 for 8) AS nombre_archivo,
+	   SUBSTRING(contenido from 20 for 10) AS numero_establecimiento,
+	   CAST(SUBSTRING(contenido from 42 for 7) AS INTEGER) AS cantidad_total_debitos,
+	   CAST(CONCAT(LPAD(SUBSTRING(contenido from 49 for 15), 13),
+		'.',
+	       RPAD(SUBSTRING(contenido from 62 for 2), 13)) AS DECIMAL)
+	   AS importe_total_debitos,
+	   '25619133' AS usuario_alta,
+	   NOW() AS fecha_generacion
+FROM tempArchivoRDEBLIQD
+WHERE lpad(contenido, 1) = '9';
+
+
+SELECT MAX(id_archivo_respuesta) INTO idArchivoRespuesta
+FROM archivo_respuesta;
+
+--INSERTO EN archivo_respuesta_detalle
+INSERT INTO archivo_respuesta_detalle (id_archivo_respuesta, registro, numero_codigo_banco_pagador,
+				     numero_sucursal_banco_pagador, numero_lote,
+				     codigo_transaccion, numero_establecimiento,
+				     numero_tarjeta, id_alumno_cc,
+				     fecha_presentacion, fecha_origen_venc_debito,
+				     importe, id_alumno, codigo_alta_identificador,
+				     cuenta_debito_fondos, estado_movimiento,
+				     rechazo1, descripcion_rechazo1, rechazo2,
+				     descripcion_rechazo2, codigo_error_debito,
+				     descripcion_error_debito, numero_tarjeta_nueva,
+				     fecha_devolucion_respuesta, fecha_pago,
+				     numero_cartera_cliente, contenido, fecha_generacion,
+				     usuario_alta)
+SELECT  idArchivoRespuesta AS id_archivo_respuesta,
+	CAST(SUBSTRING(contenido from  1 for  1) AS SMALLINT) AS Registro,
+	''  				     AS numero_codigo_banco_pagador,
+	''  				     AS numero_sucursal_banco_pagador,
+	''  				     AS numero_lote,
+	''  				     AS codigo_transaccion,
+	''  				     AS numero_establecimiento,
+	SUBSTRING(contenido from 2  for 16)  AS numero_tarjeta,
+	CAST(SUBSTRING(contenido from 21 for  8) AS INTEGER)  AS id_alumno_cc,
+	''				     AS fecha_presentacion,
+	LTRIM(RTRIM(SUBSTRING(contenido from 29 for  8)))  AS fecha_origen_venc_debito,
+	CAST(CONCAT(LPAD(SUBSTRING(contenido from 41 for 15), 13),
+		'.',
+	       RPAD(SUBSTRING(contenido from 54 for 2), 13)) AS DECIMAL)
+	AS importe,
+	CAST(SUBSTRING(contenido from 56 for 15) AS INTEGER)  AS id_alumno,
+	SUBSTRING(contenido from 71 for 1)   AS codigo_alta_identificador,
+	''  				     AS cuenta_debito_fondos,
+	''  				     AS estado_movimiento,
+	''  				     AS rechazo1,
+	''  				     AS descripcion_rechazo1,
+	''  				     AS rechazo2,
+	''  				     AS descripcion_rechazo2,
+	SUBSTRING(contenido from 101 for 3)  AS codigo_error_debito,
+	SUBSTRING(contenido from 104 for 40) AS descripcion_error_debito,
+	''  				     AS numero_tarjeta_nueva,
+	''  				     AS fecha_devolucion_respuesta,
+	''  				     AS fecha_pago,
+	''  				     AS numero_cartera_cliente,
+	contenido,
+	NOW() 				     AS fecha_generacion,
+	'25619133' 			     AS usuario_alta
+FROM tempArchivoRDEBLIQD
+WHERE lpad(contenido, 1) = '1';
+*/
+
+--LDEBLIQD
+--========
+--INSERTO EN archivo_respuesta
+--============================
+    INSERT INTO archivo_respuesta (id_marca_tarjeta, id_medio_pago,
+                                   nombre_archivo, numero_establecimiento,
+                                   cantidad_total_debitos, importe_total_debitos,
+                                   usuario_alta, fecha_generacion, cuota)
+    SELECT 	   CASE WHEN SUBSTRING(contenido from 2 for 8) = 'RDEBLIQD' THEN 1
+                      WHEN SUBSTRING(contenido from 2 for 8) = 'LDEBLIQD' THEN 1
+                     END AS id_marca_tarjeta,
+                 3 AS id_medio_pago,
+                 CONCAT(SUBSTRING(contenido from 2 for 8), '_',
+                        SUBSTRING(contenido from 30 for 12)) AS nombre_archivo,
+                 SUBSTRING(contenido from 20 for 10) AS numero_establecimiento,
+                 CAST(SUBSTRING(contenido from 42 for 7) AS INTEGER) AS cantidad_total_debitos,
+                 CAST(CONCAT(LPAD(SUBSTRING(contenido from 49 for 15), 13),
+                             '.',
+                             RPAD(SUBSTRING(contenido from 62 for 2), 13)) AS DECIMAL)
+                     AS importe_total_debitos,
+                 '25619133' AS usuario_alta,
+                 NOW() AS fecha_generacion,
+                 CONCAT(SUBSTRING(contenido from 34 for 2),
+                        SUBSTRING(contenido from 30 for 4)) AS cuota
+    FROM tempArchivoLDEBLIQD
+    WHERE lpad(contenido, 1) = '9';
+
+
+    SELECT MAX(id_archivo_respuesta) INTO idArchivoRespuesta
+    FROM archivo_respuesta;
+
+--INSERTO EN archivo_respuesta_detalle
+    INSERT INTO archivo_respuesta_detalle (id_archivo_respuesta, registro, numero_codigo_banco_pagador,
+                                           numero_sucursal_banco_pagador, numero_lote,
+                                           codigo_transaccion, numero_establecimiento,
+                                           numero_tarjeta, id_alumno_cc,
+                                           fecha_presentacion, fecha_origen_venc_debito,
+                                           importe, id_alumno, codigo_alta_identificador,
+                                           cuenta_debito_fondos, estado_movimiento,
+                                           rechazo1, descripcion_rechazo1, rechazo2,
+                                           descripcion_rechazo2, codigo_error_debito,
+                                           descripcion_error_debito, numero_tarjeta_nueva,
+                                           fecha_devolucion_respuesta, fecha_pago,
+                                           numero_cartera_cliente, contenido, fecha_generacion,
+                                           usuario_alta)
+    SELECT  idArchivoRespuesta AS id_archivo_respuesta,
+            CAST(SUBSTRING(contenido from  1 for  1) AS SMALLINT) AS Registro,
+            ''  				     AS numero_codigo_banco_pagador,
+            ''  				     AS numero_sucursal_banco_pagador,
+            ''  				     AS numero_lote,
+            ''  				     AS codigo_transaccion,
+            ''  				     AS numero_establecimiento,
+            SUBSTRING(contenido from 2  for 16)  AS numero_tarjeta,
+            CAST(SUBSTRING(contenido from 21 for  8) AS INTEGER)  AS id_alumno_cc,
+            ''				     AS fecha_presentacion,
+            LTRIM(RTRIM(SUBSTRING(contenido from 29 for  8)))  AS fecha_origen_venc_debito,
+            CAST(CONCAT(LPAD(SUBSTRING(contenido from 41 for 15), 13),
+                        '.',
+                        RPAD(SUBSTRING(contenido from 54 for 2), 13)) AS DECIMAL)
+                AS importe,
+            CAST(SUBSTRING(contenido from 56 for 15) AS INTEGER)  AS id_alumno,
+            SUBSTRING(contenido from 71 for 1)   AS codigo_alta_identificador,
+            ''  				     AS cuenta_debito_fondos,
+            ''  				     AS estado_movimiento,
+            ''  				     AS rechazo1,
+            ''  				     AS descripcion_rechazo1,
+            ''  				     AS rechazo2,
+            ''  				     AS descripcion_rechazo2,
+            SUBSTRING(contenido from 101 for 3)  AS codigo_error_debito,
+            SUBSTRING(contenido from 104 for 40) AS descripcion_error_debito,
+            ''  				     AS numero_tarjeta_nueva,
+            ''  				     AS fecha_devolucion_respuesta,
+            ''  				     AS fecha_pago,
+            ''  				     AS numero_cartera_cliente,
+            contenido,
+            NOW() 				     AS fecha_generacion,
+            '25619133' 			     AS usuario_alta
+    FROM tempArchivoLDEBLIQD
+    WHERE lpad(contenido, 1) = '1';
+
+
+END;
+$$ LANGUAGE plpgsql;

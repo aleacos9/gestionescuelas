@@ -75,11 +75,11 @@ class ci_administrar_formas_cobro extends ci_vincular_allegados
 
     function evt__formulario_ml__modificacion($datos)
     {
+        $this->s__datos_formas_cobro = $datos;
         foreach (array_keys($this->s__datos_formas_cobro) as $formas_cobro) {
             if (empty($this->s__datos_formas_cobro[$formas_cobro]['id_alumno'])) {
                 $this->s__datos_formas_cobro[$formas_cobro]['id_alumno'] = $this->s__alumno_editar;
             }
         }
-        $this->s__datos_formas_cobro = $datos;
     }
 }

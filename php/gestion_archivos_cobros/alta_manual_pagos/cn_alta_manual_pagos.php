@@ -11,7 +11,6 @@ class cn_alta_manual_pagos extends gestionescuelas_cn
             if ($this->validar() == 'ok') {
                 $persona = array();
 
-                //if (is_array($this->datos_pago)) {
                 if (isset($this->datos_pago[0])) {
                     foreach ($this->datos_pago as $pago) {
                         $persona = new persona($pago['id_alumno']);
@@ -35,9 +34,11 @@ class cn_alta_manual_pagos extends gestionescuelas_cn
         //Obtengo los datos del cargo a pagar
         $datos_cargo_generado = dao_consultas::get_datos_cargo_generado($this->datos_pago);
         if (isset($datos_cargo_generado)) {
-            //valido que el importe del cargo sea igual al ingresado
-            if ( $datos_cargo_generado[0]['importe'] != ($this->datos_pago['importe'] * -1) ) {
-                throw new toba_error("El importe ingresado es incorrecto, debe ser: $" .$datos_cargo_generado[0]['importe']);
+            //si el parámetro permite_pagos_parciales está desactivao => valido que el importe del cargo sea igual al ingresado
+            if (dao_consultas::catalogo_de_parametros("permite_pagos_parciales") == 'NO') {
+                if ( $datos_cargo_generado[0]['importe'] != ($this->datos_pago['importe'] * -1) ) {
+                    throw new toba_error("El importe ingresado es incorrecto, debe ser: $" .$datos_cargo_generado[0]['importe']);
+                }
             }
 
             //valido que la fecha de pago ingresada sea mayor o igual a la fecha del cargo generado
@@ -66,6 +67,4 @@ class cn_alta_manual_pagos extends gestionescuelas_cn
     {
         $this->datos_pago = $datos;
     }
-
-
 }

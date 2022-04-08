@@ -70,8 +70,6 @@ class ci_alta_manual_pagos extends ci_administrar_formas_cobro
 	function evt__formulario__modificacion($datos)
 	{
         if (isset($this->s__id_alumno_cc_seleccionado)) {
-            $fecha = new fecha();
-            $hoy = $fecha->get_timestamp_db();
             $usuario = toba::usuario()->get_id();
 
             $datos['id_alumno'] = $this->s__alumno_editar;
@@ -79,9 +77,9 @@ class ci_alta_manual_pagos extends ci_administrar_formas_cobro
             $datos['id_estado_cuota'] = 3; //por el momento le seteo x defecto el estado de pago de cuota Aprobado
             $datos['importe'] = $datos['importe'] * -1;
             $datos['usuario_ultima_modificacion'] = $usuario;
-            $datos['fecha_ultima_modificacion'] = $hoy;
             $datos['mostrar_mensaje_individual'] = true;
             $datos['estado'] = 'nuevo';
+            $datos['modo'] = "alta_individual";
 
             $this->s__datos_alta_manual_pago_alta = $datos;
         }

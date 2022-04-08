@@ -6,3 +6,9 @@ SELECT cambios_tablas_archivo_respuesta();
 
 --Alejandro feature/alta-manual-pagos 04/04/2022
 SELECT cambios_tablas_parametros_sistema();
+
+--Alejandro feature/alta-manual-pagos 05/04/2022
+SELECT alta_nuevo_parametro_sistema();
+
+--Alejandro feature/alta-manual-pagos 06/04/2022
+SELECT spAfectacionArchivoDebito();

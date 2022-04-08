@@ -28,5 +28,3 @@ class cn_administrar_formas_cobro extends gestionescuelas_cn
         $this->datos_formas_cobro = $datos;
     }
 }
-
-?>
