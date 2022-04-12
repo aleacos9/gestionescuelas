@@ -880,19 +880,104 @@ class dao_consultas
         return toba::db()->consultar($sql);
     }
 
-    public static function get_detalle_pagadores_por_periodo($filtro = null)
+    public static function get_saldo_cuenta_corriente($filtro = null)
     {
-        $where = 'WHERE 1=1';
+        $select = $from = '';
+        $where = $where_interno = 'WHERE 1=1';
 
         if (isset($filtro)) {
-            if (isset($filtro['id_mes'])) {
-                $where .= " AND substring(acc.cuota, 1, 2) = '{$filtro['id_mes']}'";
+            if (isset($filtro['id_persona'])) {
+                $where .= " AND p.id_persona = '{$filtro['id_persona']}'";
+            }
+
+            if (isset($filtro['id_tipo_documento'])) {
+                $where .= " AND ptd.id_tipo_documento = '{$filtro['id_tipo_documento']}'";
+            }
+
+            if (isset($filtro['numero'])) {
+                $where .= " AND ptd.numero = '{$filtro['numero']}'";
+            }
+
+            if (isset($filtro['id_sexo'])) {
+                $where .= " AND ps.id_sexo = '{$filtro['id_sexo']}'";
+            }
+
+            if (isset($filtro['apellidos'])) {
+                $where .= " AND p.apellidos ILIKE '%{$filtro['apellidos']}%'";
+            }
+
+            if (isset($filtro['activo'])) {
+                $where .= " AND p.activo = '{$filtro['activo']}'";
+            }
+
+            if (isset($filtro['estado_alumno'])) {
+                $where .= " AND a.regular = '{$filtro['estado_alumno']}'";
+            }
+
+            if (isset($filtro['cuota'])) {
+                if ($filtro['cuota'] < 10) {
+                    $filtro['cuota'] = '0'.$filtro['cuota'];
+                }
+                $where .= " AND substring(acc.cuota, 1, 2) = '{$filtro['cuota']}'";
+                $where_interno .= " AND substring(acc.cuota, 1, 2) = '{$filtro['cuota']}'";
+            }
+
+            if (isset($filtro['anio'])) {
+                $where .= " AND substring(acc.cuota, 3, 4) = '{$filtro['anio']}'";
+                $where_interno .= " AND substring(acc.cuota, 3, 4) = '{$filtro['anio']}'";
+            }
+
+            if (isset($filtro['estado_cuota'])) {
+                if ($filtro['estado_cuota'] == 'p') {
+                    $where .= " AND b.id_estado_cuota IN (3)";
+                } elseif ($filtro['estado_cuota'] == 'i') {
+                    $where .= " AND b.id_estado_cuota IN (1, 2, 4)";
+                }
+            }
+
+            if (isset($filtro['con_saldo'])) {
+                if ($filtro['con_saldo'] == 'S') {
+                    $select .= ",(COALESCE(subconsulta_saldo.saldo, 0)) as saldo";
+                    $from .= " LEFT OUTER JOIN (SELECT acc.id_alumno
+                                                      ,p.id_persona
+                                                      ,COALESCE(SUM(tcc.importe), 0) as saldo
+                                                FROM transaccion_cuenta_corriente tcc
+                                                    INNER JOIN alumno_cuenta_corriente acc on tcc.id_alumno_cc = acc.id_alumno_cc
+                                                    INNER JOIN alumno a on a.id_alumno = acc.id_alumno
+                                                    INNER JOIN persona p on p.id_persona = a.id_persona
+                                                $where_interno    
+                                                GROUP BY acc.id_alumno
+                                                        ,p.id_persona
+                                                ORDER BY acc.id_alumno) AS subconsulta_saldo ON subconsulta_saldo.id_alumno = a.id_alumno and subconsulta_saldo.id_persona = p.id_persona 
+                             ";
+                }
+            }
+
+            if (isset($filtro['tiene_tarjeta'])) {
+                if ($filtro['tiene_tarjeta'] == 'S') {
+                    $where .= " AND EXISTS (SELECT ''
+                                            FROM alumno_tarjeta at
+                                            WHERE a.id_alumno = at.id_alumno
+                                                 AND at.activo = 'S')";
+                }
+                if ($filtro['tiene_tarjeta'] == 'N') {
+                    $where .= " AND NOT EXISTS (SELECT ''
+                                                FROM alumno_tarjeta at
+                                                WHERE a.id_alumno = at.id_alumno
+                                                    AND at.activo = 'S')";
+                }
             }
         }
 
         $sql = "SELECT DISTINCT(b.id_alumno_cc)
                               ,p.id_persona
-                              ,(p.apellidos || ', ' || p.nombres) as nombre_persona
+                              ,(p.apellidos || ', ' || p.nombres) as persona
+                              ,ptd.id_tipo_documento
+                              ,td.nombre as tipo_documento
+                              ,td.nombre_corto as tipo_documento_corto
+                              ,ptd.numero as identificacion
+                              ,ps.id_sexo
+                              ,s.nombre as sexo  
                               ,b.ultimo_cambio
                               ,b.estado_actual
                               ,b.id_medio_pago
@@ -903,6 +988,11 @@ class dao_consultas
                               ,b.numero_comprobante
                               ,b.numero_lote
                               ,b.numero_autorizacion
+                              ,(CASE WHEN p.es_alumno = 'S' AND a.regular = 'S' THEN 'Regular'
+                                     WHEN p.es_alumno = 'S' AND a.regular = 'N' THEN 'No regular'
+                                     WHEN p.es_alumno = 'N' THEN '-'
+                                END) as estado_alumno
+                              $select
                 FROM transaccion_cuenta_corriente trcc
                          LEFT OUTER JOIN alumno_cuenta_corriente acc on trcc.id_alumno_cc = acc.id_alumno_cc
                          INNER JOIN alumno a on a.id_alumno = acc.id_alumno
@@ -925,11 +1015,18 @@ class dao_consultas
                                              INNER JOIN transaccion_cuenta_corriente tcc on (estado_actual.id_alumno_cc = tcc.id_alumno_cc AND tcc.fecha_transaccion = estado_actual.ultimo_cambio)
                                              INNER JOIN alumno_cuenta_corriente acc on tcc.id_alumno_cc = acc.id_alumno_cc
                                              LEFT OUTER JOIN estado_cuota e on e.id_estado_cuota = tcc.id_estado_cuota
-                                             INNER JOIN marca_tarjeta mt on tcc.id_marca_tarjeta = mt.id_marca_tarjeta
-                                             INNER JOIN medio_pago mp on tcc.id_medio_pago = mp.id_medio_pago
+                                             LEFT OUTER JOIN marca_tarjeta mt on tcc.id_marca_tarjeta = mt.id_marca_tarjeta
+                                             LEFT OUTER JOIN medio_pago mp on tcc.id_medio_pago = mp.id_medio_pago
                                           ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
+                         LEFT OUTER JOIN (persona_sexo ps JOIN sexo s on ps.id_sexo = s.id_sexo) ON ps.id_persona = p.id_persona AND ps.activo = 'S'
+                         LEFT OUTER JOIN (persona_tipo_documento ptd JOIN tipo_documento td on ptd.id_tipo_documento = td.id_tipo_documento)
+                            ON ptd.id_persona = p.id_persona AND td.jerarquia = (SELECT MIN(X1.jerarquia)
+                                                                                 FROM tipo_documento X1
+                                                                                     ,persona_tipo_documento X2
+                                                                                 WHERE X1.id_tipo_documento = X2.id_tipo_documento
+                                                                                    AND X2.id_persona = p.id_persona)
+                         $from                                                                                    
                 $where
-                  AND b.id_estado_cuota = 3 --solo las pagas
                ";
 
         toba::logger()->debug(__METHOD__." : ".$sql);
