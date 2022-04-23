@@ -207,10 +207,12 @@ class persona
             $this->set_id_estado_cuota(3);
         }
 
-        $fecha_pago = '2022-04-08';
-        //$fecha_pago = isset($datos_cuenta_corriente['fecha_pago']) ? "" . $datos_cuenta_corriente['fecha_pago'] . "" : 'null';
+        $fecha_pago = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['fecha_pago'], 'STR');
         $this->set_fecha_pago($fecha_pago);
-        $fecha_respuesta_prisma = isset($datos_cuenta_corriente['fecha_devolucion_respuesta']) ? "'" . $datos_cuenta_corriente['fecha_devolucion_respuesta'] . "'" : 'null';
+        $fecha_respuesta_prisma = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['fecha_devolucion_respuesta'], 'STR');
+        if ($fecha_respuesta_prisma != 'null') {
+            $fecha_respuesta_prisma = date($fecha_respuesta_prisma);
+        }
         $this->set_fecha_respuesta_prisma($fecha_respuesta_prisma);
         $id_motivo_rechazo = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['id_motivo_rechazo'], constantes::get_valor_constante('TIPO_DATO_INT'));
         $this->set_id_motivo_rechazo($id_motivo_rechazo);
@@ -883,7 +885,11 @@ class persona
             $this->direccion_numero = $resultado_alumno[0]['direccion_numero'];
             $this->direccion_piso = $resultado_alumno[0]['direccion_piso'];
             $this->direccion_depto = $resultado_alumno[0]['direccion_depto'];
-            $this->nombre_completo_alumno = $resultado_alumno[0]['apellidos']. ', '. $resultado_alumno[0]['nombres'];
+            if (dao_consultas::catalogo_de_parametros("muestra_nombre_con_legajo") == 'NO') {
+                $this->nombre_completo_alumno = $resultado_alumno[0]['apellidos']. ', '. $resultado_alumno[0]['nombres'];
+            } else {
+                $this->nombre_completo_alumno = $resultado_alumno[0]['apellidos']. ', '. $resultado_alumno[0]['nombres'] .' - Legajo: '. $resultado_alumno[0]['legajo'] ;
+            }
         } else {
             //Obtengo los datos de los allegados asociados a esa persona que NO es alumno
             $sql = "SELECT pa.id_persona_allegado
@@ -1560,7 +1566,7 @@ class persona
                                                          ,id_motivo_rechazo, usuario_ultima_modificacion, fecha_ultima_modificacion
                                                          ,numero_comprobante, numero_lote, numero_autorizacion, id_medio_pago
                                                          ,id_marca_tarjeta) 
-				VALUES ({$this->id_alumno_cc}, now(),'{$this->id_estado_cuota}', '{$this->importe_pago}', '{$this->fecha_pago}', to_date({$this->fecha_respuesta_prisma},'YYYY-MM-DD')
+				VALUES ({$this->id_alumno_cc}, now(),'{$this->id_estado_cuota}', '{$this->importe_pago}', {$this->fecha_pago}, {$this->fecha_respuesta_prisma}
 				       ,{$this->id_motivo_rechazo}, '{$this->usuario_ultima_modificacion}', now()
 				       ,{$this->numero_comprobante}, {$this->numero_lote}, {$this->numero_autorizacion}, '{$this->id_medio_pago}'
 				       ,{$this->id_marca_tarjeta})

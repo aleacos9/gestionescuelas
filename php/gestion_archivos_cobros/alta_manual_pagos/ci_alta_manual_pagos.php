@@ -21,6 +21,7 @@ class ci_alta_manual_pagos extends ci_administrar_formas_cobro
         if (!empty($this->s__persona_editar)) {
             $persona = new persona($this->s__persona_editar);
             $this->s__datos_alta_manual_pago = $persona->get_datos_cuenta_corriente();
+            $this->s__nombre_alumno = $persona->get_nombre_completo_alumno();
         }
     }
 
@@ -94,6 +95,9 @@ class ci_alta_manual_pagos extends ci_administrar_formas_cobro
 
 	function conf__cuadro_cuenta_corriente($cuadro)
 	{
+        if ($this->s__alumno_editar) {
+            $cuadro->set_titulo('<div class="titulo_alumno">'.$this->s__nombre_alumno.'</div>');
+        }
 	    if (!empty($this->s__datos_alta_manual_pago)) {
 	        $cuadro->set_datos($this->s__datos_alta_manual_pago);
         }

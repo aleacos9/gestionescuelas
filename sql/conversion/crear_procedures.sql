@@ -549,3 +549,19 @@ WHERE lpad(contenido, 1) = '1';
 
 END;
 $$ LANGUAGE plpgsql;
+
+
+--Alejandro feature/alta-manual-pagos 22/04/2022
+CREATE OR REPLACE FUNCTION alta_nuevos_parametros_sistema() RETURNS VOID AS
+$$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM parametros_sistema WHERE parametro = 'muestra_nombre_con_legajo') THEN
+
+        INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
+        VALUES (NEXTVAL('sq_id_parametro'), 'muestra_nombre_con_legajo', 'Muestra el nombre del alumno con legajo', 'Muestra nombre con legajo', 'SI', '1.0.0');
+        INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
+        VALUES (NEXTVAL('sq_id_parametro'), 'nombre_institucion', 'Nombre Institución', 'Nombre Institución', 'Escuela Sagrada Familia', '1.0.0');
+
+    END IF;
+END;
+$$ LANGUAGE 'plpgsql';

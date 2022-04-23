@@ -12,3 +12,6 @@ DROP FUNCTION IF EXISTS alta_nuevo_parametro_sistema();
 
 --Alejandro feature/alta-manual-pagos 06/04/2022
 DROP FUNCTION IF EXISTS spAfectacionArchivoDebito();
+
+--Alejandro feature/alta-manual-pagos 22/04/2022
+DROP FUNCTION IF EXISTS alta_nuevos_parametros_sistema();
