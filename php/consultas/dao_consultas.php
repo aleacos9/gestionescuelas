@@ -530,53 +530,129 @@ class dao_consultas
 
         if (isset($filtro)) {
             if (isset($filtro['cuota'])) {
-                $where .= " AND cuota = '{$filtro['cuota']}'";
+                $where .= " AND ar.cuota = '{$filtro['cuota']}'";
             }
         }
 
-        $sql = "SELECT ar.id_archivo_respuesta
-                      ,ar.id_marca_tarjeta
-                      ,ar.id_medio_pago
-                      ,ar.nombre_archivo
-                      ,ar.numero_establecimiento
-                      ,ar.usuario_alta
-                      ,ar.fecha_generacion
-                      ,ar.cantidad_total_debitos
-                      ,ar.importe_total_debitos
-                      ,ar.cuota
-                      ,ard.id_archivo_respuesta_detalle
-                      ,ard.registro
-                      ,ard.numero_codigo_banco_pagador
-                      ,ard.numero_sucursal_banco_pagador
-                      ,ard.numero_lote
-                      ,ard.codigo_transaccion
-                      ,ard.numero_establecimiento
-                      ,ard.numero_tarjeta
-                      ,ard.id_alumno_cc
-                      ,ard.fecha_presentacion
-                      ,ard.importe
-                      ,ard.id_alumno
-                      ,ard.codigo_alta_identificador
-                      ,ard.cuenta_debito_fondos
-                      ,ard.estado_movimiento
-                      ,ard.rechazo1
-                      ,ard.descripcion_rechazo1
-                      ,ard.rechazo2
-                      ,ard.descripcion_rechazo2
-                      ,ard.numero_tarjeta_nueva
-                      ,ard.fecha_devolucion_respuesta
-                      ,ard.fecha_pago
-                      ,ard.numero_cartera_cliente
-                      ,ard.fecha_generacion
-                      ,ard.contenido
-                      ,ard.usuario_alta
-                      ,ard.codigo_error_debito
-                      ,ard.descripcion_error_debito
-                      ,ard.fecha_origen_venc_debito
-                FROM archivo_respuesta ar
-                    INNER JOIN archivo_respuesta_detalle ard on ar.id_archivo_respuesta = ard.id_archivo_respuesta 
-				WHERE 1=1 AND procesado = 0 
-				    $where
+        $sql = "SELECT a.id_alumno
+                      ,a.legajo
+                      ,a.regular
+                      ,max_fecha.id_alumno_cc
+                      ,max_fecha.ultima_fecha
+                      ,max_fecha.id_archivo_respuesta
+                      ,max_fecha.id_marca_tarjeta
+                      ,max_fecha.id_medio_pago
+                      ,max_fecha.nombre_archivo
+                      ,max_fecha.numero_establecimiento
+                      ,max_fecha.usuario_alta
+                      ,max_fecha.cantidad_total_debitos
+                      ,max_fecha.importe_total_debitos
+                      ,max_fecha.cuota
+                      ,max_fecha.id_archivo_respuesta_detalle
+                      ,max_fecha.registro
+                      ,max_fecha.numero_codigo_banco_pagador
+                      ,max_fecha.numero_sucursal_banco_pagador
+                      ,max_fecha.numero_lote
+                      ,max_fecha.codigo_transaccion
+                      ,max_fecha.numero_tarjeta
+                      ,max_fecha.fecha_presentacion
+                      ,max_fecha.importe
+                      ,max_fecha.id_alumno
+                      ,max_fecha.codigo_alta_identificador
+                      ,max_fecha.cuenta_debito_fondos
+                      ,max_fecha.estado_movimiento
+                      ,max_fecha.rechazo1
+                      ,max_fecha.descripcion_rechazo1
+                      ,max_fecha.rechazo2
+                      ,max_fecha.descripcion_rechazo2
+                      ,max_fecha.numero_tarjeta_nueva
+                      ,max_fecha.fecha_devolucion_respuesta
+                      ,max_fecha.fecha_pago
+                      ,max_fecha.numero_cartera_cliente
+                      ,max_fecha.fecha_generacion
+                      ,max_fecha.contenido
+                      ,max_fecha.codigo_error_debito
+                      ,max_fecha.descripcion_error_debito
+                      ,max_fecha.fecha_origen_venc_debito
+                FROM alumno_cuenta_corriente acc
+                         INNER JOIN (SELECT ar.id_archivo_respuesta
+                                           ,ar.id_marca_tarjeta
+                                           ,ar.id_medio_pago
+                                           ,ar.nombre_archivo
+                                           ,ar.numero_establecimiento
+                                           ,ar.usuario_alta
+                                           ,MAX(ar.fecha_generacion_archivo_respuesta) AS ultima_fecha
+                                           ,ar.cantidad_total_debitos
+                                           ,ar.importe_total_debitos
+                                           ,ar.cuota
+                                           ,ard.id_archivo_respuesta_detalle
+                                           ,ard.registro
+                                           ,ard.numero_codigo_banco_pagador
+                                           ,ard.numero_sucursal_banco_pagador
+                                           ,ard.numero_lote
+                                           ,ard.codigo_transaccion
+                                           ,ard.numero_tarjeta
+                                           ,ard.fecha_presentacion
+                                           ,ard.importe
+                                           ,ard.id_alumno
+                                           ,ard.codigo_alta_identificador
+                                           ,ard.cuenta_debito_fondos
+                                           ,ard.estado_movimiento
+                                           ,ard.rechazo1
+                                           ,ard.descripcion_rechazo1
+                                           ,ard.rechazo2
+                                           ,ard.descripcion_rechazo2
+                                           ,ard.numero_tarjeta_nueva
+                                           ,ard.fecha_devolucion_respuesta
+                                           ,ard.fecha_pago
+                                           ,ard.numero_cartera_cliente
+                                           ,ard.fecha_generacion
+                                           ,ard.contenido
+                                           ,ard.codigo_error_debito
+                                           ,ard.descripcion_error_debito
+                                           ,ard.fecha_origen_venc_debito
+                                           ,ard.id_alumno_cc
+                                     FROM archivo_respuesta ar
+                                        INNER JOIN archivo_respuesta_detalle ard ON ard.id_archivo_respuesta = ar.id_archivo_respuesta
+                                     WHERE 1=1 AND ard.procesado = 0 $where
+                                     GROUP BY ar.id_archivo_respuesta
+                                             ,ar.id_marca_tarjeta
+                                             ,ar.id_medio_pago
+                                             ,ar.nombre_archivo
+                                             ,ar.numero_establecimiento
+                                             ,ar.usuario_alta
+                                             ,ar.cantidad_total_debitos
+                                             ,ar.importe_total_debitos
+                                             ,ar.cuota
+                                             ,ard.id_archivo_respuesta_detalle
+                                             ,ard.registro
+                                             ,ard.numero_codigo_banco_pagador
+                                             ,ard.numero_sucursal_banco_pagador
+                                             ,ard.numero_lote
+                                             ,ard.codigo_transaccion
+                                             ,ard.numero_tarjeta
+                                             ,ard.fecha_presentacion
+                                             ,ard.importe
+                                             ,ard.id_alumno
+                                             ,ard.codigo_alta_identificador
+                                             ,ard.cuenta_debito_fondos
+                                             ,ard.estado_movimiento
+                                             ,ard.rechazo1
+                                             ,ard.descripcion_rechazo1
+                                             ,ard.rechazo2
+                                             ,ard.descripcion_rechazo2
+                                             ,ard.numero_tarjeta_nueva
+                                             ,ard.fecha_devolucion_respuesta
+                                             ,ard.fecha_pago
+                                             ,ard.numero_cartera_cliente
+                                             ,ard.fecha_generacion
+                                             ,ard.contenido
+                                             ,ard.codigo_error_debito
+                                             ,ard.descripcion_error_debito
+                                             ,ard.fecha_origen_venc_debito
+                                             ,ard.id_alumno_cc) AS max_fecha ON max_fecha.id_alumno_cc = acc.id_alumno_cc
+                         INNER JOIN alumno a ON a.id_alumno = acc.id_alumno
+                WHERE 1=1
 			   ";
 
         toba::logger()->debug(__METHOD__." : ".$sql);

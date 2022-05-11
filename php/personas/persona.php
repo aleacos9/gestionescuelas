@@ -64,7 +64,11 @@ class persona
     protected $fecha_transaccion;
     protected $fecha_respuesta_prisma;
     protected $id_estado_cuota;
-    protected $id_motivo_rechazo;
+    protected $estado_movimiento;
+    protected $id_motivo_rechazo1;
+    protected $descripcion_rechazo1;
+    protected $id_motivo_rechazo2;
+    protected $descripcion_rechazo2;
     protected $numero_comprobante;
     protected $numero_lote;
     protected $numero_autorizacion;
@@ -214,15 +218,32 @@ class persona
             $fecha_respuesta_prisma = date($fecha_respuesta_prisma);
         }
         $this->set_fecha_respuesta_prisma($fecha_respuesta_prisma);
-        $id_motivo_rechazo = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['id_motivo_rechazo'], constantes::get_valor_constante('TIPO_DATO_INT'));
-        $this->set_id_motivo_rechazo($id_motivo_rechazo);
+
+        //Datos del rechazo
+        $estado_movimiento = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['estado_movimiento'], constantes::get_valor_constante('TIPO_DATO_INT'));
+        $this->set_estado_movimiento($estado_movimiento);
+        //Si el movimiento arroja error => seteo el importe en 0
+        if ($estado_movimiento == 1) {
+            $datos_cuenta_corriente['importe'] = 0;
+        }
+        $this->set_importe_pago($datos_cuenta_corriente['importe']);
+        //aca voy a tener que obtener el id_motivo_rechazo de la tabla motivo_rechazo asociado al codigo_rechazo que viene en el txt
+        $id_motivo_rechazo1 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['rechazo1'], constantes::get_valor_constante('TIPO_DATO_INT'));
+        $this->set_id_motivo_rechazo1($id_motivo_rechazo1);
+        $descripcion_rechazo1 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['$descripcion_rechazo1'], constantes::get_valor_constante('TIPO_DATO_INT'));
+        $this->set_descripcion_rechazo1($descripcion_rechazo1);
+        $id_motivo_rechazo2 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['rechazo2'], constantes::get_valor_constante('TIPO_DATO_INT'));
+        $this->set_id_motivo_rechazo2($id_motivo_rechazo2);
+        $descripcion_rechazo2 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['$descripcion_rechazo2'], constantes::get_valor_constante('TIPO_DATO_INT'));
+        $this->set_descripcion_rechazo2($descripcion_rechazo2);
+        //Fin datos del rechazo
+
         $numero_comprobante = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['numero_comprobante'], constantes::get_valor_constante('TIPO_DATO_INT'));
         $this->set_numero_comprobante($numero_comprobante);
         $numero_lote = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['numero_lote'], constantes::get_valor_constante('TIPO_DATO_INT'));
         $this->set_numero_lote($numero_lote);
         $numero_autorizacion = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['numero_autorizacion'], constantes::get_valor_constante('TIPO_DATO_INT'));
         $this->set_numero_autorizacion($numero_autorizacion);
-        $this->set_importe_pago($datos_cuenta_corriente['importe']);
         $this->set_usuario_ultima_modificacion($datos_cuenta_corriente['usuario_ultima_modificacion']);
         $this->set_fecha_ultima_modificacion($datos_cuenta_corriente['fecha_ultima_modificacion']);
         $this->set_mostrar_mensaje_individual($datos_cuenta_corriente['mostrar_mensaje_individual']);
@@ -471,10 +492,28 @@ class persona
         $this->fecha_transaccion = $fecha_transaccion;
     }
 
-    public function set_id_motivo_rechazo($id_motivo_rechazo)
+    public function set_id_motivo_rechazo1($id_motivo_rechazo1)
     {
-        toba::logger()->info("set_id_motivo_rechazo = " .$id_motivo_rechazo);
-        $this->id_motivo_rechazo = $id_motivo_rechazo;
+        toba::logger()->info("set_id_motivo_rechazo1 = " .$id_motivo_rechazo1);
+        $this->id_motivo_rechazo1 = $id_motivo_rechazo1;
+    }
+
+    public function set_descripcion_rechazo1($descripcion_rechazo1)
+    {
+        toba::logger()->info("set_descripcion_rechazo1 = " .$descripcion_rechazo1);
+        $this->descripcion_rechazo1 = $descripcion_rechazo1;
+    }
+
+    public function set_id_motivo_rechazo2($id_motivo_rechazo2)
+    {
+        toba::logger()->info("set_id_motivo_rechazo2 = " .$id_motivo_rechazo2);
+        $this->id_motivo_rechazo2 = $id_motivo_rechazo2;
+    }
+
+    public function set_descripcion_rechazo2($descripcion_rechazo2)
+    {
+        toba::logger()->info("set_descripcion_rechazo2 = " .$descripcion_rechazo2);
+        $this->descripcion_rechazo2 = $descripcion_rechazo2;
     }
 
     public function set_id_entidad_bancaria($id_entidad_bancaria)
@@ -583,6 +622,12 @@ class persona
     {
         toba::logger()->info("set_modo = " .$modo);
         $this->modo = $modo;
+    }
+
+    public function set_estado_movimiento($estado_movimiento)
+    {
+        toba::logger()->info("set_estado_movimiento = " .$estado_movimiento);
+        $this->estado_movimiento = $estado_movimiento;
     }
 
 
@@ -1077,8 +1122,10 @@ class persona
                       ,subconsulta_cuenta_corriente.id_estado_cuota  
                       ,ec.nombre as estado_cuota
                       ,subconsulta_cuenta_corriente.importe
-                      ,subconsulta_cuenta_corriente.id_motivo_rechazo
-                      ,mr.nombre AS motivo_rechazo
+                      ,subconsulta_cuenta_corriente.id_motivo_rechazo1
+                      ,mr.nombre AS motivo_rechazo1
+                      ,subconsulta_cuenta_corriente.id_motivo_rechazo2
+                      ,mr2.nombre AS motivo_rechazo2
                       ,subconsulta_cuenta_corriente.numero_comprobante
                       ,subconsulta_cuenta_corriente.numero_autorizacion
                       ,subconsulta_cuenta_corriente.numero_lote
@@ -1086,11 +1133,12 @@ class persona
                     INNER JOIN alumno a on acc.id_alumno = a.id_alumno  
                     INNER JOIN persona p on p.id_persona = a.id_persona
                     INNER JOIN (select id_alumno_cc, id_transaccion_cc, fecha_transaccion, id_estado_cuota, importe, fecha_pago
-                                      ,fecha_respuesta_prisma, id_motivo_rechazo, numero_comprobante, numero_autorizacion, numero_lote
-                                      ,id_medio_pago, id_marca_tarjeta
+                                      ,fecha_respuesta_prisma, numero_comprobante, numero_autorizacion, numero_lote
+                                      ,id_medio_pago, id_marca_tarjeta, id_motivo_rechazo1, id_motivo_rechazo2
                                 from transaccion_cuenta_corriente) as subconsulta_cuenta_corriente ON subconsulta_cuenta_corriente.id_alumno_cc = acc.id_alumno_cc
                     INNER JOIN estado_cuota ec on ec.id_estado_cuota = subconsulta_cuenta_corriente.id_estado_cuota
-                    LEFT OUTER JOIN motivo_rechazo mr on mr.id_motivo_rechazo = subconsulta_cuenta_corriente.id_motivo_rechazo
+                    LEFT OUTER JOIN motivo_rechazo mr on mr.id_motivo_rechazo = subconsulta_cuenta_corriente.id_motivo_rechazo1
+                    LEFT OUTER JOIN motivo_rechazo mr2 on mr2.id_motivo_rechazo = subconsulta_cuenta_corriente.id_motivo_rechazo2
                     LEFT OUTER JOIN medio_pago mp on mp.id_medio_pago = subconsulta_cuenta_corriente.id_medio_pago
                     LEFT OUTER JOIN marca_tarjeta mt on mt.id_marca_tarjeta = subconsulta_cuenta_corriente.id_marca_tarjeta
                 WHERE p.id_persona = {$this->persona} --a.id_alumno = {$this->persona}
@@ -1563,13 +1611,13 @@ class persona
         toba::logger()->info("persona.grabar_pago_persona()");
 
         $sql = "INSERT INTO transaccion_cuenta_corriente (id_alumno_cc, fecha_transaccion, id_estado_cuota, importe, fecha_pago, fecha_respuesta_prisma
-                                                         ,id_motivo_rechazo, usuario_ultima_modificacion, fecha_ultima_modificacion
+                                                         ,usuario_ultima_modificacion, fecha_ultima_modificacion
                                                          ,numero_comprobante, numero_lote, numero_autorizacion, id_medio_pago
-                                                         ,id_marca_tarjeta) 
+                                                         ,id_marca_tarjeta, codigo_rechazo1, codigo_rechazo2) 
 				VALUES ({$this->id_alumno_cc}, now(),'{$this->id_estado_cuota}', '{$this->importe_pago}', {$this->fecha_pago}, {$this->fecha_respuesta_prisma}
-				       ,{$this->id_motivo_rechazo}, '{$this->usuario_ultima_modificacion}', now()
+				       ,'{$this->usuario_ultima_modificacion}', now()
 				       ,{$this->numero_comprobante}, {$this->numero_lote}, {$this->numero_autorizacion}, '{$this->id_medio_pago}'
-				       ,{$this->id_marca_tarjeta})
+				       ,{$this->id_marca_tarjeta}, {$this->id_motivo_rechazo1}, {$this->id_motivo_rechazo2})
 			   ";
 
         toba::logger()->debug(__METHOD__ . " : " . $sql);

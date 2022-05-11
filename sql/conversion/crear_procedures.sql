@@ -565,3 +565,88 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/alta-manual-pagos 25/04/2022
+CREATE OR REPLACE FUNCTION cambios_tabla_transaccion_cuenta_corriente() RETURNS VOID AS
+$$
+BEGIN
+    IF NOT EXISTS ( SELECT '' FROM information_schema.columns WHERE table_name = 'transaccion_cuenta_corriente' and column_name = 'codigo_rechazo2') THEN
+
+        --quito la fk con id_motivo_rechazo
+        ALTER TABLE transaccion_cuenta_corriente
+            DROP CONSTRAINT id_motivo_rechazo;
+        --quito la columna id_motivo_rechazo
+        ALTER TABLE transaccion_cuenta_corriente
+            DROP COLUMN id_motivo_rechazo;
+        --agrego las nuevas columnas
+        ALTER TABLE transaccion_cuenta_corriente
+            ADD COLUMN id_motivo_rechazo1 INTEGER;
+        ALTER TABLE transaccion_cuenta_corriente
+            ADD COLUMN id_motivo_rechazo2 INTEGER;
+        --agrego las nuevas fk
+        ALTER TABLE transaccion_cuenta_corriente
+            ADD CONSTRAINT id_motivo_rechazo1 FOREIGN KEY (id_motivo_rechazo1)
+                REFERENCES public.motivo_rechazo (id_motivo_rechazo) MATCH FULL
+                ON UPDATE NO ACTION ON DELETE NO ACTION;
+        ALTER TABLE transaccion_cuenta_corriente
+            ADD CONSTRAINT id_motivo_rechazo2 FOREIGN KEY (id_motivo_rechazo2)
+                REFERENCES public.motivo_rechazo (id_motivo_rechazo) MATCH FULL
+                ON UPDATE NO ACTION ON DELETE NO ACTION;
+
+    END IF;
+END;
+$$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/alta-manual-pagos 25/04/2022
+CREATE OR REPLACE FUNCTION alta_parametro_sistema_ingresa_importe_en_generacion_cargos() RETURNS VOID AS
+$$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM parametros_sistema WHERE parametro = 'ingresa_importe_en_generacion_cargos') THEN
+
+        INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
+        VALUES (NEXTVAL('sq_id_parametro'), 'ingresa_importe_en_generacion_cargos', 'Permite el ingreso del importe en la generación de cargos', 'Ingresa importe en generación cargos', 'SI', '1.0.0');
+
+    END IF;
+END;
+$$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/alta-manual-pagos 05/05/2022
+CREATE OR REPLACE FUNCTION cambio_campos_archivo_respuesta() RETURNS VOID AS
+$$
+BEGIN
+    IF NOT EXISTS ( SELECT '' FROM information_schema.columns WHERE table_name = 'archivo_respuesta' and column_name = 'fecha_generacion_archivo_respuesta') THEN
+
+        ALTER TABLE public.archivo_respuesta DISABLE TRIGGER tauditoria_archivo_respuesta;
+
+        ALTER TABLE public_auditoria.logs_archivo_respuesta
+            RENAME COLUMN fecha_generacion TO fecha_generacion_archivo_respuesta;
+        ALTER TABLE public_auditoria.logs_archivo_respuesta
+            DROP COLUMN fecha_generacion_archivo_respuesta;
+
+        ALTER TABLE public_auditoria.logs_archivo_respuesta
+            ADD COLUMN fecha_generacion_archivo_respuesta DATE;
+
+        ALTER TABLE public.archivo_respuesta
+            RENAME COLUMN fecha_generacion TO fecha_generacion_archivo_respuesta;
+        ALTER TABLE public.archivo_respuesta
+            DROP COLUMN fecha_generacion_archivo_respuesta;
+
+        ALTER TABLE public.archivo_respuesta
+            ADD COLUMN fecha_generacion_archivo_respuesta DATE;
+
+        UPDATE public.archivo_respuesta
+        SET fecha_generacion_archivo_respuesta = CAST(SUBSTRING(nombre_archivo, 10, 8) AS DATE)
+        WHERE 1=1;
+
+        UPDATE public_auditoria.logs_archivo_respuesta
+        SET fecha_generacion_archivo_respuesta = CAST(SUBSTRING(nombre_archivo, 10, 8) AS DATE)
+        WHERE 1=1;
+
+        ALTER TABLE public.archivo_respuesta ENABLE TRIGGER tauditoria_archivo_respuesta;
+
+    END IF;
+END;
+$$ LANGUAGE 'plpgsql';

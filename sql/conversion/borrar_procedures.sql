@@ -15,3 +15,12 @@ DROP FUNCTION IF EXISTS spAfectacionArchivoDebito();
 
 --Alejandro feature/alta-manual-pagos 22/04/2022
 DROP FUNCTION IF EXISTS alta_nuevos_parametros_sistema();
+
+--Alejandro feature/alta-manual-pagos 25/04/2022
+DROP FUNCTION IF EXISTS cambios_tabla_transaccion_cuenta_corriente();
+
+--Alejandro feature/alta-manual-pagos 25/04/2022
+DROP FUNCTION IF EXISTS alta_parametro_sistema_ingresa_importe_en_generacion_cargos();
+
+--Alejandro feature/alta-manual-pagos 05/05/2022
+DROP FUNCTION IF EXISTS cambio_campos_archivo_respuesta();

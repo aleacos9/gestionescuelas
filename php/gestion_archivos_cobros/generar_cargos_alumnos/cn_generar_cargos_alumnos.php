@@ -54,6 +54,13 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
                     }
                 }
             }
+
+            //Valido que si el parámetro ingresa_importe_en_generacion_cargos está en SI => se cargue un importe
+            if (dao_consultas::catalogo_de_parametros("ingresa_importe_en_generacion_cargos") == 'SI') {
+                if (empty($this->datos_formulario['importe_cuota'])) {
+                    throw new toba_error("Debe ingresar un importe antes de procesar.");
+                }
+            }
         }
     }
 }

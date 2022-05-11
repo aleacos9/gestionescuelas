@@ -31,12 +31,14 @@ class ci_generar_cargos_alumnos extends gestionescuelas_ext_ci
     {
         $filtro_int = array();
         $this->s__datos_formulario = $datos;
-        $cuota_x_grado = dao_consultas::catalogo_de_parametros("importe_mensual_cuota_x_grado");
-        if ($cuota_x_grado == 'NO') {
-            if ($this->s__datos_formulario['cargo_a_generar'] == 1) {
-                $this->s__datos_formulario['importe_cuota'] = dao_consultas::catalogo_de_parametros("importe_inscripcion_anual");
-            } elseif ($this->s__datos_formulario['cargo_a_generar'] == 2) {
-                $this->s__datos_formulario['importe_cuota'] = dao_consultas::catalogo_de_parametros("importe_mensual_cuota");
+
+        if (dao_consultas::catalogo_de_parametros("importe_mensual_cuota_x_grado") == 'NO') {
+            if (dao_consultas::catalogo_de_parametros("ingresa_importe_en_generacion_cargos") == 'NO') {
+                if ($this->s__datos_formulario['cargo_a_generar'] == 1) {
+                    $this->s__datos_formulario['importe_cuota'] = dao_consultas::catalogo_de_parametros("importe_inscripcion_anual");
+                } elseif ($this->s__datos_formulario['cargo_a_generar'] == 2) {
+                    $this->s__datos_formulario['importe_cuota'] = dao_consultas::catalogo_de_parametros("importe_mensual_cuota");
+                }
             }
 
             if ($this->s__datos_formulario['forma_generacion'] == 'G') {
