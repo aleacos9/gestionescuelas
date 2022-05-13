@@ -581,7 +581,8 @@ class dao_consultas
                                            ,ar.nombre_archivo
                                            ,ar.numero_establecimiento
                                            ,ar.usuario_alta
-                                           ,MAX(ar.fecha_generacion_archivo_respuesta) AS ultima_fecha
+                                           ,MAX(SUBSTRING(ar.nombre_archivo FROM 10 FOR 8)) AS ultima_fecha
+                                           --,MAX(ar.fecha_generacion_archivo_respuesta) AS 
                                            ,ar.cantidad_total_debitos
                                            ,ar.importe_total_debitos
                                            ,ar.cuota
@@ -768,7 +769,7 @@ class dao_consultas
                                                                 ,ultimo_cambio
                                                                 ,e.id_estado_cuota
                                                                 ,e.nombre AS estado_actual
-                                                                ,tcc.id_motivo_rechazo
+                                                                ,tcc.id_motivo_rechazo1
                                                                 ,mr.nombre AS motivo_rechazo
                                                            FROM (SELECT id_alumno_cc
                                                                       ,MAX(tcc.fecha_transaccion) AS ultimo_cambio
@@ -776,7 +777,7 @@ class dao_consultas
                                                                  GROUP BY id_alumno_cc) AS estado_actual
                                                                     INNER JOIN transaccion_cuenta_corriente tcc on (estado_actual.id_alumno_cc = tcc.id_alumno_cc AND tcc.fecha_transaccion = estado_actual.ultimo_cambio)
                                                                     INNER JOIN alumno_cuenta_corriente acc on tcc.id_alumno_cc = acc.id_alumno_cc
-                                                                    LEFT OUTER JOIN motivo_rechazo mr on tcc.id_motivo_rechazo = mr.id_motivo_rechazo
+                                                                    LEFT OUTER JOIN motivo_rechazo mr on tcc.id_motivo_rechazo1 = mr.id_motivo_rechazo
                                                                     LEFT OUTER JOIN estado_cuota e on e.id_estado_cuota = tcc.id_estado_cuota
                                                            ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
                                  WHERE 1=1 AND substring(acc.cuota, 1, 2) IN ('01', '02','03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
@@ -806,7 +807,7 @@ class dao_consultas
                                                                           ,ultimo_cambio
                                                                           ,e.id_estado_cuota
                                                                           ,e.nombre AS estado_actual
-                                                                          ,tcc.id_motivo_rechazo
+                                                                          ,tcc.id_motivo_rechazo1
                                                                           ,mr.nombre AS motivo_rechazo
                                                                     FROM (SELECT id_alumno_cc
                                                                                 ,MAX(tcc.fecha_transaccion) AS ultimo_cambio
@@ -814,7 +815,7 @@ class dao_consultas
                                                                           GROUP BY id_alumno_cc) AS estado_actual
                                                                              INNER JOIN transaccion_cuenta_corriente tcc on (estado_actual.id_alumno_cc = tcc.id_alumno_cc AND tcc.fecha_transaccion = estado_actual.ultimo_cambio)
                                                                              INNER JOIN alumno_cuenta_corriente acc on tcc.id_alumno_cc = acc.id_alumno_cc
-                                                                             LEFT OUTER JOIN motivo_rechazo mr on tcc.id_motivo_rechazo = mr.id_motivo_rechazo
+                                                                             LEFT OUTER JOIN motivo_rechazo mr on tcc.id_motivo_rechazo1 = mr.id_motivo_rechazo
                                                                              LEFT OUTER JOIN estado_cuota e on e.id_estado_cuota = tcc.id_estado_cuota
                                                                     ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
                                           WHERE 1=1 AND substring(acc.cuota, 1, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
@@ -844,7 +845,7 @@ class dao_consultas
                                                                          ,ultimo_cambio
                                                                          ,e.id_estado_cuota
                                                                          ,e.nombre AS estado_actual
-                                                                         ,tcc.id_motivo_rechazo
+                                                                         ,tcc.id_motivo_rechazo1
                                                                          ,mr.nombre AS motivo_rechazo
                                                                    FROM (SELECT id_alumno_cc
                                                                               ,MAX(tcc.fecha_transaccion) AS ultimo_cambio
@@ -852,7 +853,7 @@ class dao_consultas
                                                                          GROUP BY id_alumno_cc) AS estado_actual
                                                                             INNER JOIN transaccion_cuenta_corriente tcc on (estado_actual.id_alumno_cc = tcc.id_alumno_cc AND tcc.fecha_transaccion = estado_actual.ultimo_cambio)
                                                                             INNER JOIN alumno_cuenta_corriente acc on tcc.id_alumno_cc = acc.id_alumno_cc
-                                                                            LEFT OUTER JOIN motivo_rechazo mr on tcc.id_motivo_rechazo = mr.id_motivo_rechazo
+                                                                            LEFT OUTER JOIN motivo_rechazo mr on tcc.id_motivo_rechazo1 = mr.id_motivo_rechazo
                                                                             LEFT OUTER JOIN estado_cuota e on e.id_estado_cuota = tcc.id_estado_cuota
                                                                    ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
                                           WHERE 1=1 AND substring(acc.cuota, 1, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
@@ -882,7 +883,7 @@ class dao_consultas
                                                                          ,ultimo_cambio
                                                                          ,e.id_estado_cuota
                                                                          ,e.nombre AS estado_actual
-                                                                         ,tcc.id_motivo_rechazo
+                                                                         ,tcc.id_motivo_rechazo1
                                                                          ,mr.nombre AS motivo_rechazo
                                                                    FROM (SELECT id_alumno_cc
                                                                               ,MAX(tcc.fecha_transaccion) AS ultimo_cambio
@@ -890,7 +891,7 @@ class dao_consultas
                                                                          GROUP BY id_alumno_cc) AS estado_actual
                                                                             INNER JOIN transaccion_cuenta_corriente tcc on (estado_actual.id_alumno_cc = tcc.id_alumno_cc AND tcc.fecha_transaccion = estado_actual.ultimo_cambio)
                                                                             INNER JOIN alumno_cuenta_corriente acc on tcc.id_alumno_cc = acc.id_alumno_cc
-                                                                            LEFT OUTER JOIN motivo_rechazo mr on tcc.id_motivo_rechazo = mr.id_motivo_rechazo
+                                                                            LEFT OUTER JOIN motivo_rechazo mr on tcc.id_motivo_rechazo1 = mr.id_motivo_rechazo
                                                                             LEFT OUTER JOIN estado_cuota e on e.id_estado_cuota = tcc.id_estado_cuota
                                                                    ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
                                           WHERE 1=1 AND substring(acc.cuota, 1, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')

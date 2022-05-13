@@ -211,9 +211,9 @@ class persona
             $this->set_id_estado_cuota(3);
         }
 
-        $fecha_pago = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['fecha_pago'], 'STR');
+        $fecha_pago = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['fecha_pago'], 'TIPO_DATO_STR');
         $this->set_fecha_pago($fecha_pago);
-        $fecha_respuesta_prisma = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['fecha_devolucion_respuesta'], 'STR');
+        $fecha_respuesta_prisma = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['fecha_devolucion_respuesta'], 'TIPO_DATO_STR');
         if ($fecha_respuesta_prisma != 'null') {
             $fecha_respuesta_prisma = date($fecha_respuesta_prisma);
         }
@@ -226,17 +226,17 @@ class persona
         if ($estado_movimiento == 1) {
             $datos_cuenta_corriente['importe'] = 0;
         }
-        $this->set_importe_pago($datos_cuenta_corriente['importe']);
         //aca voy a tener que obtener el id_motivo_rechazo de la tabla motivo_rechazo asociado al codigo_rechazo que viene en el txt
-        $id_motivo_rechazo1 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['rechazo1'], constantes::get_valor_constante('TIPO_DATO_INT'));
+        $id_motivo_rechazo1 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['rechazo1'], constantes::get_valor_constante('TIPO_DATO_STR'));
         $this->set_id_motivo_rechazo1($id_motivo_rechazo1);
-        $descripcion_rechazo1 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['$descripcion_rechazo1'], constantes::get_valor_constante('TIPO_DATO_INT'));
+        $descripcion_rechazo1 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['$descripcion_rechazo1'], constantes::get_valor_constante('TIPO_DATO_STR'));
         $this->set_descripcion_rechazo1($descripcion_rechazo1);
-        $id_motivo_rechazo2 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['rechazo2'], constantes::get_valor_constante('TIPO_DATO_INT'));
+        $id_motivo_rechazo2 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['rechazo2'], constantes::get_valor_constante('TIPO_DATO_STR'));
         $this->set_id_motivo_rechazo2($id_motivo_rechazo2);
-        $descripcion_rechazo2 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['$descripcion_rechazo2'], constantes::get_valor_constante('TIPO_DATO_INT'));
+        $descripcion_rechazo2 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['$descripcion_rechazo2'], constantes::get_valor_constante('TIPO_DATO_STR'));
         $this->set_descripcion_rechazo2($descripcion_rechazo2);
         //Fin datos del rechazo
+        $this->set_importe_pago($datos_cuenta_corriente['importe']);
 
         $numero_comprobante = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['numero_comprobante'], constantes::get_valor_constante('TIPO_DATO_INT'));
         $this->set_numero_comprobante($numero_comprobante);
@@ -1613,7 +1613,7 @@ class persona
         $sql = "INSERT INTO transaccion_cuenta_corriente (id_alumno_cc, fecha_transaccion, id_estado_cuota, importe, fecha_pago, fecha_respuesta_prisma
                                                          ,usuario_ultima_modificacion, fecha_ultima_modificacion
                                                          ,numero_comprobante, numero_lote, numero_autorizacion, id_medio_pago
-                                                         ,id_marca_tarjeta, codigo_rechazo1, codigo_rechazo2) 
+                                                         ,id_marca_tarjeta, id_motivo_rechazo1, id_motivo_rechazo2) 
 				VALUES ({$this->id_alumno_cc}, now(),'{$this->id_estado_cuota}', '{$this->importe_pago}', {$this->fecha_pago}, {$this->fecha_respuesta_prisma}
 				       ,'{$this->usuario_ultima_modificacion}', now()
 				       ,{$this->numero_comprobante}, {$this->numero_lote}, {$this->numero_autorizacion}, '{$this->id_medio_pago}'
