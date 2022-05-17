@@ -650,3 +650,39 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/alta-manual-pagos 13/05/2022
+CREATE OR REPLACE FUNCTION agregar_campos_transaccion_cuenta_corriente() RETURNS VOID AS
+$$
+BEGIN
+    IF NOT EXISTS ( SELECT '' FROM information_schema.columns WHERE table_name = 'transaccion_cuenta_corriente' and column_name = 'codigo_error_debito') THEN
+
+        ALTER TABLE public.transaccion_cuenta_corriente
+            ADD COLUMN codigo_error_debito varchar(3);
+
+        ALTER TABLE public.transaccion_cuenta_corriente
+            ADD COLUMN descripcion_error_debito varchar(40);
+
+        --quito la fk con id_motivo_rechazo1
+        ALTER TABLE public.transaccion_cuenta_corriente
+            DROP CONSTRAINT id_motivo_rechazo1;
+
+        --quito la fk con id_motivo_rechazo2
+        ALTER TABLE public.transaccion_cuenta_corriente
+            DROP CONSTRAINT id_motivo_rechazo2;
+
+        ALTER TABLE public.transaccion_cuenta_corriente DISABLE TRIGGER tauditoria_transaccion_cuenta_corriente;
+
+        --cambio el tipo de dato del campo fecha_respuesta_prisma
+        ALTER TABLE public.transaccion_cuenta_corriente
+            ALTER COLUMN fecha_respuesta_prisma TYPE varchar(8);
+
+        ALTER TABLE public_auditoria.logs_transaccion_cuenta_corriente
+            ALTER COLUMN fecha_respuesta_prisma TYPE varchar(8);
+
+        ALTER TABLE public.transaccion_cuenta_corriente ENABLE TRIGGER tauditoria_transaccion_cuenta_corriente;
+
+    END IF;
+END;
+$$ LANGUAGE 'plpgsql';

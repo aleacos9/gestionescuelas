@@ -24,3 +24,6 @@ DROP FUNCTION IF EXISTS alta_parametro_sistema_ingresa_importe_en_generacion_car
 
 --Alejandro feature/alta-manual-pagos 05/05/2022
 DROP FUNCTION IF EXISTS cambio_campos_archivo_respuesta();
+
+--Alejandro feature/alta-manual-pagos 13/05/2022
+DROP FUNCTION IF EXISTS agregar_campos_transaccion_cuenta_corriente();

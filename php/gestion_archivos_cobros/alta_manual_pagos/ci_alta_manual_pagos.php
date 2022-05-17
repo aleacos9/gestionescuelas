@@ -110,7 +110,7 @@ class ci_alta_manual_pagos extends ci_administrar_formas_cobro
 
     function conf_evt__cuadro_cuenta_corriente__seleccion(toba_evento_usuario $evento, $fila)
     {
-        if ($this->s__datos_alta_manual_pago[$fila]['importe'] < 0) {
+        if ($this->s__datos_alta_manual_pago[$fila]['importe'] <= 0) {
             $evento->desactivar();
         } else {
             $evento->activar();

@@ -24,3 +24,6 @@ SELECT alta_parametro_sistema_ingresa_importe_en_generacion_cargos();
 
 --Alejandro feature/alta-manual-pagos 05/05/2022
 SELECT cambio_campos_archivo_respuesta();
+
+--Alejandro feature/alta-manual-pagos 13/05/2022
+SELECT agregar_campos_transaccion_cuenta_corriente();

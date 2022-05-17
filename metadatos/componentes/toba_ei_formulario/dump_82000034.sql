@@ -621,9 +621,9 @@ INSERT INTO apex_objeto_ei_formulario_ef (objeto_ei_formulario_fila, objeto_ei_f
 	'82000125', --objeto_ei_formulario_fila
 	'82000034', --objeto_ei_formulario
 	'gestionescuelas', --objeto_ei_formulario_proyecto
-	'importe', --identificador
+	'importe_cuota', --identificador
 	'ef_editable_moneda', --elemento_formulario
-	'importe', --columnas
+	'importe_cuota', --columnas
 	'0', --obligatorio
 	'0', --oculto_relaja_obligatorio
 	'7', --orden

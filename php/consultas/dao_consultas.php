@@ -508,7 +508,6 @@ class dao_consultas
                       ,(COALESCE(importe, 0)) AS importe
                       ,fecha_pago
                       ,fecha_respuesta_prisma
-                      ,id_motivo_rechazo
                       ,usuario_ultima_modificacion
                       ,fecha_ultima_modificacion
                       ,numero_comprobante
@@ -516,6 +515,10 @@ class dao_consultas
                       ,numero_autorizacion
                       ,id_medio_pago
                       ,id_marca_tarjeta
+                      ,id_motivo_rechazo1                                            
+                      ,id_motivo_rechazo2
+                      ,codigo_error_debito
+                      ,descripcion_error_debito
 				FROM transaccion_cuenta_corriente 
 				$where
 			   ";
@@ -532,57 +535,69 @@ class dao_consultas
             if (isset($filtro['cuota'])) {
                 $where .= " AND ar.cuota = '{$filtro['cuota']}'";
             }
+            if (isset($filtro['id_alumno_cc'])) {
+                $where .= " AND id_alumno_cc = '{$filtro['id_alumno_cc']}'";
+            }
         }
 
         $sql = "SELECT a.id_alumno
                       ,a.legajo
                       ,a.regular
-                      ,max_fecha.id_alumno_cc
-                      ,max_fecha.ultima_fecha
-                      ,max_fecha.id_archivo_respuesta
-                      ,max_fecha.id_marca_tarjeta
-                      ,max_fecha.id_medio_pago
-                      ,max_fecha.nombre_archivo
-                      ,max_fecha.numero_establecimiento
-                      ,max_fecha.usuario_alta
-                      ,max_fecha.cantidad_total_debitos
-                      ,max_fecha.importe_total_debitos
-                      ,max_fecha.cuota
-                      ,max_fecha.id_archivo_respuesta_detalle
-                      ,max_fecha.registro
-                      ,max_fecha.numero_codigo_banco_pagador
-                      ,max_fecha.numero_sucursal_banco_pagador
-                      ,max_fecha.numero_lote
-                      ,max_fecha.codigo_transaccion
-                      ,max_fecha.numero_tarjeta
-                      ,max_fecha.fecha_presentacion
-                      ,max_fecha.importe
-                      ,max_fecha.id_alumno
-                      ,max_fecha.codigo_alta_identificador
-                      ,max_fecha.cuenta_debito_fondos
-                      ,max_fecha.estado_movimiento
-                      ,max_fecha.rechazo1
-                      ,max_fecha.descripcion_rechazo1
-                      ,max_fecha.rechazo2
-                      ,max_fecha.descripcion_rechazo2
-                      ,max_fecha.numero_tarjeta_nueva
-                      ,max_fecha.fecha_devolucion_respuesta
-                      ,max_fecha.fecha_pago
-                      ,max_fecha.numero_cartera_cliente
-                      ,max_fecha.fecha_generacion
-                      ,max_fecha.contenido
-                      ,max_fecha.codigo_error_debito
-                      ,max_fecha.descripcion_error_debito
-                      ,max_fecha.fecha_origen_venc_debito
+                      ,r1.id_alumno_cc
+                      ,max_fecha.UltimaFecha
+                      ,r1.id_archivo_respuesta
+                      ,r1.id_marca_tarjeta
+                      ,r1.id_medio_pago
+                      ,r1.nombre_archivo
+                      ,r1.numero_establecimiento
+                      ,r1.usuario_alta
+                      ,r1.cantidad_total_debitos
+                      ,r1.importe_total_debitos
+                      ,r1.cuota
+                      ,r1.id_archivo_respuesta_detalle
+                      ,r1.registro
+                      ,r1.numero_codigo_banco_pagador
+                      ,r1.numero_sucursal_banco_pagador
+                      ,r1.numero_lote
+                      ,r1.codigo_transaccion
+                      ,r1.numero_tarjeta
+                      ,r1.fecha_presentacion
+                      ,r1.importe
+                      ,r1.id_alumno
+                      ,r1.codigo_alta_identificador
+                      ,r1.cuenta_debito_fondos
+                      ,r1.estado_movimiento
+                      ,r1.rechazo1
+                      ,r1.descripcion_rechazo1
+                      ,r1.rechazo2
+                      ,r1.descripcion_rechazo2
+                      ,r1.numero_tarjeta_nueva
+                      ,r1.fecha_devolucion_respuesta
+                      ,r1.fecha_pago
+                      ,r1.numero_cartera_cliente
+                      ,r1.fecha_generacion
+                      ,r1.contenido
+                      ,CASE WHEN r1.codigo_error_debito = '' THEN 'NUL'
+                            ELSE r1.codigo_error_debito
+                            END AS codigo_error_debito  
+                      ,CASE WHEN r1.descripcion_error_debito = '' THEN 'NUL'
+                            ELSE r1.descripcion_error_debito
+                            END AS descripcion_error_debito
+                      ,r1.fecha_origen_venc_debito
                 FROM alumno_cuenta_corriente acc
+                         INNER JOIN (SELECT ad.id_alumno_cc
+                                           ,MAX(SUBSTRING(ar.Nombre_archivo FROM 10 FOR 8)) AS UltimaFecha
+                                     FROM archivo_respuesta ar
+                                        INNER JOIN archivo_respuesta_detalle ad ON ad.id_archivo_respuesta = ar.id_archivo_respuesta
+                                     WHERE 1=1 $where
+                                     GROUP BY id_alumno_cc) AS max_fecha ON max_fecha.id_alumno_cc = acc.id_alumno_cc
                          INNER JOIN (SELECT ar.id_archivo_respuesta
                                            ,ar.id_marca_tarjeta
                                            ,ar.id_medio_pago
                                            ,ar.nombre_archivo
                                            ,ar.numero_establecimiento
                                            ,ar.usuario_alta
-                                           ,MAX(SUBSTRING(ar.nombre_archivo FROM 10 FOR 8)) AS ultima_fecha
-                                           --,MAX(ar.fecha_generacion_archivo_respuesta) AS 
+                                           ,SUBSTRING(ar.nombre_archivo FROM 10 FOR 8) AS fecha
                                            ,ar.cantidad_total_debitos
                                            ,ar.importe_total_debitos
                                            ,ar.cuota
@@ -614,7 +629,7 @@ class dao_consultas
                                            ,ard.fecha_origen_venc_debito
                                            ,ard.id_alumno_cc
                                      FROM archivo_respuesta ar
-                                        INNER JOIN archivo_respuesta_detalle ard ON ard.id_archivo_respuesta = ar.id_archivo_respuesta
+                                              INNER JOIN archivo_respuesta_detalle ard ON ard.id_archivo_respuesta = ar.id_archivo_respuesta
                                      WHERE 1=1 AND ard.procesado = 0 $where
                                      GROUP BY ar.id_archivo_respuesta
                                              ,ar.id_marca_tarjeta
@@ -651,9 +666,9 @@ class dao_consultas
                                              ,ard.codigo_error_debito
                                              ,ard.descripcion_error_debito
                                              ,ard.fecha_origen_venc_debito
-                                             ,ard.id_alumno_cc) AS max_fecha ON max_fecha.id_alumno_cc = acc.id_alumno_cc
+                                             ,ard.id_alumno_cc) AS r1 ON r1.id_alumno_cc = max_fecha.id_alumno_cc and max_fecha.UltimaFecha = r1.fecha
                          INNER JOIN alumno a ON a.id_alumno = acc.id_alumno
-                WHERE 1=1
+                WHERE 1=1;
 			   ";
 
         toba::logger()->debug(__METHOD__." : ".$sql);
@@ -935,7 +950,7 @@ class dao_consultas
                                                                              INNER JOIN transaccion_cuenta_corriente tcc on (estado_actual.id_alumno_cc = tcc.id_alumno_cc AND tcc.fecha_transaccion = estado_actual.ultimo_cambio)
                                                                              INNER JOIN alumno_cuenta_corriente acc on tcc.id_alumno_cc = acc.id_alumno_cc
                                                                              LEFT OUTER JOIN estado_cuota e on e.id_estado_cuota = tcc.id_estado_cuota
-                                                                             INNER JOIN marca_tarjeta mt on tcc.id_marca_tarjeta = mt.id_marca_tarjeta
+                                                                             LEFT OUTER JOIN marca_tarjeta mt on tcc.id_marca_tarjeta = mt.id_marca_tarjeta
                                                                              INNER JOIN medio_pago mp on tcc.id_medio_pago = mp.id_medio_pago
                                                                     ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
                                           WHERE 1=1 AND substring(acc.cuota, 1, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')

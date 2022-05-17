@@ -69,6 +69,8 @@ class persona
     protected $descripcion_rechazo1;
     protected $id_motivo_rechazo2;
     protected $descripcion_rechazo2;
+    protected $codigo_error_debito;
+    protected $descripcion_error_debito;
     protected $numero_comprobante;
     protected $numero_lote;
     protected $numero_autorizacion;
@@ -213,19 +215,16 @@ class persona
 
         $fecha_pago = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['fecha_pago'], 'TIPO_DATO_STR');
         $this->set_fecha_pago($fecha_pago);
-        $fecha_respuesta_prisma = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['fecha_devolucion_respuesta'], 'TIPO_DATO_STR');
-        if ($fecha_respuesta_prisma != 'null') {
+        $fecha_respuesta_prisma = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['fecha_devolucion_respuesta2'], 'TIPO_DATO_STR');
+        /*if ($fecha_respuesta_prisma != 'null') {
             $fecha_respuesta_prisma = date($fecha_respuesta_prisma);
-        }
+        }*/
         $this->set_fecha_respuesta_prisma($fecha_respuesta_prisma);
 
         //Datos del rechazo
         $estado_movimiento = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['estado_movimiento'], constantes::get_valor_constante('TIPO_DATO_INT'));
         $this->set_estado_movimiento($estado_movimiento);
-        //Si el movimiento arroja error => seteo el importe en 0
-        if ($estado_movimiento == 1) {
-            $datos_cuenta_corriente['importe'] = 0;
-        }
+
         //aca voy a tener que obtener el id_motivo_rechazo de la tabla motivo_rechazo asociado al codigo_rechazo que viene en el txt
         $id_motivo_rechazo1 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['rechazo1'], constantes::get_valor_constante('TIPO_DATO_STR'));
         $this->set_id_motivo_rechazo1($id_motivo_rechazo1);
@@ -236,6 +235,22 @@ class persona
         $descripcion_rechazo2 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['$descripcion_rechazo2'], constantes::get_valor_constante('TIPO_DATO_STR'));
         $this->set_descripcion_rechazo2($descripcion_rechazo2);
         //Fin datos del rechazo
+
+        //Si el debito Ó el movimiento tuvo error  => seteo el importe en 0 y el estado en rechazada -- Solo para el alta_masiva
+        if ($this->modo == 'alta_masiva') {
+            if (($estado_movimiento == 1) or ($datos_cuenta_corriente['codigo_error_debito'] != 'NUL')) {
+                $datos_cuenta_corriente['importe'] = 0;
+                $this->set_id_estado_cuota(4);
+            }
+        }
+        //error en el debito
+        $codigo_error_debito = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['codigo_error_debito'], constantes::get_valor_constante('TIPO_DATO_STR'));
+        $this->set_codigo_error_debito($codigo_error_debito);
+        $descripcion_error_debito = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['descripcion_error_debito'], constantes::get_valor_constante('TIPO_DATO_STR'));
+        $this->set_descripcion_error_debito($descripcion_error_debito);
+
+        //fin error en débito y crédito
+
         $this->set_importe_pago($datos_cuenta_corriente['importe']);
 
         $numero_comprobante = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['numero_comprobante'], constantes::get_valor_constante('TIPO_DATO_INT'));
@@ -514,6 +529,18 @@ class persona
     {
         toba::logger()->info("set_descripcion_rechazo2 = " .$descripcion_rechazo2);
         $this->descripcion_rechazo2 = $descripcion_rechazo2;
+    }
+
+    public function set_codigo_error_debito($codigo_error_debito)
+    {
+        toba::logger()->info("set_codigo_error_debito = " .$codigo_error_debito);
+        $this->codigo_error_debito = $codigo_error_debito;
+    }
+
+    public function set_descripcion_error_debito($descripcion_error_debito)
+    {
+        toba::logger()->info("set_descripcion_error_debito = " .$descripcion_error_debito);
+        $this->descripcion_error_debito = $descripcion_error_debito;
     }
 
     public function set_id_entidad_bancaria($id_entidad_bancaria)
@@ -1103,6 +1130,7 @@ class persona
                              WHEN subconsulta_cuenta_corriente.numero_comprobante IS NULL THEN 'Cuota'
                              ELSE 'Pago'
                         END) AS concepto*/
+                      ,acc.cuota
                       ,(CASE WHEN (subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL AND acc.id_cargo_cuenta_corriente = 1) THEN 'Pago de Inscripción Anual ' --|| acc.cuota
                              WHEN (subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL AND acc.id_cargo_cuenta_corriente = 2) THEN 'Pago de cuota ' || acc.cuota
                              ELSE acc.descripcion
@@ -1126,6 +1154,11 @@ class persona
                       ,mr.nombre AS motivo_rechazo1
                       ,subconsulta_cuenta_corriente.id_motivo_rechazo2
                       ,mr2.nombre AS motivo_rechazo2
+                      ,(CASE WHEN subconsulta_cuenta_corriente.id_motivo_rechazo1 IS NOT NULL THEN mr.nombre
+                             WHEN subconsulta_cuenta_corriente.id_motivo_rechazo2 IS NOT NULL THEN mr.nombre
+                             WHEN subconsulta_cuenta_corriente.codigo_error_debito IS NOT NULL THEN subconsulta_cuenta_corriente.descripcion_error_debito
+                             ELSE ''
+                        END) AS motivo_rechazo  
                       ,subconsulta_cuenta_corriente.numero_comprobante
                       ,subconsulta_cuenta_corriente.numero_autorizacion
                       ,subconsulta_cuenta_corriente.numero_lote
@@ -1134,7 +1167,7 @@ class persona
                     INNER JOIN persona p on p.id_persona = a.id_persona
                     INNER JOIN (select id_alumno_cc, id_transaccion_cc, fecha_transaccion, id_estado_cuota, importe, fecha_pago
                                       ,fecha_respuesta_prisma, numero_comprobante, numero_autorizacion, numero_lote
-                                      ,id_medio_pago, id_marca_tarjeta, id_motivo_rechazo1, id_motivo_rechazo2
+                                      ,id_medio_pago, id_marca_tarjeta, id_motivo_rechazo1, id_motivo_rechazo2, codigo_error_debito, descripcion_error_debito
                                 from transaccion_cuenta_corriente) as subconsulta_cuenta_corriente ON subconsulta_cuenta_corriente.id_alumno_cc = acc.id_alumno_cc
                     INNER JOIN estado_cuota ec on ec.id_estado_cuota = subconsulta_cuenta_corriente.id_estado_cuota
                     LEFT OUTER JOIN motivo_rechazo mr on mr.id_motivo_rechazo = subconsulta_cuenta_corriente.id_motivo_rechazo1
@@ -1142,7 +1175,8 @@ class persona
                     LEFT OUTER JOIN medio_pago mp on mp.id_medio_pago = subconsulta_cuenta_corriente.id_medio_pago
                     LEFT OUTER JOIN marca_tarjeta mt on mt.id_marca_tarjeta = subconsulta_cuenta_corriente.id_marca_tarjeta
                 WHERE p.id_persona = {$this->persona} --a.id_alumno = {$this->persona}
-                ORDER BY acc.id_alumno_cc
+                ORDER BY acc.cuota
+                        ,acc.id_alumno_cc
                ";
 
         toba::logger()->debug(__METHOD__." : ".$sql);
@@ -1613,11 +1647,11 @@ class persona
         $sql = "INSERT INTO transaccion_cuenta_corriente (id_alumno_cc, fecha_transaccion, id_estado_cuota, importe, fecha_pago, fecha_respuesta_prisma
                                                          ,usuario_ultima_modificacion, fecha_ultima_modificacion
                                                          ,numero_comprobante, numero_lote, numero_autorizacion, id_medio_pago
-                                                         ,id_marca_tarjeta, id_motivo_rechazo1, id_motivo_rechazo2) 
-				VALUES ({$this->id_alumno_cc}, now(),'{$this->id_estado_cuota}', '{$this->importe_pago}', {$this->fecha_pago}, {$this->fecha_respuesta_prisma}
+                                                         ,id_marca_tarjeta, id_motivo_rechazo1, id_motivo_rechazo2, codigo_error_debito, descripcion_error_debito) 
+				VALUES ({$this->id_alumno_cc}, now(),'{$this->id_estado_cuota}', '{$this->importe_pago}', '{$this->fecha_pago}', {$this->fecha_respuesta_prisma}
 				       ,'{$this->usuario_ultima_modificacion}', now()
 				       ,{$this->numero_comprobante}, {$this->numero_lote}, {$this->numero_autorizacion}, '{$this->id_medio_pago}'
-				       ,{$this->id_marca_tarjeta}, {$this->id_motivo_rechazo1}, {$this->id_motivo_rechazo2})
+				       ,{$this->id_marca_tarjeta}, {$this->id_motivo_rechazo1}, {$this->id_motivo_rechazo2}, {$this->codigo_error_debito}, {$this->descripcion_error_debito})
 			   ";
 
         toba::logger()->debug(__METHOD__ . " : " . $sql);
