@@ -1156,6 +1156,7 @@ class persona
                       ,mr2.nombre AS motivo_rechazo2
                       ,(CASE WHEN subconsulta_cuenta_corriente.id_motivo_rechazo1 IS NOT NULL THEN mr.nombre
                              WHEN subconsulta_cuenta_corriente.id_motivo_rechazo2 IS NOT NULL THEN mr.nombre
+                             WHEN subconsulta_cuenta_corriente.descripcion_error_debito ILIKE '%NUL%' THEN ''
                              WHEN subconsulta_cuenta_corriente.codigo_error_debito IS NOT NULL THEN subconsulta_cuenta_corriente.descripcion_error_debito
                              ELSE ''
                         END) AS motivo_rechazo  
@@ -1177,6 +1178,7 @@ class persona
                 WHERE p.id_persona = {$this->persona} --a.id_alumno = {$this->persona}
                 ORDER BY acc.cuota
                         ,acc.id_alumno_cc
+                        ,subconsulta_cuenta_corriente.id_transaccion_cc
                ";
 
         toba::logger()->debug(__METHOD__." : ".$sql);
@@ -1648,7 +1650,7 @@ class persona
                                                          ,usuario_ultima_modificacion, fecha_ultima_modificacion
                                                          ,numero_comprobante, numero_lote, numero_autorizacion, id_medio_pago
                                                          ,id_marca_tarjeta, id_motivo_rechazo1, id_motivo_rechazo2, codigo_error_debito, descripcion_error_debito) 
-				VALUES ({$this->id_alumno_cc}, now(),'{$this->id_estado_cuota}', '{$this->importe_pago}', '{$this->fecha_pago}', {$this->fecha_respuesta_prisma}
+				VALUES ({$this->id_alumno_cc}, now(),'{$this->id_estado_cuota}', '{$this->importe_pago}', {$this->fecha_pago}, {$this->fecha_respuesta_prisma}
 				       ,'{$this->usuario_ultima_modificacion}', now()
 				       ,{$this->numero_comprobante}, {$this->numero_lote}, {$this->numero_autorizacion}, '{$this->id_medio_pago}'
 				       ,{$this->id_marca_tarjeta}, {$this->id_motivo_rechazo1}, {$this->id_motivo_rechazo2}, {$this->codigo_error_debito}, {$this->descripcion_error_debito})
