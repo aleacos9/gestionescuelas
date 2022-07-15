@@ -4,10 +4,27 @@ class gestionescuelas_ext_ci extends toba_ci
 {
     protected $s__seleccion;
     protected $s__datos_filtro;
+    protected $s__perfil_funcional;
+    protected $s__usuario = null;
+    protected $s__id_persona = null;
+    protected $s__persona_editar;
+    protected $s__alumno_editar;
+    protected $s__nombre_alumno;
+    protected $s__datos_allegados = array();
 
     public function ini()
     {
+        $this->s__usuario = toba::usuario()->get_id();
 
+        //Obtengo los perfiles funcionales asociados al usuario
+        $this->s__perfil_funcional = dao_consultas::get_perfiles_funcionales_por_usuario($this->s__usuario, TRUE);
+
+        //***INICIO obtención del id_persona del usuario loggueado***//
+        $this->s__id_persona = dao_consultas::get_id_persona_x_id_usuario($this->s__usuario);
+        if (isset($this->s__id_persona)) {
+            $this->s__id_persona = $this->s__id_persona[0]['id_persona'];
+        }
+        //***FIN obtención del id_persona del usuario loggueado***//
     }
 
     //---- filtro -----------------------------------------------------------------------

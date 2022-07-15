@@ -1,10 +1,6 @@
 <?php
 class ci_vincular_allegados extends ci_abm_personas
 {
-    protected $s__alumno_editar;
-    protected $s__nombre_alumno;
-    protected $s__datos_allegados = array();
-
     //---- Funciones ---------------------------------------------------------------------
 
     /*

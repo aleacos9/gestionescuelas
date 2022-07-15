@@ -3,7 +3,6 @@ class ci_abm_personas_interno extends ci_abm_personas
 {
     protected $s__persona_seleccionada;
     protected $s__documento_seleccionado;
-    protected $s__datos_allegados;
 
     public function conf()
     {

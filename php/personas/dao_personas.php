@@ -230,4 +230,84 @@ class dao_personas
             return $alumnos;
         }
     }
+
+    /*
+     * Retorna la deuda de un alumno en particular
+     */
+    public static function get_deuda_por_alumno($filtro = null)
+    {
+        $where = 'WHERE 1 = 1';
+
+        if (isset($filtro)) {
+            if (isset($filtro['id_persona'])) {
+                $where .= " AND p.id_persona = '{$filtro['id_persona']}'";
+            }
+
+            if (isset($filtro['fecha_desde'])) {
+                $where .= "AND ((subconsulta_cuenta_corriente.fecha_pago >= '{$filtro['fecha_desde']}') OR (acc.fecha_generacion_cc >= '{$filtro['fecha_desde']}'))";
+            }
+
+            if (isset($filtro['fecha_hasta'])) {
+                $where .= "AND ((subconsulta_cuenta_corriente.fecha_pago < '{$filtro['fecha_hasta']}') OR (acc.fecha_generacion_cc < '{$filtro['fecha_hasta']}'))";
+            }
+        }
+
+        $sql = "SELECT acc.id_alumno_cc
+                      ,acc.id_alumno
+                      ,acc.usuario_alta
+                      ,acc.cuota
+                      ,(CASE WHEN (subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL AND acc.id_cargo_cuenta_corriente = 1) THEN 'Pago de Inscripción Anual ' --|| acc.cuota
+                             WHEN (subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL AND acc.id_cargo_cuenta_corriente = 2) THEN 'Pago de cuota ' || acc.cuota
+                             ELSE acc.descripcion
+                       END) AS concepto
+                      ,(CASE WHEN subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL THEN subconsulta_cuenta_corriente.fecha_pago
+                             ELSE acc.fecha_generacion_cc
+                       END) AS fecha
+                      ,acc.id_cargo_cuenta_corriente
+                      ,subconsulta_cuenta_corriente.id_medio_pago
+                      ,(CASE WHEN subconsulta_cuenta_corriente.id_medio_pago IS NOT NULL THEN mp.nombre
+                             ELSE ''
+                       END) AS medio_pago
+                      ,subconsulta_cuenta_corriente.id_marca_tarjeta
+                      ,(CASE WHEN subconsulta_cuenta_corriente.id_marca_tarjeta IS NOT NULL THEN mt.nombre
+                             ELSE ''
+                      END) AS marca_tarjeta
+                      ,subconsulta_cuenta_corriente.id_estado_cuota
+                      ,ec.nombre as estado_cuota
+                      ,subconsulta_cuenta_corriente.importe
+                      ,subconsulta_cuenta_corriente.id_motivo_rechazo1
+                      ,mr.nombre AS motivo_rechazo1
+                      ,subconsulta_cuenta_corriente.id_motivo_rechazo2
+                      ,mr2.nombre AS motivo_rechazo2
+                      ,(CASE WHEN subconsulta_cuenta_corriente.id_motivo_rechazo1 IS NOT NULL THEN mr.nombre
+                             WHEN subconsulta_cuenta_corriente.id_motivo_rechazo2 IS NOT NULL THEN mr.nombre
+                             WHEN subconsulta_cuenta_corriente.descripcion_error_debito ILIKE '%NUL%' THEN ''
+                             WHEN subconsulta_cuenta_corriente.codigo_error_debito IS NOT NULL THEN subconsulta_cuenta_corriente.descripcion_error_debito
+                             ELSE ''
+                       END) AS motivo_rechazo
+                      ,subconsulta_cuenta_corriente.numero_comprobante
+                      ,subconsulta_cuenta_corriente.numero_autorizacion
+                      ,subconsulta_cuenta_corriente.numero_lote
+                FROM alumno_cuenta_corriente acc
+                         INNER JOIN alumno a on acc.id_alumno = a.id_alumno
+                         INNER JOIN persona p on p.id_persona = a.id_persona
+                         INNER JOIN (select id_alumno_cc, id_transaccion_cc, fecha_transaccion, id_estado_cuota, importe, fecha_pago
+                                          ,fecha_respuesta_prisma, numero_comprobante, numero_autorizacion, numero_lote
+                                          ,id_medio_pago, id_marca_tarjeta, id_motivo_rechazo1, id_motivo_rechazo2, codigo_error_debito, descripcion_error_debito
+                                     from transaccion_cuenta_corriente) as subconsulta_cuenta_corriente ON subconsulta_cuenta_corriente.id_alumno_cc = acc.id_alumno_cc
+                         INNER JOIN estado_cuota ec on ec.id_estado_cuota = subconsulta_cuenta_corriente.id_estado_cuota
+                         LEFT OUTER JOIN motivo_rechazo mr on mr.id_motivo_rechazo = subconsulta_cuenta_corriente.id_motivo_rechazo1
+                         LEFT OUTER JOIN motivo_rechazo mr2 on mr2.id_motivo_rechazo = subconsulta_cuenta_corriente.id_motivo_rechazo2
+                         LEFT OUTER JOIN medio_pago mp on mp.id_medio_pago = subconsulta_cuenta_corriente.id_medio_pago
+                         LEFT OUTER JOIN marca_tarjeta mt on mt.id_marca_tarjeta = subconsulta_cuenta_corriente.id_marca_tarjeta
+                $where
+                ORDER BY acc.cuota
+                        ,acc.id_alumno_cc
+                        ,subconsulta_cuenta_corriente.id_transaccion_cc
+               ";
+
+        toba::logger()->debug(__METHOD__." : ".$sql);
+        return toba::db()->consultar($sql);
+
+    }
 }

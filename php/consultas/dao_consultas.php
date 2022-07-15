@@ -1343,4 +1343,110 @@ class dao_consultas
         toba::logger()->debug(__METHOD__." : ".$sql);
         return toba::db()->consultar($sql);
     }
+
+    /**
+     * Obtiene el listado de los perfiles funcionales asociados a un usuario en particular
+     */
+    public static function get_perfiles_funcionales_por_usuario($usuario, $ordena = null)
+    {
+        $where = 'WHERE 1 = 1';
+
+        if (isset($usuario)) {
+            $where = $where . " AND usuario = '{$usuario}'";
+        }
+
+        $sql = "SELECT proyecto
+					  ,usuario_grupo_acc
+					  ,usuario_perfil_datos
+				FROM desarrollo.apex_usuario_proyecto
+				$where
+					AND proyecto = 'gestionescuelas'
+		       ";
+
+        toba::logger()->debug(__METHOD__." : ".$sql);
+        $datos = toba::db('toba_3')->consultar($sql);
+
+        if (isset($datos) && ($ordena == true)) {
+            return self::ordenar_perfiles_funcionales($datos);
+        } else {
+            return $datos;
+        }
+    }
+
+    public static function ordenar_perfiles_funcionales($datos)
+    {
+        if (isset($datos)) {
+            $funcionales = array();
+            $cant = count($datos);
+            for ($i = 0; $i < $cant; $i++) {			//Recorro los valores formando un arreglo posicional.
+                $funcionales[] = $datos[$i]['usuario_grupo_acc'];
+            }
+
+            toba::logger()->debug('Perfiles funcionales desde el ordenar_perfiles:');
+            toba::logger()->debug($funcionales);
+            return $funcionales;
+        }
+    }
+
+    /*
+    * Retorna el id de la persona según un usuario
+    */
+    public static function get_id_persona_x_id_usuario($id_usuario = null)
+    {
+        $where = 'WHERE 1 = 1';
+
+        if (isset($id_usuario)) {
+            $where = $where . " AND ptd.numero = '{$id_usuario}'";
+        }
+
+        $sql = "SELECT persona.id_persona
+			    FROM persona
+			        INNER JOIN persona_tipo_documento ptd on persona.id_persona = ptd.id_persona
+				$where
+		       ";
+
+        toba::logger()->debug(__METHOD__." : ".$sql);
+        return toba::db()->consultar($sql);
+    }
+
+    /*
+     * Retorna todas las personas que son tutores y tienen al menos 1 allegado activo
+     */
+    public static function get_tutores_con_allegados($filtro = null)
+    {
+        $where = 'WHERE 1 = 1';
+
+        if (isset($filtro)) {
+            if (isset($filtro['id_persona'])) {
+                $where .= " AND p.id_persona = '{$filtro['id_persona']}'";
+            }
+        }
+
+        $sql = "SELECT DISTINCT(p.id_persona) as id_persona
+                      ,p.apellidos
+                      ,p.nombres
+                      ,(p.apellidos || ', ' || p.nombres) as persona
+                      ,p.correo_electronico
+                      ,p.es_alumno
+                      ,pa.tutor
+                      ,p.usuario
+                      ,td.nombre as tipo_documento
+                      ,td.nombre_corto as tipo_documento_corto
+                      ,ptd.numero as identificacion
+                FROM persona p
+                    INNER JOIN persona_allegado pa on p.id_persona = pa.id_persona and pa.tutor = 'S' and pa.activo = 'S'
+                    LEFT OUTER JOIN (persona_tipo_documento ptd JOIN tipo_documento td on ptd.id_tipo_documento = td.id_tipo_documento)
+                                    ON ptd.id_persona = p.id_persona AND td.jerarquia = (SELECT MIN(X1.jerarquia)
+                                                                                         FROM tipo_documento X1
+                                                                                            ,persona_tipo_documento X2
+                                                                                         WHERE X1.id_tipo_documento = X2.id_tipo_documento
+                                                                                           AND X2.id_persona = p.id_persona)
+                $where 
+                    AND p.es_alumno = 'N'
+                ORDER BY p.id_persona
+               ";
+
+        toba::logger()->debug(__METHOD__." : ".$sql);
+        return toba::db()->consultar($sql);
+    }
 }

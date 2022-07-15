@@ -686,3 +686,27 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/alta-manual-pagos 14/07/2022
+CREATE OR REPLACE FUNCTION actualizar_usuario_a_tutores() RETURNS VOID AS
+$$
+BEGIN
+    UPDATE persona
+    SET usuario = (SELECT ptd.numero as identificacion
+                   FROM persona p
+                            INNER JOIN (SELECT distinct(p2.id_persona) as id_persona, es_alumno
+                                        FROM persona p2
+                                                 INNER JOIN persona_allegado pa on p2.id_persona = pa.id_persona and pa.tutor = 'S'
+                                        WHERE es_alumno = 'N') p2 on p2.id_persona = p.id_persona
+                            LEFT OUTER JOIN (persona_tipo_documento ptd JOIN tipo_documento td on ptd.id_tipo_documento = td.id_tipo_documento)
+                                            ON ptd.id_persona = p.id_persona AND td.jerarquia = (SELECT MIN(X1.jerarquia)
+                                                                                                 FROM tipo_documento X1
+                                                                                                    ,persona_tipo_documento X2
+                                                                                                 WHERE X1.id_tipo_documento = X2.id_tipo_documento
+                                                                                                   AND X2.id_persona = p.id_persona)
+                   WHERE p.id_persona = p.id_persona
+                   ORDER BY p2.id_persona)
+    WHERE 1=1;
+END;
+$$ LANGUAGE 'plpgsql';

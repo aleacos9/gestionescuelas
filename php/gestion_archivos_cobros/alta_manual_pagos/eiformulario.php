@@ -65,6 +65,22 @@ class eiformulario extends gestionescuelas_ei_formulario
 				    this.ef('numero_comprobante').set_obligatorio(1);
 				    this.ef('importe').set_obligatorio(1);
 				    break;
+				case '6': //depósito
+				    this.ef('id_marca_tarjeta').resetear_estado();
+				    this.ef('id_marca_tarjeta').set_obligatorio(0);
+				    this.ef('fecha_pago').resetear_estado();
+				    this.ef('numero_comprobante').resetear_estado();
+				    this.ef('numero_lote').resetear_estado();
+				    this.ef('numero_autorizacion').resetear_estado();
+				    this.ef('importe').resetear_estado();
+				
+				    this.ef('fecha_pago').mostrar();
+				    this.ef('numero_comprobante').mostrar();
+				    this.ef('importe').mostrar();
+				    this.ef('concepto').set_obligatorio(1);
+				    this.ef('fecha_pago').set_obligatorio(1);
+				    this.ef('numero_comprobante').set_obligatorio(1);
+				    this.ef('importe').set_obligatorio(1);
 			}     
 		}
 		";

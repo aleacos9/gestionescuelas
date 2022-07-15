@@ -27,3 +27,6 @@ SELECT cambio_campos_archivo_respuesta();
 
 --Alejandro feature/alta-manual-pagos 13/05/2022
 SELECT agregar_campos_transaccion_cuenta_corriente();
+
+--Alejandro feature/alta-manual-pagos 14/07/2022
+SELECT actualizar_usuario_a_tutores();

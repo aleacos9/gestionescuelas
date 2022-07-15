@@ -968,6 +968,7 @@ class persona
                           ,p.id_persona
                           ,(p.apellidos || ', ' || p.nombres) as nombre_persona
                           ,pa.id_alumno
+                          ,subconsulta_nombre_alumno.id_persona as id_persona_alumno  
                           ,subconsulta_nombre_alumno.nombre_alumno as nombre_alumno
                           ,pa.id_tipo_allegado
                           ,ta.nombre as allegado
@@ -1650,7 +1651,7 @@ class persona
                                                          ,usuario_ultima_modificacion, fecha_ultima_modificacion
                                                          ,numero_comprobante, numero_lote, numero_autorizacion, id_medio_pago
                                                          ,id_marca_tarjeta, id_motivo_rechazo1, id_motivo_rechazo2, codigo_error_debito, descripcion_error_debito) 
-				VALUES ({$this->id_alumno_cc}, now(),'{$this->id_estado_cuota}', '{$this->importe_pago}', {$this->fecha_pago}, {$this->fecha_respuesta_prisma}
+				VALUES ({$this->id_alumno_cc}, now(),'{$this->id_estado_cuota}', '{$this->importe_pago}', '{$this->fecha_pago}', {$this->fecha_respuesta_prisma}
 				       ,'{$this->usuario_ultima_modificacion}', now()
 				       ,{$this->numero_comprobante}, {$this->numero_lote}, {$this->numero_autorizacion}, '{$this->id_medio_pago}'
 				       ,{$this->id_marca_tarjeta}, {$this->id_motivo_rechazo1}, {$this->id_motivo_rechazo2}, {$this->codigo_error_debito}, {$this->descripcion_error_debito})

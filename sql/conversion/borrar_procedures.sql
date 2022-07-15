@@ -27,3 +27,6 @@ DROP FUNCTION IF EXISTS cambio_campos_archivo_respuesta();
 
 --Alejandro feature/alta-manual-pagos 13/05/2022
 DROP FUNCTION IF EXISTS agregar_campos_transaccion_cuenta_corriente();
+
+--Alejandro feature/alta-manual-pagos 14/07/2022
+DROP FUNCTION IF EXISTS actualizar_usuario_a_tutores();
