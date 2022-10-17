@@ -19,6 +19,7 @@ class gestionescuelas_autoload
 
 	static protected $clases = array(
 		'ci_abm_parametros_sistema' => 'ABMs/abm_parametros_sistema/ci_abm_parametros_sistema.php',
+		'ci_alta_usuarios' => 'administracion/alta_usuarios/ci_alta_usuarios.php',
 		'constantes' => 'constantes.php',
 		'dao_consultas' => 'consultas/dao_consultas.php',
 		'dt_parametros_sistema' => 'datos/dt_parametros_sistema.php',
@@ -44,10 +45,14 @@ class gestionescuelas_autoload
 		'ci_alta_manual_pagos' => 'gestion_archivos_cobros/alta_manual_pagos/ci_alta_manual_pagos.php',
 		'cn_alta_manual_pagos' => 'gestion_archivos_cobros/alta_manual_pagos/cn_alta_manual_pagos.php',
 		'eiformulario' => 'gestion_archivos_cobros/alta_manual_pagos/eiformulario.php',
+		'ci_alta_masiva_pagos' => 'gestion_archivos_cobros/alta_masiva_pagos/ci_alta_masiva_pagos.php',
+		'cn_alta_masiva_pagos' => 'gestion_archivos_cobros/alta_masiva_pagos/cn_alta_masiva_pagos.php',
 		'ci_generar_cargos_alumnos' => 'gestion_archivos_cobros/generar_cargos_alumnos/ci_generar_cargos_alumnos.php',
 		'cn_generar_cargos_alumnos' => 'gestion_archivos_cobros/generar_cargos_alumnos/cn_generar_cargos_alumnos.php',
 		'gestionescuelas_autoload' => 'gestionescuelas_autoload.php',
 		'gestionescuelas_ext_ci' => 'gestionescuelas_ext_ci.php',
+		'ci_cuadro_control' => 'listados/cuadro_control/ci_cuadro_control.php',
+		'ci_listado_deudores' => 'listados/listado_deudores/ci_listado_deudores.php',
 		'ci_login' => 'login/ci_login.php',
 		'cuadro_autologin' => 'login/cuadro_autologin.php',
 		'pant_login' => 'login/pant_login.php',
@@ -62,6 +67,8 @@ class gestionescuelas_autoload
 		'persona' => 'personas/persona.php',
 		'ci_vincular_allegados' => 'personas/vincular_allegados/ci_vincular_allegados.php',
 		'cn_vincular_allegados' => 'personas/vincular_allegados/cn_vincular_allegados.php',
+		'ci_cuenta_corriente' => 'tutor/cuenta_corriente/ci_cuenta_corriente.php',
+		'ci_deuda_corriente' => 'tutor/deuda_corriente/ci_deuda_corriente.php',
 		'conversion_tipo_datos' => 'utiles/conversion_tipo_datos.php',
 		'fecha' => 'utiles/fecha.php',
 	);

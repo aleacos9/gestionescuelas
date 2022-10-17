@@ -308,6 +308,86 @@ class dao_personas
 
         toba::logger()->debug(__METHOD__." : ".$sql);
         return toba::db()->consultar($sql);
+    }
 
+    /*
+     * Retorna la deuda actual de un alumno en particular
+     */
+    public static function get_deuda_actual_por_alumno($filtro = null)
+    {
+        $where = 'WHERE 1 = 1';
+        ei_arbol($filtro);
+        if (isset($filtro)) {
+            if (isset($filtro['id_persona'])) {
+                $where .= " AND p.id_persona = '{$filtro['id_persona']}'";
+            }
+        }
+
+        $sql = "SELECT a.legajo
+                      ,CASE WHEN a.regular = 'S' THEN 'SI' ELSE 'NO' END AS Regular
+                      ,concat(p.apellidos, ', ', p.nombres) AS Nombre_Apellido
+                      ,acc.cuota
+                      ,acc.descripcion
+	                  ,CASE WHEN Generadas.id_alumno_cc IS NOT NULL AND Liquidadas.id_alumno_cc IS NULL AND Pagas.id_alumno_cc IS NULL AND Rechazadas.id_alumno_cc IS NULL THEN 'GENERADA'
+	                        WHEN Generadas.id_alumno_cc IS NOT NULL AND Liquidadas.id_alumno_cc IS NOT NULL THEN 'LIQUIDADA (ENVIADA AL BANCO)'
+	                        WHEN Pagas.id_alumno_cc IS NOT NULL THEN 'PAGA'
+	                        WHEN Rechazadas.id_alumno_cc IS NOT NULL AND Pagas.id_alumno_cc IS NULL THEN 'RECHAZADA'
+	                   END AS Estado_Cuota
+	                  ,acc.importe
+                      ,Pagas.fecha_pago
+                      ,mp.nombre AS Medio_de_Pago
+                      ,mt.nombre AS Marca_tarjeta
+	                  ,mr.nombre AS Motivo_rechazo1
+                      ,mr2.nombre AS Motivo_rechazo2
+                FROM alumno_cuenta_corriente acc
+                    INNER JOIN alumno a on acc.id_alumno = a.id_alumno
+                    INNER JOIN persona p on p.id_persona = a.id_persona         
+                    LEFT JOIN
+                    --Cuota generada
+                        (SELECT id_alumno_cc, id_transaccion_cc, fecha_transaccion, id_estado_cuota, importe, fecha_pago
+                               ,fecha_respuesta_prisma, numero_comprobante, numero_autorizacion, numero_lote
+                               ,id_medio_pago, id_marca_tarjeta, id_motivo_rechazo1, id_motivo_rechazo2, codigo_error_debito, descripcion_error_debito
+                         FROM transaccion_cuenta_corriente
+                         WHERE id_estado_cuota = 1) AS Generadas ON Generadas.id_alumno_cc = acc.id_alumno_cc
+	                LEFT JOIN 
+		            --Cuota Liquidada (Enviadas al banco)
+                        (SELECT id_alumno_cc, id_transaccion_cc, fecha_transaccion, id_estado_cuota, importe, fecha_pago
+                               ,fecha_respuesta_prisma, numero_comprobante, numero_autorizacion, numero_lote
+                               ,id_medio_pago, id_marca_tarjeta, id_motivo_rechazo1, id_motivo_rechazo2, codigo_error_debito, descripcion_error_debito
+                         FROM transaccion_cuenta_corriente
+                         WHERE id_estado_cuota = 2) AS Liquidadas ON Liquidadas.id_alumno_cc = acc.id_alumno_cc
+                    LEFT JOIN
+                    --Cuota Paga
+                        (SELECT id_alumno_cc, id_transaccion_cc, fecha_transaccion, id_estado_cuota, importe, fecha_pago
+                               ,fecha_respuesta_prisma, numero_comprobante, numero_autorizacion, numero_lote
+                               ,id_medio_pago, id_marca_tarjeta, id_motivo_rechazo1, id_motivo_rechazo2, codigo_error_debito, descripcion_error_debito
+                         FROM transaccion_cuenta_corriente
+                         WHERE id_estado_cuota = 3) AS Pagas ON Pagas.id_alumno_cc = acc.id_alumno_cc
+                    LEFT JOIN 
+                    --obtengo el id_transaccion_cc del ultimo rechazo de pago de existir
+                        (SELECT id_alumno_cc, MAX(id_transaccion_cc) AS idUltimoRechazo
+                         FROM transaccion_cuenta_corriente
+                         WHERE id_estado_cuota = 4
+                         GROUP BY id_alumno_cc) AS UltimoRechazo ON UltimoRechazo.id_alumno_cc = acc.id_alumno_cc
+                    INNER JOIN
+		            --obtengo datos correspondiente al ultimo rechazo del pago
+                    (SELECT id_alumno_cc, id_transaccion_cc, fecha_transaccion, id_estado_cuota, importe, fecha_pago
+                           ,fecha_respuesta_prisma, numero_comprobante, numero_autorizacion, numero_lote
+                           ,id_medio_pago, id_marca_tarjeta, id_motivo_rechazo1, id_motivo_rechazo2, codigo_error_debito, descripcion_error_debito
+                     FROM transaccion_cuenta_corriente
+                     WHERE id_estado_cuota = 4) AS Rechazadas ON Rechazadas.id_alumno_cc = UltimoRechazo.id_alumno_cc AND UltimoRechazo.idUltimoRechazo = Rechazadas.id_transaccion_cc
+                    LEFT OUTER JOIN motivo_rechazo mr on mr.id_motivo_rechazo = Rechazadas.id_motivo_rechazo1
+                    LEFT OUTER JOIN motivo_rechazo mr2 on mr2.id_motivo_rechazo = Rechazadas.id_motivo_rechazo2
+                    LEFT OUTER JOIN medio_pago mp on mp.id_medio_pago = Pagas.id_medio_pago
+                    LEFT OUTER JOIN marca_tarjeta mt on mt.id_marca_tarjeta = Pagas.id_marca_tarjeta
+                $where
+                    --AND ((Pagas.fecha_pago >= '2022-01-01') OR (acc.fecha_generacion_cc >= '2022-01-01')) AND ((Pagas.fecha_pago < '2022-07-28') OR (acc.fecha_generacion_cc < '2022-07-28'))
+                ORDER BY acc.cuota
+                        ,acc.id_alumno_cc
+                        ,Generadas.id_transaccion_cc
+               ";
+
+        toba::logger()->debug(__METHOD__." : ".$sql);
+        return toba::db()->consultar($sql);
     }
 }

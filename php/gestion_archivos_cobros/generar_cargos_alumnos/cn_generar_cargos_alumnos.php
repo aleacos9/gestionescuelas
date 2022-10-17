@@ -15,11 +15,25 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
             if ((is_array($this->datos_formulario['id_persona'])) && ($this->datos_formulario['forma_generacion'] == 'G')) {
                 foreach ($this->datos_formulario['id_persona'] as $key => $value) {
                     $persona = new persona($value);
+                    if ($this->datos_formulario['cargo_a_generar'] == 1) {
+                        if ($persona->get_nivel_actual_cursada() == 1) {
+                            $this->datos_formulario['importe_cuota'] = dao_consultas::catalogo_de_parametros("importe_inscripcion_inicial");
+                        } elseif ($persona->get_nivel_actual_cursada() == 2) {
+                            $this->datos_formulario['importe_cuota'] = dao_consultas::catalogo_de_parametros("importe_inscripcion_primario");
+                        }
+                    }
                     $persona->set_datos_generacion_cargos($this->datos_formulario);
                     $persona->generar_cargos_persona();
                 }
             } elseif ((!is_array($this->datos_formulario['id_persona'])) && ($this->datos_formulario['forma_generacion'] == 'I')) {
                 $persona = new persona($this->datos_formulario['id_persona']);
+                if ($this->datos_formulario['cargo_a_generar'] == 1) {
+                    if ($persona->get_nivel_actual_cursada() == 1) {
+                        $this->datos_formulario['importe_cuota'] = dao_consultas::catalogo_de_parametros("importe_inscripcion_inicial");
+                    } elseif ($persona->get_nivel_actual_cursada() == 2) {
+                        $this->datos_formulario['importe_cuota'] = dao_consultas::catalogo_de_parametros("importe_inscripcion_primario");
+                    }
+                }
                 $persona->set_datos_generacion_cargos($this->datos_formulario);
                 $persona->generar_cargos_persona();
             } else {

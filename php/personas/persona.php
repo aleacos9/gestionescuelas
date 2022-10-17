@@ -1,5 +1,7 @@
 <?php
 
+use Endroid\QrCode\QrCode;
+use Dompdf\Dompdf;
 
 class persona
 {
@@ -42,6 +44,8 @@ class persona
     protected $id_grado;
     protected $division;
     protected $anio_cursada;
+    protected $grado_actual_cursada;
+    protected $nivel_actual_cursada;
     protected $genero_costo_inscripcion;
     protected $pago_inscripcion;
 
@@ -88,6 +92,7 @@ class persona
     protected $datos_formas_cobro = array();
     protected $datos_generacion_cargos = array();
     protected $datos_cuenta_corriente = array();
+    protected $datos_actuales_cursada = array();
 
     public function __construct($persona = null)
     {
@@ -869,6 +874,18 @@ class persona
         return $this->modo;
     }
 
+    public function get_grado_actual_cursada()
+    {
+        toba::logger()->info("get_grado_actual_cursada");
+        return $this->datos_actuales_cursada[0]['id_grado'];
+    }
+
+    public function get_nivel_actual_cursada()
+    {
+        toba::logger()->info("get_nivel_actual_cursada");
+        return $this->datos_actuales_cursada[0]['id_nivel'];
+    }
+
     //---------------------------------------------------------------------
     //                     MÉTODOS
     //---------------------------------------------------------------------
@@ -1184,6 +1201,31 @@ class persona
 
         toba::logger()->debug(__METHOD__." : ".$sql);
         $this->datos_cuenta_corriente = consultar_fuente($sql);
+
+        // Obtiene los datos actuales de cursada de la persona ---------------------------------
+        $sql = "SELECT adc.id_alumno_dato_cursada
+                      ,adc.id_alumno
+                      ,adc.id_grado
+                      ,adc.division
+                      ,g.id_nivel
+                      ,n.nombre AS nivel
+                      ,adc.anio_cursada
+                      ,adc.genero_costo_inscripcion
+                      ,adc.pago_inscripcion
+                      ,g.nombre AS grado
+                FROM (SELECT max(id_grado) AS id_grado, id_alumno
+                      FROM alumno_datos_cursada
+                      GROUP BY id_alumno) AS max
+                    INNER JOIN alumno_datos_cursada AS adc ON adc.id_alumno = max.id_alumno
+                    INNER JOIN grado g ON adc.id_grado = g.id_grado AND max.id_grado = g.id_grado
+                    INNER JOIN nivel n ON g.id_nivel = n.id_nivel
+                    INNER JOIN alumno a ON a.id_alumno = adc.id_alumno
+                    INNER JOIN persona p ON p.id_persona = a.id_persona
+                WHERE p.id_persona = {$this->persona}    
+               ";
+
+        toba::logger()->debug(__METHOD__." : ".$sql);
+        $this->datos_actuales_cursada = consultar_fuente($sql);
     }
 
     /*public function es_alumno()
@@ -1651,7 +1693,7 @@ class persona
                                                          ,usuario_ultima_modificacion, fecha_ultima_modificacion
                                                          ,numero_comprobante, numero_lote, numero_autorizacion, id_medio_pago
                                                          ,id_marca_tarjeta, id_motivo_rechazo1, id_motivo_rechazo2, codigo_error_debito, descripcion_error_debito) 
-				VALUES ({$this->id_alumno_cc}, now(),'{$this->id_estado_cuota}', '{$this->importe_pago}', '{$this->fecha_pago}', {$this->fecha_respuesta_prisma}
+				VALUES ({$this->id_alumno_cc}, now(),'{$this->id_estado_cuota}', '{$this->importe_pago}', {$this->fecha_pago}, {$this->fecha_respuesta_prisma}
 				       ,'{$this->usuario_ultima_modificacion}', now()
 				       ,{$this->numero_comprobante}, {$this->numero_lote}, {$this->numero_autorizacion}, '{$this->id_medio_pago}'
 				       ,{$this->id_marca_tarjeta}, {$this->id_motivo_rechazo1}, {$this->id_motivo_rechazo2}, {$this->codigo_error_debito}, {$this->descripcion_error_debito})
@@ -1678,6 +1720,107 @@ class persona
 
         if ($this->mostrar_mensaje_individual) {
             toba::notificacion()->agregar('El alta del pago fue realizada con éxito.', 'info');
+        }
+    }
+
+    public function generar_comprobante_afip()
+    {
+        $afip = new Afip(array('CUIT' => '27127112784'));
+
+        $importe = 0;
+        if (isset($this->importe_pago)) {
+            $importe = $this->importe_pago * -1;
+        }
+        $data = array(
+                      'CantReg' 	=> 1,  // Cantidad de comprobantes a registrar
+                      'PtoVta' 	    => 1,  // Punto de venta
+                      'CbteTipo' 	=> 11,  // Tipo de comprobante (ver tipos disponibles)
+                      'Concepto' 	=> 2,  // Concepto del Comprobante: (1)Productos, (2)Servicios, (3)Productos y Servicios
+                      'DocTipo' 	=> 96, // Tipo de documento del comprador (99 consumidor final, ver tipos disponibles) / 96 -> DNI / 86 - CUIL
+                      'DocNro' 	    => $this->persona_documentos[0]['identificacion'], //27127112784,  // Número de documento del comprador (0 consumidor final)
+                      'FchServDesde'=> '20220901', //Debería ir el primer día del mes de pago
+                      'FchServHasta'=> '20220930', //Debería ir el último día del mes de pago
+                      'FchVtoPago'  => intval(date('Ymd')),
+                      'CbteFch' 	=> intval(date('Ymd')), // (Opcional) Fecha del comprobante (yyyymmdd) o fecha actual si es nulo
+                      'ImpTotal' 	=> $importe, // Importe total del comprobante
+                      'ImpTotConc' 	=> 0,   // Importe neto no gravado
+                      'ImpNeto' 	=> $importe, // Importe neto gravado
+                      'ImpOpEx' 	=> 0,   // Importe exento de IVA
+                      'ImpIVA' 	    => 0,  //Importe total de IVA
+                      'ImpTrib' 	=> 0,   //Importe total de tributos
+                      'MonId' 	    => 'PES', //Tipo de moneda usada en el comprobante (ver tipos disponibles)('PES' para pesos argentinos)
+                      'MonCotiz' 	=> 1,     // Cotización de la moneda usada (1 para pesos argentinos
+                     );
+
+        $res = $afip->ElectronicBilling->CreateNextVoucher($data);
+
+        echo $res['CAE']; //CAE asignado el comprobante
+        echo $res['CAEFchVto']; //Fecha de vencimiento del CAE (yyyy-mm-dd)
+        echo $res['voucher_number']; //Número asignado al comprobante
+
+        $datos['numero_comprobante'] = $res['voucher_number'];
+        $datos['tipo_comprobante'] = 11; //Factura C
+        $datos['punto_venta'] = 1;
+        $this->obtener_datos_comprobante_afip($datos);
+    }
+
+    public function obtener_datos_comprobante_afip($datos = null)
+    {
+        if (isset($datos['numero_comprobante'])) {
+            $afip = new Afip(array('CUIT' => '27127112784'));
+            $voucher_info = $afip->ElectronicBilling->GetVoucherInfo($datos['numero_comprobante'],$datos['punto_venta'],$datos['tipo_comprobante']); //Devuelve la información del comprobante 1 para el punto de venta 1 y el tipo de comprobante 11 (Factura C)
+            //ei_arbol($voucher_info);
+            if ($voucher_info === NULL) {
+                echo 'El comprobante no existe';
+            } else {
+                echo 'Esta es la información del comprobeante:';
+                echo '<pre>';
+                print_r($voucher_info);
+                echo '</pre>';
+            }
+            $datos = get_object_vars($voucher_info);
+            self::mostrar_comprobante_afip($datos);
+        }
+    }
+
+    public function mostrar_comprobante_afip($datos = null)
+    {
+        $dompdf = new Dompdf();
+        $dir = dirname(__DIR__, 1);
+        $html = file_get_contents($dir.'/comprobantes/factura_c/factura_c.php');
+        $dompdf->loadHtml($html);
+        $dompdf->render();
+        //header("Content-type: application/pdf");
+        //header("Content-Disposition: inline; filename=documento.pdf");
+        echo $dompdf->output();
+    }
+
+    public function generar_qr_comprobante_afip($datos = null)
+    {
+        if (isset($datos)) {
+            $url = 'https://www.afip.gob.ar/fe/qr/'; // URL que pide AFIP que se ponga en el QR.
+            $datos_cmp_base_64 = json_encode([
+                //"ver" => 1,                         // Numérico 1 digito -  OBLIGATORIO ? versión del formato de los datos del comprobante	1
+                //"fecha" => $datos['CbteFch'],       // full-date (RFC3339) - OBLIGATORIO ? Fecha de emisión del comprobante
+                //"cuit" => $datos['cuit'],        // Numérico 11 dígitos -  OBLIGATORIO ? Cuit del Emisor del comprobante
+                //"ptoVta" => $datos['PtoVta'],                // Numérico hasta 5 digitos - OBLIGATORIO ? Punto de venta utilizado para emitir el comprobante
+                //"tipoCmp" => $datos['CbteTipo'], // Numérico hasta 3 dígitos - OBLIGATORIO ? tipo de comprobante (según Tablas del sistema. Ver abajo )
+                //"nroCmp" => $datos['numero_comprobante'],               // Numérico hasta 8 dígitos - OBLIGATORIO ? Número del comprobante
+                //"importe" => $datos['ImpTotal'],         // Decimal hasta 13 enteros y 2 decimales - OBLIGATORIO ? Importe Total del comprobante (en la moneda en la que fue emitido)
+                //"moneda" => "PES",                  // 3 caracteres - OBLIGATORIO ? Moneda del comprobante (según Tablas del sistema. Ver Abajo )
+                //"ctz" => 1,                 // Decimal hasta 13 enteros y 6 decimales - OBLIGATORIO ? Cotización en pesos argentinos de la moneda utilizada (1 cuando la moneda sea pesos)
+                //"tipoDocRec" => $datos['DocTipo'],               // Numérico hasta 2 dígitos - DE CORRESPONDER ? Código del Tipo de documento del receptor (según Tablas del sistema )
+                //"nroDocRec" => $datos['DocNro'],        // Numérico hasta 20 dígitos - DE CORRESPONDER ? Número de documento del receptor correspondiente al tipo de documento indicado
+                //"tipoCodAut" => "E",                // string - OBLIGATORIO ? ?A? para comprobante autorizado por CAEA, ?E? para comprobante autorizado por CAE
+                //"codAut" => $datos['CodAutorizacion']    // Numérico 14 dígitos -  OBLIGATORIO ? Código de autorización otorgado por AFIP para el comprobante
+            ]);
+            toba::logger()->error($datos_cmp_base_64);
+            $datos_cmp_base_64 = base64_encode($datos_cmp_base_64);
+            toba::logger()->error($datos_cmp_base_64);
+            $to_qr = $url.'?p='.$datos_cmp_base_64;
+            echo ('hasta aca llega');
+            $qrcode = new QrCode($to_qr);
+            echo $qrcode->writeString();
         }
     }
 }

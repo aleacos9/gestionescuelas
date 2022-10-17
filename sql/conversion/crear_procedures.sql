@@ -710,3 +710,26 @@ BEGIN
     WHERE 1=1;
 END;
 $$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/alta-manual-pagos 13/10/2022
+CREATE OR REPLACE FUNCTION insertar_jerarquia_grado() RETURNS VOID AS
+$$
+BEGIN
+    IF NOT EXISTS ( SELECT '' FROM information_schema.columns WHERE table_name = 'grado' and column_name = 'jerarquia') THEN
+
+        ALTER TABLE public.grado
+            ADD COLUMN jerarquia integer;
+
+        UPDATE grado SET jerarquia = 1 WHERE id_grado = 1;
+        UPDATE grado SET jerarquia = 2 WHERE id_grado = 2;
+        UPDATE grado SET jerarquia = 3 WHERE id_grado = 3;
+        UPDATE grado SET jerarquia = 4 WHERE id_grado = 4;
+        UPDATE grado SET jerarquia = 5 WHERE id_grado = 5;
+        UPDATE grado SET jerarquia = 6 WHERE id_grado = 6;
+        UPDATE grado SET jerarquia = 7 WHERE id_grado = 7;
+        UPDATE grado SET jerarquia = 8 WHERE id_grado = 8;
+
+    END IF;
+END;
+$$ LANGUAGE 'plpgsql';

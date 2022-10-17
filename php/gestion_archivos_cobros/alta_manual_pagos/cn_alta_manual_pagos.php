@@ -22,6 +22,7 @@ class cn_alta_manual_pagos extends gestionescuelas_cn
                 $persona->set_modo($this->datos_pago['modo']);
                 $persona->set_datos_cuenta_corriente($this->datos_pago);
                 $persona->grabar_pago_persona();
+                //$persona->generar_comprobante_afip();
                 return $ok;
             }
         } else {

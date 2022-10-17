@@ -1,5 +1,6 @@
 <?php
 ini_set('display_errors', '1');
+
 class gestionescuelas_ext_ci extends toba_ci
 {
     protected $s__seleccion;
@@ -25,6 +26,27 @@ class gestionescuelas_ext_ci extends toba_ci
             $this->s__id_persona = $this->s__id_persona[0]['id_persona'];
         }
         //***FIN obtención del id_persona del usuario loggueado***//
+
+
+        /*$afip = new Afip(array('CUIT' => '27127112784'));
+        $last_voucher = $afip->ElectronicBilling->GetLastVoucher(1,11);
+        $datos['numero_comprobante'] = $last_voucher;
+        $datos['tipo_comprobante'] = 11; //Factura C
+        $datos['punto_venta'] = 1;
+        $persona = new persona($this->s__persona_editar);
+        $datos_comp = $persona::obtener_datos_comprobante_afip($datos);
+        /*if (isset($datos_comp)) {
+            $datos_comp['CbteNro'] = $last_voucher;
+            $datos_comp['cuit'] = 27127112784;
+            toba::logger()->error('datos_comp:');
+            toba::logger()->error($datos_comp);
+            //$persona->generar_qr_comprobante_afip($datos_comp);
+        }*/
+
+        /*$dompdf = new Dompdf\Dompdf();
+        $dompdf->loadHtml('<h1>Hola mundo</h1><br><a href="https://parzibyte.me/blog">By Parzibyte</a>');
+        $dompdf->render();
+        $dompdf->stream();*/
     }
 
     //---- filtro -----------------------------------------------------------------------

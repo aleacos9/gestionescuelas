@@ -68,7 +68,7 @@ class ci_cuenta_corriente extends ci_alta_manual_pagos //gestionescuelas_ext_ci
         unset($this->s__datos_filtro);
     }
 
-    //---- cuadro -----------------------------------------------------------------------
+    //---- cuadro_cuenta_corriente ------------------------------------------------------
 
     function conf__cuadro_cuenta_corriente($cuadro)
     {
