@@ -22,7 +22,7 @@ class gestionescuelas_ext_ci extends toba_ci
 
         //***INICIO obtención del id_persona del usuario loggueado***//
         $this->s__id_persona = dao_consultas::get_id_persona_x_id_usuario($this->s__usuario);
-        if (isset($this->s__id_persona)) {
+        if (isset($this->s__id_persona[0])) {
             $this->s__id_persona = $this->s__id_persona[0]['id_persona'];
         }
         //***FIN obtención del id_persona del usuario loggueado***//

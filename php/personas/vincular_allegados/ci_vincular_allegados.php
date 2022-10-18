@@ -79,8 +79,10 @@ class ci_vincular_allegados extends ci_abm_personas
 
         if (!empty($this->s__datos_allegados)) {
             foreach (array_keys($this->s__datos_allegados) as $id) {
-                if ($this->s__datos_allegados[$id]['apex_ei_analisis_fila'] == 'B') {
-                    unset($this->s__datos_allegados[$id]);
+                if (isset($this->s__datos_allegados[$id]['apex_ei_analisis_fila'])) {
+                    if ($this->s__datos_allegados[$id]['apex_ei_analisis_fila'] == 'B') {
+                        unset($this->s__datos_allegados[$id]);
+                    }
                 }
             }
             $form_ml->set_datos($this->s__datos_allegados);

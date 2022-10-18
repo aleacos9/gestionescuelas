@@ -208,11 +208,14 @@ class dao_personas
         $datos = toba::db()->consultar($sql);
 
         if (isset($datos)) {
-            if ($filtro['solo_ids'] == true) {
-                return dao_personas::retornar_solo_ids($datos);
-            } else {
-                return $datos;
+            if (isset($filtro['solo_ids'])) {
+                if ($filtro['solo_ids'] == true) {
+                    return dao_personas::retornar_solo_ids($datos);
+                } else {
+                    return $datos;
+                }
             }
+            return $datos;
         }
     }
 
