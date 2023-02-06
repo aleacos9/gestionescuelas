@@ -13,6 +13,11 @@ class ci_gestion_academica extends ci_vincular_allegados
         return dao_consultas::get_grados();
     }
 
+    public function get_anios_ci()
+    {
+        return dao_consultas::get_anios();
+    }
+
     public function cargar_datos()
     {
         if (!empty($this->s__persona_editar)) {

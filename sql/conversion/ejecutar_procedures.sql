@@ -33,3 +33,15 @@ SELECT actualizar_usuario_a_tutores();
 
 --Alejandro feature/alta-manual-pagos 13/10/2022
 SELECT insertar_jerarquia_grado();
+
+--Alejandro feature/alta-manual-pagos 18/10/2022
+SELECT insertar_campos_alumno();
+
+--Alejandro feature/alta-manual-pagos 18/10/2022
+SELECT altas_parametros_sistema();
+
+--Alejandro feature/alta-manual-pagos 31/10/2022
+SELECT cambios_tabla_alumnos_dato_cursada();
+
+--Alejandro feature/alta-manual-pagos 01/11/2022
+SELECT actualizar_anio_cursada_alumnos();

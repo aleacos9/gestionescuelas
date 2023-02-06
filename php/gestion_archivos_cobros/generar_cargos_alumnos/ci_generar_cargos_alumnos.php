@@ -44,6 +44,7 @@ class ci_generar_cargos_alumnos extends gestionescuelas_ext_ci
                 $filtro_int['activo'] = 'S';
                 $filtro_int['solo_ids'] = true;
                 $filtro_int['solo_alumnos'] = true;
+                $filtro_int['excluir_alumnos_generacion_masiva'] = false;
                 $this->s__datos_formulario['id_persona'] = dao_personas::get_datos_personas($filtro_int);
             }
         } else {

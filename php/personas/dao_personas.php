@@ -66,6 +66,21 @@ class dao_personas
                 }
             }
 
+            if (isset($filtro['tiene_tutor'])) {
+                if ($filtro['tiene_tutor'] == 'S') {
+                    $where .= " AND EXISTS (SELECT ''
+                                            FROM persona_allegado pa3
+                                            WHERE a.id_alumno = pa3.id_alumno
+                                                 AND pa3.tutor = 'S')";
+                }
+                if ($filtro['tiene_tutor'] == 'N') {
+                    $where .= " AND NOT EXISTS (SELECT ''
+                                                FROM persona_allegado pa3
+                                                WHERE a.id_alumno = pa3.id_alumno
+                                                    AND pa3.tutor = 'S')";
+                }
+            }
+
             if (isset($filtro['tiene_tarjeta'])) {
                 if ($filtro['tiene_tarjeta'] == 'S') {
                     $where .= " AND EXISTS (SELECT ''
@@ -105,6 +120,13 @@ class dao_personas
                                                         ,p.id_persona
                                                 ORDER BY acc.id_alumno) AS subconsulta_saldo ON subconsulta_saldo.id_alumno = a.id_alumno and subconsulta_saldo.id_persona = p.id_persona 
                              ";
+                }
+            }
+
+            //Aca se deben agregar los id_persona de los alumnos a los cuales no se les quiera generar una cuota desde la generación masiva
+            if (isset($filtro['excluir_alumnos_generacion_masiva'])) {
+                if ($filtro['excluir_alumnos_generacion_masiva']) {
+                    $where .= " AND p.id_persona NOT IN (482, 484, 485, 486, 487)";
                 }
             }
 
@@ -169,9 +191,12 @@ class dao_personas
                              WHEN p.es_alumno = 'S' AND a.regular = 'N' THEN 'No regular'
                              WHEN p.es_alumno = 'N' THEN '-'
                         END) as estado_alumno
-                      ,(CASE WHEN subconsulta_tiene_allegado.id_persona IS NOT NULL THEN 'Sí'
+                      ,(CASE WHEN subconsulta_tiene_allegado.id_alumno IS NOT NULL THEN 'Sí'
                              ELSE 'No'
                        	END) AS tiene_allegado
+                      ,(CASE WHEN subconsulta_tiene_tutor.id_alumno IS NOT NULL THEN 'Sí'
+                             ELSE 'No'
+                       	END) AS tiene_tutor  
                       ,(CASE WHEN subconsulta_tiene_tarjeta.id_alumno IS NOT NULL THEN 'Sí'
                              ELSE 'No'
                        	END) AS tiene_tarjeta 	  
@@ -195,6 +220,9 @@ class dao_personas
                 LEFT OUTER JOIN (SELECT id_persona, id_alumno
 					 		     FROM persona_allegado pa3
 							     WHERE pa3.activo = 'S') AS subconsulta_tiene_allegado ON subconsulta_tiene_allegado.id_alumno = a.id_alumno
+				LEFT OUTER JOIN (SELECT id_persona, id_alumno
+                                 FROM persona_allegado pa3
+                                 WHERE pa3.activo = 'S' AND pa3.tutor = 'S') AS subconsulta_tiene_tutor ON subconsulta_tiene_tutor.id_alumno = a.id_alumno			         
                 LEFT OUTER JOIN (SELECT id_alumno
 					 		     FROM alumno_tarjeta at
 							     WHERE at.activo = 'S') AS subconsulta_tiene_tarjeta ON subconsulta_tiene_tarjeta.id_alumno = a.id_alumno							         
@@ -228,7 +256,7 @@ class dao_personas
             $alumnos = array();
             $cant = count($datos);
             for ($i = 0; $i < $cant; $i++) {			//Recorro los valores formando un arreglo posicional.
-                $alumnos[] = $datos[$i]['id_alumno'];
+                $alumnos[] = $datos[$i]['id_persona'];
             }
             return $alumnos;
         }
@@ -392,5 +420,36 @@ class dao_personas
 
         toba::logger()->debug(__METHOD__." : ".$sql);
         return toba::db()->consultar($sql);
+    }
+
+    public static function get_cantidad_tutorias_x_persona($filtro = null)
+    {
+        $where = 'WHERE 1 = 1';
+
+        if (isset($filtro)) {
+            if (isset($filtro['id_persona'])) {
+                $where .= " AND p.id_persona = '{$filtro['id_persona']}'";
+
+                $sql = "SELECT p.id_persona
+                              ,p.apellidos
+                              ,p.nombres
+                              ,correo_electronico
+                              ,r1.tutorias
+                        FROM persona p
+                            INNER JOIN (SELECT pa.id_persona, count(pa.id_alumno) AS tutorias
+                                        FROM persona_allegado pa
+                                            INNER JOIN alumno a ON  a.id_alumno = pa.id_alumno AND a.Regular = 'S'
+                                        WHERE pa.tutor = 'S' AND pa.activo = 'S'
+                                        GROUP BY pa.id_persona) AS r1 ON r1.id_persona = p.id_persona AND p.activo = 'S' AND p.es_alumno = 'N'
+                        $where
+                        ORDER BY r1.tutorias DESC
+                       ";
+
+                        toba::logger()->debug(__METHOD__." : ".$sql);
+                        return toba::db()->consultar($sql);
+            } else {
+                throw new toba_error('No se designó correctamente a la persona.');
+            }
+        }
     }
 }

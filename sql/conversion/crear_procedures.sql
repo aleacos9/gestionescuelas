@@ -733,3 +733,79 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/alta-manual-pagos 18/10/2022
+CREATE OR REPLACE FUNCTION insertar_campos_alumno() RETURNS VOID AS
+$$
+BEGIN
+    IF NOT EXISTS ( SELECT '' FROM information_schema.columns WHERE table_name = 'alumno' and column_name = 'id_medio_pago_inscripcion') THEN
+
+        ALTER TABLE public.alumno
+            ADD COLUMN id_medio_pago_inscripcion integer;
+
+        ALTER TABLE alumno
+            ADD CONSTRAINT id_medio_pago FOREIGN KEY (id_medio_pago_inscripcion)
+                REFERENCES medio_pago (id_medio_pago) MATCH FULL
+                ON UPDATE NO ACTION ON DELETE NO ACTION;
+
+        ALTER TABLE public.alumno
+            ADD COLUMN paga_inscripcion_en_cuotas character(1) DEFAULT 'N'::bpchar;
+    END IF;
+END;
+$$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/alta-manual-pagos 18/10/2022
+CREATE OR REPLACE FUNCTION altas_parametros_sistema() RETURNS VOID AS
+$$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM parametros_sistema WHERE parametro = 'cobra_inscripcion_en_cuotas_inicial') THEN
+
+        INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
+        VALUES (NEXTVAL('sq_id_parametro'), 'cobra_inscripcion_en_cuotas_inicial', 'Permite el cobro de inscripcion en cuotas - Niv. Inicial', 'Cobro inscripcion cuotas NI', 'SI', '1.0.0');
+        INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
+        VALUES (NEXTVAL('sq_id_parametro'), 'cobra_inscripcion_en_cuotas_primario', 'Permite el cobro de inscripcion en cuotas - Niv. Primario', 'Cobro inscripcion cuotas NP', 'SI', '1.0.0');
+        INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
+        VALUES (NEXTVAL('sq_id_parametro'), 'cant_cuotas_cobro_inscripcion', 'Cantidad de cuotas en que se cobra la inscripcion', 'Cant cuotas cobro inscripcion', 2, '1.0.0');
+
+    END IF;
+END;
+$$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/alta-manual-pagos 31/10/2022
+CREATE OR REPLACE FUNCTION cambios_tabla_alumnos_dato_cursada() RETURNS VOID AS
+$$
+BEGIN
+     IF NOT EXISTS (SELECT 1 FROM anio WHERE id_anio = 3) THEN
+
+        ALTER TABLE alumno_datos_cursada
+            DROP COLUMN anio_cursada;
+        ALTER TABLE alumno_datos_cursada
+            ADD COLUMN anio_cursada INTEGER;
+        ALTER TABLE alumno_datos_cursada
+            ADD CONSTRAINT anio_cursada FOREIGN KEY (anio_cursada)
+                REFERENCES public.anio (id_anio) MATCH FULL
+                ON UPDATE NO ACTION ON DELETE NO ACTION;
+
+        INSERT INTO anio (id_anio, anio) VALUES (3, 2023);
+     END IF;
+END;
+$$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/alta-manual-pagos 01/11/2022
+CREATE OR REPLACE FUNCTION actualizar_anio_cursada_alumnos() RETURNS VOID AS
+$$
+BEGIN
+    IF EXISTS (SELECT 1 FROM anio WHERE anio = (date_part('year', CURRENT_DATE)+2)) THEN
+
+        INSERT INTO alumno_datos_cursada(id_alumno, id_grado, division, anio_cursada, genero_costo_inscripcion, pago_inscripcion)
+            SELECT  id_alumno, (id_grado + 1) as grado, division, cast(anio_cursada as int4) + 1, genero_costo_inscripcion, pago_inscripcion
+            FROM alumno_datos_cursada
+            WHERE id_grado <> 8
+            ORDER BY grado;
+    END IF;
+END;
+$$ LANGUAGE 'plpgsql';

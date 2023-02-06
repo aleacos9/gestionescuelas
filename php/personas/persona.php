@@ -61,7 +61,7 @@ class persona
     protected $cuota;
     protected $anio_cuota;
     protected $cuota_completa;
-    protected $importe_cuota;
+    protected $actualiza_pago_inscripcion_en_cuotas;
 
     protected $id_alumno_cc;
     protected $fecha_pago;
@@ -93,6 +93,7 @@ class persona
     protected $datos_generacion_cargos = array();
     protected $datos_cuenta_corriente = array();
     protected $datos_actuales_cursada = array();
+    protected $datos_tutor = array();
 
     public function __construct($persona = null)
     {
@@ -155,12 +156,12 @@ class persona
     {
         toba::logger()->info("set_datos_formas_cobro");
 
-        $this->set_id_medio_pago($datos_formas_cobro['id_medio_pago']);
-        $this->set_id_marca_tarjeta($datos_formas_cobro['id_marca_tarjeta']);
-        $this->set_id_entidad_bancaria($datos_formas_cobro['id_entidad_bancaria']);
-        $this->set_numero_tarjeta($datos_formas_cobro['numero_tarjeta']);
-        $this->set_nombre_titular($datos_formas_cobro['nombre_titular']);
-        $this->set_activo($datos_formas_cobro['activo']);
+        $this->set_id_medio_pago($datos_formas_cobro[0]['id_medio_pago']);
+        $this->set_id_marca_tarjeta($datos_formas_cobro[0]['id_marca_tarjeta']);
+        $this->set_id_entidad_bancaria($datos_formas_cobro[0]['id_entidad_bancaria']);
+        $this->set_numero_tarjeta($datos_formas_cobro[0]['numero_tarjeta']);
+        $this->set_nombre_titular($datos_formas_cobro[0]['nombre_titular']);
+        $this->set_activo($datos_formas_cobro[0]['activo']);
 
         $this->datos_formas_cobro = $datos_formas_cobro;
     }
@@ -169,11 +170,11 @@ class persona
     {
         toba::logger()->info("set_datos_academicos");
 
-        $this->set_id_grado($datos_academicos['id_grado']);
-        $this->set_division($datos_academicos['division']);
-        $this->set_anio_cursada($datos_academicos['anio_cursada']);
-        $this->set_genero_costo_inscripcion($datos_academicos['genero_costo_inscripcion']);
-        $this->set_pago_inscripcion($datos_academicos['pago_inscripcion']);
+        $this->set_id_grado($datos_academicos[0]['id_grado']);
+        $this->set_division($datos_academicos[0]['division']);
+        $this->set_anio_cursada($datos_academicos[0]['anio_cursada']);
+        $this->set_genero_costo_inscripcion($datos_academicos[0]['genero_costo_inscripcion']);
+        $this->set_pago_inscripcion($datos_academicos[0]['pago_inscripcion']);
 
         $this->datos_academicos = $datos_academicos;
     }
@@ -182,6 +183,7 @@ class persona
     {
         toba::logger()->info("set_datos_generacion_cargos");
 
+        $this->set_id_alumno($datos_generacion_cargos['id_alumno']);
         $this->set_cargo_a_generar($datos_generacion_cargos['cargo_a_generar']);
         $this->set_cuota($datos_generacion_cargos['cuota']);
         $this->set_anio_cuota($datos_generacion_cargos['anio']);
@@ -199,6 +201,9 @@ class persona
             $this->set_cuota_completa($cuota);
         }
         $this->set_importe_cuota($datos_generacion_cargos['importe_cuota']);
+        if (isset($datos_generacion_cargos['actualiza_pago_inscripcion_en_cuotas'])) {
+            $this->set_actualiza_pago_inscripcion_en_cuotas($datos_generacion_cargos['actualiza_pago_inscripcion_en_cuotas']);
+        }
 
         $this->datos_generacion_cargos = $datos_generacion_cargos;
     }
@@ -220,11 +225,13 @@ class persona
 
         $fecha_pago = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['fecha_pago'], 'TIPO_DATO_STR');
         $this->set_fecha_pago($fecha_pago);
-        $fecha_respuesta_prisma = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['fecha_devolucion_respuesta2'], 'TIPO_DATO_STR');
+        //if (isset($datos_cuenta_corriente['fecha_devolucion_respuesta2'])) {
+            $fecha_respuesta_prisma = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['fecha_devolucion_respuesta2'], 'TIPO_DATO_STR');
+            $this->set_fecha_respuesta_prisma($fecha_respuesta_prisma);
+        //}
         /*if ($fecha_respuesta_prisma != 'null') {
             $fecha_respuesta_prisma = date($fecha_respuesta_prisma);
         }*/
-        $this->set_fecha_respuesta_prisma($fecha_respuesta_prisma);
 
         //Datos del rechazo
         $estado_movimiento = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['estado_movimiento'], constantes::get_valor_constante('TIPO_DATO_INT'));
@@ -233,12 +240,16 @@ class persona
         //aca voy a tener que obtener el id_motivo_rechazo de la tabla motivo_rechazo asociado al codigo_rechazo que viene en el txt
         $id_motivo_rechazo1 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['rechazo1'], constantes::get_valor_constante('TIPO_DATO_STR'));
         $this->set_id_motivo_rechazo1($id_motivo_rechazo1);
-        $descripcion_rechazo1 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['$descripcion_rechazo1'], constantes::get_valor_constante('TIPO_DATO_STR'));
-        $this->set_descripcion_rechazo1($descripcion_rechazo1);
+        //if (isset($datos_cuenta_corriente['$descripcion_rechazo1'])) {
+            $descripcion_rechazo1 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['$descripcion_rechazo1'], constantes::get_valor_constante('TIPO_DATO_STR'));
+            $this->set_descripcion_rechazo1($descripcion_rechazo1);
+        //}
         $id_motivo_rechazo2 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['rechazo2'], constantes::get_valor_constante('TIPO_DATO_STR'));
         $this->set_id_motivo_rechazo2($id_motivo_rechazo2);
-        $descripcion_rechazo2 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['$descripcion_rechazo2'], constantes::get_valor_constante('TIPO_DATO_STR'));
-        $this->set_descripcion_rechazo2($descripcion_rechazo2);
+        //if (isset($datos_cuenta_corriente['$descripcion_rechazo2'])) {
+            $descripcion_rechazo2 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['$descripcion_rechazo2'], constantes::get_valor_constante('TIPO_DATO_STR'));
+            $this->set_descripcion_rechazo2($descripcion_rechazo2);
+        //}
         //Fin datos del rechazo
 
         //Si el debito Ó el movimiento tuvo error  => seteo el importe en 0 y el estado en rechazada -- Solo para el alta_masiva
@@ -258,15 +269,25 @@ class persona
 
         $this->set_importe_pago($datos_cuenta_corriente['importe']);
 
-        $numero_comprobante = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['numero_comprobante'], constantes::get_valor_constante('TIPO_DATO_INT'));
-        $this->set_numero_comprobante($numero_comprobante);
+        //if (isset($datos_cuenta_corriente['numero_comprobante'])) {
+            $numero_comprobante = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['numero_comprobante'], constantes::get_valor_constante('TIPO_DATO_INT'));
+            $this->set_numero_comprobante($numero_comprobante);
+        //}
         $numero_lote = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['numero_lote'], constantes::get_valor_constante('TIPO_DATO_INT'));
         $this->set_numero_lote($numero_lote);
-        $numero_autorizacion = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['numero_autorizacion'], constantes::get_valor_constante('TIPO_DATO_INT'));
-        $this->set_numero_autorizacion($numero_autorizacion);
-        $this->set_usuario_ultima_modificacion($datos_cuenta_corriente['usuario_ultima_modificacion']);
-        $this->set_fecha_ultima_modificacion($datos_cuenta_corriente['fecha_ultima_modificacion']);
-        $this->set_mostrar_mensaje_individual($datos_cuenta_corriente['mostrar_mensaje_individual']);
+        //if (isset($datos_cuenta_corriente['numero_autorizacion'])) {
+            $numero_autorizacion = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['numero_autorizacion'], constantes::get_valor_constante('TIPO_DATO_INT'));
+            $this->set_numero_autorizacion($numero_autorizacion);
+        //}
+        //if (isset($datos_cuenta_corriente['usuario_ultima_modificacion'])) {
+            $this->set_usuario_ultima_modificacion($datos_cuenta_corriente['usuario_ultima_modificacion']);
+        //}
+        //if (isset($datos_cuenta_corriente['fecha_ultima_modificacion'])) {
+            $this->set_fecha_ultima_modificacion($datos_cuenta_corriente['fecha_ultima_modificacion']);
+        //}
+        //if (isset($datos_cuenta_corriente['mostrar_mensaje_individual'])) {
+            $this->set_mostrar_mensaje_individual($datos_cuenta_corriente['mostrar_mensaje_individual']);
+        //}
         $this->set_cuota_completa($datos_cuenta_corriente['cuota']);
 
         $this->datos_cuenta_corriente = $datos_cuenta_corriente;
@@ -476,6 +497,12 @@ class persona
         $this->pago_inscripcion = $pago_inscripcion;
     }
 
+    public function set_id_alumno($id_alumno)
+    {
+        toba::logger()->info("set_id_alumno = " .$id_alumno);
+        $this->id_alumno = $id_alumno;
+    }
+
     public function set_id_alumno_cc($id_alumno_cc)
     {
         toba::logger()->info("set_id_alumno_cc = " .$id_alumno_cc);
@@ -660,6 +687,12 @@ class persona
     {
         toba::logger()->info("set_estado_movimiento = " .$estado_movimiento);
         $this->estado_movimiento = $estado_movimiento;
+    }
+
+    public function set_actualiza_pago_inscripcion_en_cuotas($actualiza_pago_inscripcion_en_cuotas)
+    {
+        toba::logger()->info("set_actualiza_pago_inscripcion_en_cuotas = " .$actualiza_pago_inscripcion_en_cuotas);
+        $this->actualiza_pago_inscripcion_en_cuotas = $actualiza_pago_inscripcion_en_cuotas;
     }
 
 
@@ -880,10 +913,79 @@ class persona
         return $this->datos_actuales_cursada[0]['id_grado'];
     }
 
+    public function get_anio_actual_cursada()
+    {
+        toba::logger()->info("get_anio_actual_cursada");
+        return $this->datos_actuales_cursada[0]['anio_cursada'];
+    }
+
     public function get_nivel_actual_cursada()
     {
         toba::logger()->info("get_nivel_actual_cursada");
-        return $this->datos_actuales_cursada[0]['id_nivel'];
+        if (isset($this->datos_actuales_cursada[0])) {
+            return $this->datos_actuales_cursada[0]['id_nivel'];
+        } else {
+            toba::logger()->error('El alumno '.$this->id_alumno. ' no tiene nivel de cursada asignada. Revise los datos.');
+        }
+    }
+
+    public function get_datos_tutor()
+    {
+        toba::logger()->info("get_datos_tutor");
+        $sql = "SELECT pa.id_persona_allegado
+                      ,pa.id_persona
+                      ,p.nombres
+                      ,pa.id_alumno
+                      ,pa.id_tipo_allegado
+                      ,ta.nombre as allegado
+                      ,pa.id_estudio_alcanzado
+                      ,ea.nombre as estudio_alcanzado
+                      ,pa.id_ocupacion
+                      ,o.nombre as ocupacion
+                      ,pa.tutor
+                      ,pa.activo
+                      ,(CASE WHEN pa.activo = 'S' THEN 'Activo'
+                             WHEN pa.activo = 'N' THEN 'Inactivo'
+                        END) as activo_completo   
+                      ,per.id_persona as id_persona_tutor
+                      ,per.nombres
+                      ,per.apellidos
+                      ,(per.apellidos || ', ' || per.nombres) as nombre_tutor
+                      ,pa.fecha_alta
+                      ,pa.usuario_alta
+                      ,pa.fecha_ultima_modificacion
+                      ,pa.usuario_ultima_modificacion
+                FROM persona_allegado pa
+                    INNER JOIN alumno a on pa.id_alumno = a.id_alumno
+                    INNER JOIN persona p on p.id_persona = a.id_persona
+                    INNER JOIN persona per on per.id_persona = pa.id_persona
+                    INNER JOIN tipo_allegado ta on pa.id_tipo_allegado = ta.id_tipo_allegado
+                    INNER JOIN estudio_alcanzado ea on pa.id_estudio_alcanzado = ea.id_estudio_alcanzado
+                    INNER JOIN ocupacion o on pa.id_ocupacion = o.id_ocupacion
+                WHERE p.id_persona = {$this->persona} 
+                    AND pa.tutor = 'S' AND pa.activo = 'S'
+                ORDER BY ta.jerarquia
+                        ,pa.id_tipo_allegado
+               ";
+
+        toba::logger()->debug(__METHOD__." : ".$sql);
+        $this->datos_tutor = consultar_fuente($sql);
+    }
+
+    public function get_id_tutor()
+    {
+        toba::logger()->info("get_id_tutor");
+        if (isset($this->datos_tutor[0])) {
+            return $this->datos_tutor[0]['id_persona_tutor'];
+        } else {
+            toba::logger()->error('El alumno '.$this->id_alumno. ' no tiene tutor asignado. Revise los datos.');
+        }
+    }
+
+    public function get_nombre_tutor()
+    {
+        toba::logger()->info("get_nombre_tutor");
+        return $this->datos_tutor[0]['nombre_tutor'];
     }
 
     //---------------------------------------------------------------------
@@ -1194,8 +1296,7 @@ class persona
                     LEFT OUTER JOIN medio_pago mp on mp.id_medio_pago = subconsulta_cuenta_corriente.id_medio_pago
                     LEFT OUTER JOIN marca_tarjeta mt on mt.id_marca_tarjeta = subconsulta_cuenta_corriente.id_marca_tarjeta
                 WHERE p.id_persona = {$this->persona} --a.id_alumno = {$this->persona}
-                ORDER BY acc.cuota
-                        ,acc.id_alumno_cc
+                ORDER BY acc.id_alumno_cc
                         ,subconsulta_cuenta_corriente.id_transaccion_cc
                ";
 
@@ -1221,7 +1322,7 @@ class persona
                     INNER JOIN nivel n ON g.id_nivel = n.id_nivel
                     INNER JOIN alumno a ON a.id_alumno = adc.id_alumno
                     INNER JOIN persona p ON p.id_persona = a.id_persona
-                WHERE p.id_persona = {$this->persona}    
+                WHERE p.id_persona = {$this->persona}   
                ";
 
         toba::logger()->debug(__METHOD__." : ".$sql);
@@ -1596,10 +1697,10 @@ class persona
         $usuario = toba::usuario()->get_id();
 
         //Valido por cada persona que ya no tenga ese cargo generado para ese mes/año
-        if ($this->validar_generacion_cargo($this->datos_generacion_cargos)) {
+        if ($this->validar_generacion_cargo()) {
             //Primero, inserto en la tabla alumno_cuenta_corriente
             $sql = "INSERT INTO alumno_cuenta_corriente (id_alumno, usuario_alta, fecha_generacion_cc, cuota, descripcion, id_cargo_cuenta_corriente) 
-				    VALUES ({$this->persona},'{$usuario}', '{$hoy}', '{$this->cuota_completa}', '{$this->descripcion_cuota}', '{$this->cargo_a_generar}')
+				    VALUES ({$this->id_alumno},'{$usuario}', '{$hoy}', '{$this->cuota_completa}', '{$this->descripcion_cuota}', '{$this->cargo_a_generar}')
 			   ";
 
             toba::logger()->debug(__METHOD__ . " : " . $sql);
@@ -1617,6 +1718,19 @@ class persona
 
             toba::logger()->debug(__METHOD__ . " : " . $sql1);
             ejecutar_fuente($sql1);
+
+            //Tercero, actualizo en el caso de que corresponda, el campo paga_inscripcion_en_cuotas de la tabla alumno
+            if (isset($this->actualiza_pago_inscripcion_en_cuotas)) {
+                if ($this->actualiza_pago_inscripcion_en_cuotas) {
+                    $sql2 = "UPDATE alumno
+                             SET paga_inscripcion_en_cuotas = 'S'
+                             WHERE id_persona = {$this->persona}
+                            ";
+
+                    toba::logger()->debug(__METHOD__ . " : " . $sql2);
+                    ejecutar_fuente($sql2);
+                }
+            }
         } else {
             $alumnos_con_error['id_persona'] = $this->persona;
         }
@@ -1632,11 +1746,20 @@ class persona
      */
     protected function validar_generacion_cargo()
     {
+        $where = 'WHERE 1 = 1';
         $salida = true;
+
+        if ($this->cargo_a_generar == 1) {
+            $where .= " AND cuota = ''";
+        } elseif ($this->cargo_a_generar == 2) {
+            $where .= " AND cuota = '{$this->cuota_completa}'";
+        }
+
         $sql = "SELECT ''
-                FROM alumno_cuenta_corriente
-                WHERE id_alumno = {$this->persona}
-                    AND cuota = '{$this->cuota_completa}'
+                FROM alumno_cuenta_corriente acc
+                    LEFT OUTER JOIN alumno a on a.id_alumno = acc.id_alumno
+                $where 
+                    AND a.id_persona = {$this->persona}
                     AND id_cargo_cuenta_corriente = '{$this->cargo_a_generar}'
                ";
 
@@ -1669,7 +1792,7 @@ class persona
         $errores = [];
         if (isset($array_datos_invalidos['id_persona'])) {
             foreach ($array_datos_invalidos as $clave => $id_persona) {
-                $filtro['id_alumno'] = $id_persona;
+                $filtro['id_persona'] = $id_persona;
                 $filtro['solo_alumnos'] = true;
                 $persona = dao_consultas::get_nombres_persona($filtro);
                 if ($persona) {
