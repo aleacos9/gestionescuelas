@@ -91,12 +91,12 @@ class ci_vincular_allegados extends ci_abm_personas
 
     function evt__formulario_ml__modificacion($datos)
     {
-        $this->s__datos_allegados = $datos;
-        foreach (array_keys($this->s__datos_allegados) as $allegado) {
-            if (empty($this->s__datos_allegados[$allegado]['id_alumno'])) {
-                $this->s__datos_allegados[$allegado]['id_alumno'] = $this->s__alumno_editar;
+        foreach (array_keys($datos) as $dato) {
+            if ($datos[$dato]['apex_ei_analisis_fila'] == 'B') {
+                unset($datos[$dato]);
             }
         }
+        $this->s__datos_allegados = $datos;
     }
 
     //---- Eventos ----------------------------------------------------------------------

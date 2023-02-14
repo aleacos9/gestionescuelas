@@ -65,8 +65,10 @@ class ci_administrar_formas_cobro extends ci_vincular_allegados
 
         if (!empty($this->s__datos_formas_cobro)) {
             foreach (array_keys($this->s__datos_formas_cobro) as $id) {
-                if ($this->s__datos_formas_cobro[$id]['apex_ei_analisis_fila'] == 'B') {
-                    unset($this->s__datos_formas_cobro[$id]);
+                if (isset($this->s__datos_formas_cobro[$id]['apex_ei_analisis_fila'])) {
+                    if ($this->s__datos_formas_cobro[$id]['apex_ei_analisis_fila'] == 'B') {
+                        unset($this->s__datos_formas_cobro[$id]);
+                    }
                 }
             }
             $form_ml->set_datos($this->s__datos_formas_cobro);
@@ -75,11 +77,17 @@ class ci_administrar_formas_cobro extends ci_vincular_allegados
 
     function evt__formulario_ml__modificacion($datos)
     {
-        $this->s__datos_formas_cobro = $datos;
+        /*$this->s__datos_formas_cobro = $datos;
         foreach (array_keys($this->s__datos_formas_cobro) as $formas_cobro) {
             if (empty($this->s__datos_formas_cobro[$formas_cobro]['id_alumno'])) {
                 $this->s__datos_formas_cobro[$formas_cobro]['id_alumno'] = $this->s__alumno_editar;
             }
+        }*/
+        foreach (array_keys($datos) as $dato) {
+            if ($datos[$dato]['apex_ei_analisis_fila'] == 'B') {
+                unset($datos[$dato]);
+            }
         }
+        $this->s__datos_formas_cobro = $datos;
     }
 }

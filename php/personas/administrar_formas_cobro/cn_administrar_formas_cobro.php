@@ -20,7 +20,10 @@ class cn_administrar_formas_cobro extends gestionescuelas_cn
 
     public function validar()
     {
-        //agregar todas las validaciones necesarias
+        //Valido que se inserte al menos 1 allegado
+        if (($this->datos_formas_cobro) == null) {
+            throw new toba_error('Para procesar debe ingresar datos.');
+        }
     }
 
     public function set_datos_formas_cobro($datos)

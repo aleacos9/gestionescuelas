@@ -723,23 +723,11 @@ class dao_consultas
                                      WHERE 1=1 AND substring(cuota, 1, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
                                        AND id_cargo_cuenta_corriente = 2
                                      GROUP BY 1, 2) AS cargo_mensual_cuota ON cargo_mensual_cuota.cuota = acc.cuota
-                         LEFT OUTER JOIN (SELECT (CASE WHEN substring(cuota, 1, 2) = '01' THEN 'ENERO'
-                                                       WHEN substring(cuota, 1, 2) = '02' THEN 'FEBRERO'
-                                                       WHEN substring(cuota, 1, 2) = '03' THEN 'MARZO'
-                                                       WHEN substring(cuota, 1, 2) = '04' THEN 'ABRIL'
-                                                       WHEN substring(cuota, 1, 2) = '05' THEN 'MAYO'
-                                                       WHEN substring(cuota, 1, 2) = '06' THEN 'JUNIO'
-                                                       WHEN substring(cuota, 1, 2) = '07' THEN 'JULIO'
-                                                       WHEN substring(cuota, 1, 2) = '08' THEN 'AGOSTO'
-                                                       WHEN substring(cuota, 1, 2) = '09' THEN 'SEPTIEMBRE'
-                                                       WHEN substring(cuota, 1, 2) = '10' THEN 'OCTUBRE'
-                                                       WHEN substring(cuota, 1, 2) = '11' THEN 'NOVIEMBRE'
-                                                       WHEN substring(cuota, 1, 2) = '12' THEN 'DICIEMBRE'
-                                                   END) AS mes
-                                                 ,cuota
-                                                 ,count(id_alumno_cc) as cargo_mensual_inscripcion
+                         LEFT OUTER JOIN (SELECT CASE WHEN substr(fecha_generacion_cc::varchar,1,7) = '2022-11' THEN 'NOVIEMBRE' END AS mes
+                                                ,'112022' AS cuota
+                                                ,count(id_alumno_cc) as cargo_mensual_inscripcion
                                           FROM alumno_cuenta_corriente
-                                          WHERE 1=1 AND substring(cuota, 1, 2) IN ('01', '02','03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
+                                          WHERE 1=1
                                             AND id_cargo_cuenta_corriente = 1
                                           GROUP BY 1, 2) AS cargo_mensual_inscripcion ON cargo_mensual_inscripcion.cuota = acc.cuota
                          LEFT OUTER JOIN (SELECT (CASE WHEN substring(cuota, 1, 2) = '01' THEN 'ENERO'
@@ -1229,22 +1217,28 @@ class dao_consultas
                 if ($filtro['cuota'] < 10) {
                     $filtro['cuota'] = '0'.$filtro['cuota'];
                 }
-                $where .= " AND substring(acc.cuota, 1, 2) = '{$filtro['cuota']}'";
-                $where_interno .= " AND substring(acc.cuota, 1, 2) = '{$filtro['cuota']}'";
+                if ($filtro['cuota'] == 11) {
+                    $where_interno .= " AND ((substring(acc.cuota, 1, 2) = '{$filtro['cuota']}') OR acc.cuota = '')";
+                } else {
+                    $where_interno .= " AND substring(acc.cuota, 1, 2) = '{$filtro['cuota']}'";
+                }
             }
 
             if (isset($filtro['anio'])) {
-                $where .= " AND substring(acc.cuota, 3, 4) = '{$filtro['anio']}'";
-                $where_interno .= " AND substring(acc.cuota, 3, 4) = '{$filtro['anio']}'";
+                if ($filtro['cuota'] == 11) {
+                    $where_interno .= " AND ((substring(acc.cuota, 3, 4) = '{$filtro['anio']}') OR acc.cuota = '')";
+                } else {
+                    $where_interno .= " AND substring(acc.cuota, 3, 4) = '{$filtro['anio']}'";
+                }
             }
 
-            if (isset($filtro['estado_cuota'])) {
+            /*if (isset($filtro['estado_cuota'])) {
                 if ($filtro['estado_cuota'] == 'p') {
                     $where .= " AND b.id_estado_cuota IN (3)";
                 } elseif ($filtro['estado_cuota'] == 'i') {
                     $where .= " AND b.id_estado_cuota IN (1, 2, 4)";
                 }
-            }
+            }*/
 
             if (isset($filtro['con_saldo'])) {
                 if ($filtro['con_saldo'] == 'S') {
@@ -1279,64 +1273,33 @@ class dao_consultas
                 }
             }
         }
-
-        $sql = "SELECT DISTINCT(b.id_alumno_cc)
-                              ,p.id_persona
-                              ,(p.apellidos || ', ' || p.nombres) as persona
-                              ,ptd.id_tipo_documento
-                              ,td.nombre as tipo_documento
-                              ,td.nombre_corto as tipo_documento_corto
-                              ,ptd.numero as identificacion
-                              ,ps.id_sexo
-                              ,s.nombre as sexo  
-                              ,b.ultimo_cambio
-                              ,b.estado_actual
-                              ,b.id_medio_pago
-                              ,b.medio_pago
-                              ,b.id_medio_pago
-                              ,b.id_marca_tarjeta
-                              ,b.marca_tarjeta
-                              ,b.numero_comprobante
-                              ,b.numero_lote
-                              ,b.numero_autorizacion
-                              ,(CASE WHEN p.es_alumno = 'S' AND a.regular = 'S' THEN 'Regular'
-                                     WHEN p.es_alumno = 'S' AND a.regular = 'N' THEN 'No regular'
-                                     WHEN p.es_alumno = 'N' THEN '-'
-                                END) as estado_alumno
-                              $select
-                FROM transaccion_cuenta_corriente trcc
-                         LEFT OUTER JOIN alumno_cuenta_corriente acc on trcc.id_alumno_cc = acc.id_alumno_cc
-                         INNER JOIN alumno a on a.id_alumno = acc.id_alumno
-                         INNER JOIN persona p on p.id_persona = a.id_persona
-                         LEFT OUTER JOIN (SELECT estado_actual.id_alumno_cc
-                                               ,ultimo_cambio
-                                               ,e.id_estado_cuota
-                                               ,e.nombre AS estado_actual
-                                               ,tcc.id_medio_pago
-                                               ,mp.nombre AS medio_pago
-                                               ,tcc.id_marca_tarjeta
-                                               ,mt.nombre AS marca_tarjeta
-                                               ,tcc.numero_comprobante
-                                               ,tcc.numero_lote
-                                               ,tcc.numero_autorizacion
-                                          FROM (SELECT id_alumno_cc
-                                                     ,MAX(tcc.fecha_transaccion) AS ultimo_cambio
-                                                FROM transaccion_cuenta_corriente tcc
-                                                GROUP BY id_alumno_cc) AS estado_actual
-                                             INNER JOIN transaccion_cuenta_corriente tcc on (estado_actual.id_alumno_cc = tcc.id_alumno_cc AND tcc.fecha_transaccion = estado_actual.ultimo_cambio)
-                                             INNER JOIN alumno_cuenta_corriente acc on tcc.id_alumno_cc = acc.id_alumno_cc
-                                             LEFT OUTER JOIN estado_cuota e on e.id_estado_cuota = tcc.id_estado_cuota
-                                             LEFT OUTER JOIN marca_tarjeta mt on tcc.id_marca_tarjeta = mt.id_marca_tarjeta
-                                             LEFT OUTER JOIN medio_pago mp on tcc.id_medio_pago = mp.id_medio_pago
-                                          ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
-                         LEFT OUTER JOIN (persona_sexo ps JOIN sexo s on ps.id_sexo = s.id_sexo) ON ps.id_persona = p.id_persona AND ps.activo = 'S'
-                         LEFT OUTER JOIN (persona_tipo_documento ptd JOIN tipo_documento td on ptd.id_tipo_documento = td.id_tipo_documento)
-                            ON ptd.id_persona = p.id_persona AND td.jerarquia = (SELECT MIN(X1.jerarquia)
-                                                                                 FROM tipo_documento X1
-                                                                                     ,persona_tipo_documento X2
-                                                                                 WHERE X1.id_tipo_documento = X2.id_tipo_documento
-                                                                                    AND X2.id_persona = p.id_persona)
-                         $from                                                                                    
+        $sql = "SELECT a.id_alumno
+                      ,p.id_persona
+                      ,(p.apellidos || ', ' || p.nombres)     as persona
+                      ,ptd.id_tipo_documento
+                      ,td.nombre                              as tipo_documento
+                      ,td.nombre_corto                        as tipo_documento_corto
+                      ,ptd.numero                             as identificacion
+                      ,ps.id_sexo
+                      ,s.nombre                               as sexo
+                      ,(CASE
+                            WHEN p.es_alumno = 'S' AND a.regular = 'S' THEN 'Regular'
+                            WHEN p.es_alumno = 'S' AND a.regular = 'N' THEN 'No regular'
+                            WHEN p.es_alumno = 'N' THEN '-'
+                        END)  as estado_alumno
+                      $select  
+                FROM alumno a
+                    INNER JOIN persona p on p.id_persona = a.id_persona
+                    LEFT OUTER JOIN (persona_sexo ps JOIN sexo s on ps.id_sexo = s.id_sexo)
+                                    ON ps.id_persona = p.id_persona AND ps.activo = 'S'
+                    LEFT OUTER JOIN (persona_tipo_documento ptd JOIN tipo_documento td
+                                     on ptd.id_tipo_documento = td.id_tipo_documento)
+                                    ON ptd.id_persona = p.id_persona AND td.jerarquia = (SELECT MIN(X1.jerarquia)
+                                                                                         FROM tipo_documento X1
+                                                                                            , persona_tipo_documento X2
+                                                                                         WHERE X1.id_tipo_documento = X2.id_tipo_documento
+                                                                                           AND X2.id_persona = p.id_persona)
+                    $from                    
                 $where
                ";
 

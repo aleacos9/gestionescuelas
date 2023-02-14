@@ -125,11 +125,18 @@ class persona
         $this->set_activo($datos['activo']);
         $this->set_es_alumno($datos['es_alumno']);
         $this->set_usuario($datos['usuario']);
-        $this->set_fecha_alta($datos['fecha_alta']);
-        $this->set_usuario_alta($datos['usuario_alta']);
-        $this->set_fecha_ultima_modificacion($datos['fecha_ultima_modificacion']);
-        $this->set_usuario_ultima_modificacion($datos['usuario_ultima_modificacion']);
-
+        if (isset($datos['fecha_alta'])) {
+            $this->set_fecha_alta($datos['fecha_alta']);
+        }
+        if (isset($datos['usuario_alta'])) {
+            $this->set_usuario_alta($datos['usuario_alta']);
+        }
+        if (isset($datos['fecha_ultima_modificacion'])) {
+            $this->set_fecha_ultima_modificacion($datos['fecha_ultima_modificacion']);
+        }
+        if (isset($datos['usuario_ultima_modificacion'])) {
+            $this->set_usuario_ultima_modificacion($datos['usuario_ultima_modificacion']);
+        }
         $this->set_sexo($datos['id_sexo']);
 
         $this->datos = $datos;
@@ -139,16 +146,33 @@ class persona
     {
         toba::logger()->info("set_datos_alumno");
 
-        $this->set_legajo($datos_alumno['legajo']);
-        $this->set_extranjero($datos_alumno['extranjero']);
-        $this->set_regular($datos_alumno['regular']);
-        $this->set_id_motivo_desercion($datos_alumno['id_motivo_desercion']);
-        $this->set_es_celiaco($datos_alumno['es_celiaco']);
-        $this->set_direccion_calle($datos_alumno['direccion_calle']);
-        $this->set_direccion_numero($datos_alumno['direccion_numero']);
-        $this->set_direccion_piso($datos_alumno['direccion_piso']);
-        $this->set_direccion_depto($datos_alumno['direccion_depto']);
-
+        if (isset($datos_alumno['legajo'])) {
+            $this->set_legajo($datos_alumno['legajo']);
+        }
+        if (isset($datos_alumno['extranjero'])) {
+            $this->set_extranjero($datos_alumno['extranjero']);
+        }
+        if (isset($datos_alumno['regular'])) {
+            $this->set_regular($datos_alumno['regular']);
+        }
+        if (isset($datos_alumno['id_motivo_desercion'])) {
+            $this->set_id_motivo_desercion($datos_alumno['id_motivo_desercion']);
+        }
+        if (isset($datos_alumno['es_celiaco'])) {
+            $this->set_es_celiaco($datos_alumno['es_celiaco']);
+        }
+        if (isset($datos_alumno['direccion_calle'])) {
+            $this->set_direccion_calle($datos_alumno['direccion_calle']);
+        }
+        if (isset($datos_alumno['direccion_numero'])) {
+            $this->set_direccion_numero($datos_alumno['direccion_numero']);
+        }
+        if (isset($datos_alumno['direccion_piso'])) {
+            $this->set_direccion_piso($datos_alumno['direccion_piso']);
+        }
+        if (isset($datos_alumno['direccion_depto'])) {
+            $this->set_direccion_depto($datos_alumno['direccion_depto']);
+        }
         $this->datos_alumno = $datos_alumno;
     }
 
@@ -1543,40 +1567,29 @@ class persona
 
     public function grabar_persona_allegados()
     {
+        //Primero borro todas los allegados de la persona
+        $sql = "DELETE FROM persona_allegado
+                WHERE id_alumno = {$this->persona}
+               ";
+        toba::logger()->debug(__METHOD__ . " : " . $sql);
+        ejecutar_fuente($sql);
+
+        $fecha = new fecha();
+        $hoy = $fecha->get_timestamp_db();
+        $usuario = toba::usuario()->get_id();
+
+        //Ahora inserto todos los registros que me llegan
         foreach ($this->persona_allegados as $persona_allegado) {
-            //esta bien que queden cambiado los datos id_alumno y id_persona
-            $sql = "SELECT id_persona
-                          ,id_alumno 
-					FROM persona_allegado 
-					WHERE id_alumno = {$this->persona} 
-					    AND	id_persona = '{$persona_allegado['id_persona']}'";
-
-            $datos = consultar_fuente($sql);
-
-            $fecha = new fecha();
-            $hoy = $fecha->get_timestamp_db();
-            $usuario = toba::usuario()->get_id();
-
-            if ($datos == null) {
+            if ($persona_allegado['apex_ei_analisis_fila'] != 'B') {
                 $sql = "INSERT INTO persona_allegado (id_alumno, id_persona, id_tipo_allegado, id_estudio_alcanzado, id_ocupacion
                                                      ,tutor, activo, fecha_alta, usuario_alta, fecha_ultima_modificacion, usuario_ultima_modificacion) 
 					    VALUES ({$this->persona},'{$persona_allegado['id_persona']}', '{$persona_allegado['id_tipo_allegado']}', '{$persona_allegado['id_estudio_alcanzado']}', '{$persona_allegado['id_ocupacion']}'
-					            ,'{$persona_allegado['tutor']}', '{$persona_allegado['activo']}', '{$hoy}', '{$usuario}', '{$hoy}', '{$usuario}')";
-            } else {
-                $sql = "UPDATE persona_allegado 
-						SET id_tipo_allegado = '{$persona_allegado['id_tipo_allegado']}'
-                           ,id_estudio_alcanzado = '{$persona_allegado['id_estudio_alcanzado']}'
-                           ,id_ocupacion = '{$persona_allegado['id_ocupacion']}'
-                           ,tutor = '{$persona_allegado['tutor']}'
-                           ,activo = '{$persona_allegado['activo']}'
-                           ,fecha_ultima_modificacion = '{$hoy}'
-                           ,usuario_ultima_modificacion = '{$usuario}'
-						WHERE id_alumno = {$this->persona} 
-						    AND	id_persona = '{$persona_allegado['id_persona']}'
+					            ,'{$persona_allegado['tutor']}', '{$persona_allegado['activo']}', '{$hoy}', '{$usuario}', '{$hoy}', '{$usuario}')
 					   ";
+
+                toba::logger()->debug(__METHOD__ . " : " . $sql);
+                ejecutar_fuente($sql);
             }
-            toba::logger()->debug(__METHOD__." : ".$sql);
-            ejecutar_fuente($sql);
         }
     }
 
@@ -1591,34 +1604,14 @@ class persona
 
         //Luego recorro el array que recibo y voy insertando otra vez los datos
         foreach ($this->persona_documentos as $persona_documento) {
-            /*$numero = conversion_tipo_datos::convertir_null_a_cadena($persona_documento['identificacion'], constantes::get_valor_constante('TIPO_DATO_STR'));
-
-            $sql = "SELECT id_persona
-                          ,numero
-					FROM persona_tipo_documento 
-					WHERE id_persona = {$this->persona} 
-                        AND id_tipo_documento = '{$persona_documento['id']}'
-				   ";
-            toba::logger()->debug(__METHOD__ . " : " . $sql);
-            $datos = consultar_fuente($sql);*/
-
             $fecha = new fecha();
             $hoy = $fecha->get_timestamp_db();
             $usuario = toba::usuario()->get_id();
 
-            //if ($datos == null) {
-                $sql = "INSERT INTO persona_tipo_documento (id_persona, id_tipo_documento, numero, activo, fecha_alta, usuario_alta) 
-					    VALUES ({$this->persona},'{$persona_documento['id']}', '{$persona_documento['identificacion']}', '{$persona_documento['activo']}', '{$hoy}', '{$usuario}')";
-            /*} else {
-                $sql = "UPDATE persona_tipo_documento 
-						SET numero = $numero
-                           ,id_tipo_documento = '{$persona_documento['id']}'
-                           ,activo = '{$persona_documento['activo']}'
-						WHERE id_persona = {$this->persona}
-                            AND id_tipo_documento = '{$persona_documento['id']}'
-                            AND numero <> '{$datos[0]['numero']}'
-					   ";
-            }*/
+            $sql = "INSERT INTO persona_tipo_documento (id_persona, id_tipo_documento, numero, activo, fecha_alta, usuario_alta) 
+			        VALUES ({$this->persona},'{$persona_documento['id']}', '{$persona_documento['identificacion']}', '{$persona_documento['activo']}', '{$hoy}', '{$usuario}')
+			       ";
+
             toba::logger()->debug(__METHOD__ . " : " . $sql);
             ejecutar_fuente($sql);
         }
@@ -1626,31 +1619,50 @@ class persona
 
     public function grabar_datos_getion_academica()
     {
+        //Primero borro todas los datos académicos de la persona
+        $sql = "DELETE FROM alumno_datos_cursada
+                WHERE id_alumno = {$this->persona}
+               ";
+        toba::logger()->debug(__METHOD__ . " : " . $sql);
+        ejecutar_fuente($sql);
+
+        //Ahora inserto todos los registros que me llegan
         foreach ($this->datos_academicos as $alumno_dato_academico) {
-            if ($alumno_dato_academico['id_alumno_dato_cursada'] == null) {
+            if ($alumno_dato_academico['apex_ei_analisis_fila'] != 'B') {
                 $sql = "INSERT INTO alumno_datos_cursada (id_alumno, id_grado, division, anio_cursada, genero_costo_inscripcion, pago_inscripcion) 
-					    VALUES ({$this->persona},'{$alumno_dato_academico['id_grado']}', '{$alumno_dato_academico['division']}', '{$alumno_dato_academico['anio_cursada']}'
-					          ,'{$alumno_dato_academico['genero_costo_inscripcion']}','{$alumno_dato_academico['pago_inscripcion']}')
-				       ";
-            } else {
-                $sql = "UPDATE alumno_datos_cursada 
-						SET id_grado = '{$alumno_dato_academico['id_grado']}'
-                           ,division = '{$alumno_dato_academico['division']}'
-                           ,anio_cursada = '{$alumno_dato_academico['anio_cursada']}'
-                           ,genero_costo_inscripcion = '{$alumno_dato_academico['genero_costo_inscripcion']}'
-                           ,pago_inscripcion = '{$alumno_dato_academico['pago_inscripcion']}'
-						WHERE id_alumno = {$this->persona}
-                            AND id_alumno_dato_cursada = {$alumno_dato_academico['id_alumno_dato_cursada']}
-					   ";
+					VALUES ({$this->persona},'{$alumno_dato_academico['id_grado']}', '{$alumno_dato_academico['division']}', '{$alumno_dato_academico['anio_cursada']}'
+					      ,'{$alumno_dato_academico['genero_costo_inscripcion']}','{$alumno_dato_academico['pago_inscripcion']}')
+				   ";
+
+                toba::logger()->debug(__METHOD__ . " : " . $sql);
+                ejecutar_fuente($sql);
             }
-            toba::logger()->debug(__METHOD__." : ".$sql);
-            ejecutar_fuente($sql);
         }
     }
 
     public function grabar_datos_formas_cobro()
     {
+        //Primero borro todas las formas de pago de la persona
+        $sql = "DELETE FROM alumno_tarjeta
+                WHERE id_alumno = {$this->persona}
+               ";
+        toba::logger()->debug(__METHOD__ . " : " . $sql);
+        ejecutar_fuente($sql);
+
+        //Ahora inserto todos los registros que me llegan
         foreach ($this->datos_formas_cobro as $alumno_dato_forma_cobro) {
+            if ($alumno_dato_forma_cobro['apex_ei_analisis_fila'] != 'B') {
+                $sql = "INSERT INTO alumno_tarjeta (id_alumno, id_medio_pago, id_marca_tarjeta, id_entidad_bancaria, numero_tarjeta, nombre_titular, activo) 
+					    VALUES ({$this->persona},'{$alumno_dato_forma_cobro['id_medio_pago']}', '{$alumno_dato_forma_cobro['id_marca_tarjeta']}', '{$alumno_dato_forma_cobro['id_entidad_bancaria']}'
+					          ,'{$alumno_dato_forma_cobro['numero_tarjeta']}','{$alumno_dato_forma_cobro['nombre_titular']}', '{$alumno_dato_forma_cobro['activo']}')
+				       ";
+
+                toba::logger()->debug(__METHOD__ . " : " . $sql);
+                ejecutar_fuente($sql);
+            }
+        }
+
+        /*foreach ($this->datos_formas_cobro as $alumno_dato_forma_cobro) {
             if (isset($alumno_dato_forma_cobro['apex_ei_analisis_fila'])) {
                 if ($alumno_dato_forma_cobro['apex_ei_analisis_fila'] == 'B') {
                     toba::logger()->error('por lo pronto no hago, pero debo borrar el registro');
@@ -1684,7 +1696,7 @@ class persona
                 toba::logger()->debug(__METHOD__ . " : " . $sql);
                 ejecutar_fuente($sql);
             }
-        }
+        }*/
     }
 
     public function generar_cargos_persona()
