@@ -180,27 +180,33 @@ class persona
     {
         toba::logger()->info("set_datos_formas_cobro");
 
-        $this->set_id_medio_pago($datos_formas_cobro[0]['id_medio_pago']);
-        $this->set_id_marca_tarjeta($datos_formas_cobro[0]['id_marca_tarjeta']);
-        $this->set_id_entidad_bancaria($datos_formas_cobro[0]['id_entidad_bancaria']);
-        $this->set_numero_tarjeta($datos_formas_cobro[0]['numero_tarjeta']);
-        $this->set_nombre_titular($datos_formas_cobro[0]['nombre_titular']);
-        $this->set_activo($datos_formas_cobro[0]['activo']);
-
-        $this->datos_formas_cobro = $datos_formas_cobro;
+        if (isset($datos_formas_cobro)) {
+            foreach ($datos_formas_cobro as $formas_cobro) {
+                $this->set_id_medio_pago($formas_cobro['id_medio_pago']);
+                $this->set_id_marca_tarjeta($formas_cobro['id_marca_tarjeta']);
+                $this->set_id_entidad_bancaria($formas_cobro['id_entidad_bancaria']);
+                $this->set_numero_tarjeta($formas_cobro['numero_tarjeta']);
+                $this->set_nombre_titular($formas_cobro['nombre_titular']);
+                $this->set_activo($formas_cobro['activo']);
+            }
+            $this->datos_formas_cobro = $datos_formas_cobro;
+        }
     }
 
     public function set_datos_academicos($datos_academicos = null)
     {
         toba::logger()->info("set_datos_academicos");
 
-        $this->set_id_grado($datos_academicos[0]['id_grado']);
-        $this->set_division($datos_academicos[0]['division']);
-        $this->set_anio_cursada($datos_academicos[0]['anio_cursada']);
-        $this->set_genero_costo_inscripcion($datos_academicos[0]['genero_costo_inscripcion']);
-        $this->set_pago_inscripcion($datos_academicos[0]['pago_inscripcion']);
-
-        $this->datos_academicos = $datos_academicos;
+        if (isset($datos_academicos)) {
+            foreach ($datos_academicos as $dato_academico) {
+                $this->set_id_grado($dato_academico['id_grado']);
+                $this->set_division($dato_academico['division']);
+                $this->set_anio_cursada($dato_academico['anio_cursada']);
+                $this->set_genero_costo_inscripcion($dato_academico['genero_costo_inscripcion']);
+                $this->set_pago_inscripcion($dato_academico['pago_inscripcion']);
+            }
+            $this->datos_academicos = $datos_academicos;
+        }
     }
 
     public function set_datos_generacion_cargos($datos_generacion_cargos)
@@ -236,6 +242,7 @@ class persona
     {
         toba::logger()->info("set_datos_cuenta_corriente");
 
+        //Datos comunes a ambos modos de procesamiento (individual/masivo)
         $this->set_id_alumno_cc($datos_cuenta_corriente['id_alumno_cc']);
         $this->set_id_medio_pago($datos_cuenta_corriente['id_medio_pago']);
         $id_marca_tarjeta = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['id_marca_tarjeta'], constantes::get_valor_constante('TIPO_DATO_INT'));
@@ -247,73 +254,79 @@ class persona
             $this->set_id_estado_cuota(3);
         }
 
-        $fecha_pago = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['fecha_pago'], 'TIPO_DATO_STR');
-        $this->set_fecha_pago($fecha_pago);
-        //if (isset($datos_cuenta_corriente['fecha_devolucion_respuesta2'])) {
-            $fecha_respuesta_prisma = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['fecha_devolucion_respuesta2'], 'TIPO_DATO_STR');
-            $this->set_fecha_respuesta_prisma($fecha_respuesta_prisma);
-        //}
-        /*if ($fecha_respuesta_prisma != 'null') {
-            $fecha_respuesta_prisma = date($fecha_respuesta_prisma);
-        }*/
+        if (isset($datos_cuenta_corriente['usuario_ultima_modificacion'])) {
+            $this->set_usuario_ultima_modificacion($datos_cuenta_corriente['usuario_ultima_modificacion']);
+        }
 
-        //Datos del rechazo
-        $estado_movimiento = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['estado_movimiento'], constantes::get_valor_constante('TIPO_DATO_INT'));
-        $this->set_estado_movimiento($estado_movimiento);
-
-        //aca voy a tener que obtener el id_motivo_rechazo de la tabla motivo_rechazo asociado al codigo_rechazo que viene en el txt
-        $id_motivo_rechazo1 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['rechazo1'], constantes::get_valor_constante('TIPO_DATO_STR'));
-        $this->set_id_motivo_rechazo1($id_motivo_rechazo1);
-        //if (isset($datos_cuenta_corriente['$descripcion_rechazo1'])) {
-            $descripcion_rechazo1 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['$descripcion_rechazo1'], constantes::get_valor_constante('TIPO_DATO_STR'));
-            $this->set_descripcion_rechazo1($descripcion_rechazo1);
-        //}
-        $id_motivo_rechazo2 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['rechazo2'], constantes::get_valor_constante('TIPO_DATO_STR'));
-        $this->set_id_motivo_rechazo2($id_motivo_rechazo2);
-        //if (isset($datos_cuenta_corriente['$descripcion_rechazo2'])) {
-            $descripcion_rechazo2 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['$descripcion_rechazo2'], constantes::get_valor_constante('TIPO_DATO_STR'));
-            $this->set_descripcion_rechazo2($descripcion_rechazo2);
-        //}
-        //Fin datos del rechazo
-
-        //Si el debito Ó el movimiento tuvo error  => seteo el importe en 0 y el estado en rechazada -- Solo para el alta_masiva
         if ($this->modo == 'alta_masiva') {
+            //Datos del rechazo
+            $estado_movimiento = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['estado_movimiento'], constantes::get_valor_constante('TIPO_DATO_INT'));
+            $this->set_estado_movimiento($estado_movimiento);
+
+            $fecha_respuesta_prisma = 'null';
+            if (isset($datos_cuenta_corriente['fecha_devolucion_respuesta2'])) {
+                $fecha_respuesta_prisma = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['fecha_devolucion_respuesta2'], 'TIPO_DATO_STR');
+                $this->set_fecha_respuesta_prisma($fecha_respuesta_prisma);
+            }
+
+            //aca voy a tener que obtener el id_motivo_rechazo de la tabla motivo_rechazo asociado al codigo_rechazo que viene en el txt
+            $id_motivo_rechazo1 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['rechazo1'], constantes::get_valor_constante('TIPO_DATO_STR'));
+            $this->set_id_motivo_rechazo1($id_motivo_rechazo1);
+
+            $descripcion_rechazo1 = null;
+            if (isset($datos_cuenta_corriente['descripcion_rechazo1'])) {
+                $descripcion_rechazo1 = $datos_cuenta_corriente['descripcion_rechazo1'];
+            }
+            $this->set_descripcion_rechazo1($descripcion_rechazo1);
+
+            $id_motivo_rechazo2 = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['rechazo2'], constantes::get_valor_constante('TIPO_DATO_STR'));
+            $this->set_id_motivo_rechazo2($id_motivo_rechazo2);
+
+            $descripcion_rechazo2 = '';
+            if (isset($datos_cuenta_corriente['descripcion_rechazo2'])) {
+                $descripcion_rechazo2 = $datos_cuenta_corriente['descripcion_rechazo2'];
+            }
+            $this->set_descripcion_rechazo2($descripcion_rechazo2);
+            //Fin datos del rechazo
+
+            //Si el debito Ó el movimiento tuvo error  => seteo el importe en 0 y el estado en rechazada -- Solo para el alta_masiva
             if (($estado_movimiento == 1) or ($datos_cuenta_corriente['codigo_error_debito'] != 'NUL')) {
+                toba::logger()->error('entra a poner el importe en 0');
                 $datos_cuenta_corriente['importe'] = 0;
                 $this->set_id_estado_cuota(4);
             }
-        }
-        //error en el debito
-        $codigo_error_debito = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['codigo_error_debito'], constantes::get_valor_constante('TIPO_DATO_STR'));
-        $this->set_codigo_error_debito($codigo_error_debito);
-        $descripcion_error_debito = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['descripcion_error_debito'], constantes::get_valor_constante('TIPO_DATO_STR'));
-        $this->set_descripcion_error_debito($descripcion_error_debito);
+            //error en el debito
+            $codigo_error_debito = null;
+            if (isset($datos_cuenta_corriente['codigo_error_debito'])) {
+                $codigo_error_debito = $datos_cuenta_corriente['codigo_error_debito'];
+            }
+            $this->set_codigo_error_debito($codigo_error_debito);
+            //$codigo_error_debito = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['codigo_error_debito'], constantes::get_valor_constante('TIPO_DATO_STR'));
+            //$this->set_codigo_error_debito($codigo_error_debito);
 
-        //fin error en débito y crédito
+            $descripcion_error_debito = null;
+            if (isset($datos_cuenta_corriente['descripcion_error_debito'])) {
+                $descripcion_error_debito = $datos_cuenta_corriente['descripcion_error_debito'];
+            }
+            $this->set_descripcion_error_debito($descripcion_error_debito);
 
-        $this->set_importe_pago($datos_cuenta_corriente['importe']);
+            $this->set_cuota_completa($datos_cuenta_corriente['cuota']);
+        } elseif ($this->modo == 'alta_individual') {
+            $fecha_pago = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['fecha_pago'], 'TIPO_DATO_STR');
+            $this->set_fecha_pago($fecha_pago);
 
-        //if (isset($datos_cuenta_corriente['numero_comprobante'])) {
             $numero_comprobante = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['numero_comprobante'], constantes::get_valor_constante('TIPO_DATO_INT'));
             $this->set_numero_comprobante($numero_comprobante);
-        //}
-        $numero_lote = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['numero_lote'], constantes::get_valor_constante('TIPO_DATO_INT'));
-        $this->set_numero_lote($numero_lote);
-        //if (isset($datos_cuenta_corriente['numero_autorizacion'])) {
+
+            $numero_lote = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['numero_lote'], constantes::get_valor_constante('TIPO_DATO_INT'));
+            $this->set_numero_lote($numero_lote);
+
             $numero_autorizacion = conversion_tipo_datos::convertir_null_a_cadena($datos_cuenta_corriente['numero_autorizacion'], constantes::get_valor_constante('TIPO_DATO_INT'));
             $this->set_numero_autorizacion($numero_autorizacion);
-        //}
-        //if (isset($datos_cuenta_corriente['usuario_ultima_modificacion'])) {
-            $this->set_usuario_ultima_modificacion($datos_cuenta_corriente['usuario_ultima_modificacion']);
-        //}
-        //if (isset($datos_cuenta_corriente['fecha_ultima_modificacion'])) {
-            $this->set_fecha_ultima_modificacion($datos_cuenta_corriente['fecha_ultima_modificacion']);
-        //}
-        //if (isset($datos_cuenta_corriente['mostrar_mensaje_individual'])) {
-            $this->set_mostrar_mensaje_individual($datos_cuenta_corriente['mostrar_mensaje_individual']);
-        //}
-        $this->set_cuota_completa($datos_cuenta_corriente['cuota']);
 
+            $this->set_mostrar_mensaje_individual($datos_cuenta_corriente['mostrar_mensaje_individual']);
+        }
+        $this->set_importe_pago($datos_cuenta_corriente['importe']);
         $this->datos_cuenta_corriente = $datos_cuenta_corriente;
     }
 
@@ -1628,14 +1641,16 @@ class persona
 
         //Ahora inserto todos los registros que me llegan
         foreach ($this->datos_academicos as $alumno_dato_academico) {
-            if ($alumno_dato_academico['apex_ei_analisis_fila'] != 'B') {
-                $sql = "INSERT INTO alumno_datos_cursada (id_alumno, id_grado, division, anio_cursada, genero_costo_inscripcion, pago_inscripcion) 
+            if (isset($alumno_dato_academico['apex_ei_analisis_fila'])) {
+                if ($alumno_dato_academico['apex_ei_analisis_fila'] != 'B') {
+                    $sql = "INSERT INTO alumno_datos_cursada (id_alumno, id_grado, division, anio_cursada, genero_costo_inscripcion, pago_inscripcion) 
 					VALUES ({$this->persona},'{$alumno_dato_academico['id_grado']}', '{$alumno_dato_academico['division']}', '{$alumno_dato_academico['anio_cursada']}'
 					      ,'{$alumno_dato_academico['genero_costo_inscripcion']}','{$alumno_dato_academico['pago_inscripcion']}')
 				   ";
 
-                toba::logger()->debug(__METHOD__ . " : " . $sql);
-                ejecutar_fuente($sql);
+                    toba::logger()->debug(__METHOD__ . " : " . $sql);
+                    ejecutar_fuente($sql);
+                }
             }
         }
     }
@@ -1824,15 +1839,32 @@ class persona
     {
         toba::logger()->info("persona.grabar_pago_persona()");
 
-        $sql = "INSERT INTO transaccion_cuenta_corriente (id_alumno_cc, fecha_transaccion, id_estado_cuota, importe, fecha_pago, fecha_respuesta_prisma
+        $inserts = $valores_inserts = '';
+        if ($this->modo == 'alta_masiva') {
+            $inserts = ", fecha_respuesta_prisma, id_motivo_rechazo1, id_motivo_rechazo2, codigo_error_debito, descripcion_error_debito";
+            $valores_inserts = ", '{$this->fecha_respuesta_prisma}', {$this->id_motivo_rechazo1}, {$this->id_motivo_rechazo2}, '{$this->codigo_error_debito}', '{$this->descripcion_error_debito}'";
+        } elseif ($this->modo == 'alta_individual') {
+            $inserts = ", fecha_pago, numero_comprobante, numero_lote, numero_autorizacion, id_medio_pago, id_marca_tarjeta";
+            $valores_inserts = ", '{$this->fecha_pago}', {$this->numero_comprobante}, {$this->numero_lote}, {$this->numero_autorizacion}, '{$this->id_medio_pago}', {$this->id_marca_tarjeta}";
+        }
+
+        $sql = "INSERT INTO transaccion_cuenta_corriente (id_alumno_cc, fecha_transaccion, id_estado_cuota, importe
+                                                         ,usuario_ultima_modificacion, fecha_ultima_modificacion $inserts
+                                                         )
+                VALUES ({$this->id_alumno_cc}, now(),'{$this->id_estado_cuota}', '{$this->importe_pago}'
+                       ,'{$this->usuario_ultima_modificacion}', now() $valores_inserts
+                        )
+               ";
+
+        /*$sql = "INSERT INTO transaccion_cuenta_corriente (id_alumno_cc, fecha_transaccion, id_estado_cuota, importe, fecha_pago, fecha_respuesta_prisma
                                                          ,usuario_ultima_modificacion, fecha_ultima_modificacion
                                                          ,numero_comprobante, numero_lote, numero_autorizacion, id_medio_pago
                                                          ,id_marca_tarjeta, id_motivo_rechazo1, id_motivo_rechazo2, codigo_error_debito, descripcion_error_debito) 
-				VALUES ({$this->id_alumno_cc}, now(),'{$this->id_estado_cuota}', '{$this->importe_pago}', {$this->fecha_pago}, {$this->fecha_respuesta_prisma}
+				VALUES ({$this->id_alumno_cc}, now(),'{$this->id_estado_cuota}', '{$this->importe_pago}', '{$this->fecha_pago}', '{$this->fecha_respuesta_prisma}'
 				       ,'{$this->usuario_ultima_modificacion}', now()
 				       ,{$this->numero_comprobante}, {$this->numero_lote}, {$this->numero_autorizacion}, '{$this->id_medio_pago}'
-				       ,{$this->id_marca_tarjeta}, {$this->id_motivo_rechazo1}, {$this->id_motivo_rechazo2}, {$this->codigo_error_debito}, {$this->descripcion_error_debito})
-			   ";
+				       ,{$this->id_marca_tarjeta}, '{$this->id_motivo_rechazo1}', '{$this->id_motivo_rechazo2}', '{$this->codigo_error_debito}', '{$this->descripcion_error_debito}')
+			   ";*/
 
         toba::logger()->debug(__METHOD__ . " : " . $sql);
         ejecutar_fuente($sql);
@@ -1873,8 +1905,8 @@ class persona
                       'Concepto' 	=> 2,  // Concepto del Comprobante: (1)Productos, (2)Servicios, (3)Productos y Servicios
                       'DocTipo' 	=> 96, // Tipo de documento del comprador (99 consumidor final, ver tipos disponibles) / 96 -> DNI / 86 - CUIL
                       'DocNro' 	    => $this->persona_documentos[0]['identificacion'], //27127112784,  // Número de documento del comprador (0 consumidor final)
-                      'FchServDesde'=> '20220901', //Debería ir el primer día del mes de pago
-                      'FchServHasta'=> '20220930', //Debería ir el último día del mes de pago
+                      'FchServDesde'=> '20230101', //Debería ir el primer día del mes de pago
+                      'FchServHasta'=> '20230131', //Debería ir el último día del mes de pago
                       'FchVtoPago'  => intval(date('Ymd')),
                       'CbteFch' 	=> intval(date('Ymd')), // (Opcional) Fecha del comprobante (yyyymmdd) o fecha actual si es nulo
                       'ImpTotal' 	=> $importe, // Importe total del comprobante
@@ -1889,9 +1921,9 @@ class persona
 
         $res = $afip->ElectronicBilling->CreateNextVoucher($data);
 
-        echo $res['CAE']; //CAE asignado el comprobante
+        /*echo $res['CAE']; //CAE asignado el comprobante
         echo $res['CAEFchVto']; //Fecha de vencimiento del CAE (yyyy-mm-dd)
-        echo $res['voucher_number']; //Número asignado al comprobante
+        echo $res['voucher_number']; //Número asignado al comprobante*/
 
         $datos['numero_comprobante'] = $res['voucher_number'];
         $datos['tipo_comprobante'] = 11; //Factura C
@@ -1907,27 +1939,52 @@ class persona
             //ei_arbol($voucher_info);
             if ($voucher_info === NULL) {
                 echo 'El comprobante no existe';
-            } else {
+            } /*else {
                 echo 'Esta es la información del comprobeante:';
                 echo '<pre>';
                 print_r($voucher_info);
                 echo '</pre>';
-            }
-            $datos = get_object_vars($voucher_info);
-            self::mostrar_comprobante_afip($datos);
+            }*/
+            $datos_a_pasar = get_object_vars($voucher_info);
+            $datos_a_pasar['numero_comprobante'] = $datos['numero_comprobante'];
+            self::mostrar_comprobante_afip($datos_a_pasar);
         }
     }
 
     public function mostrar_comprobante_afip($datos = null)
     {
+        /*$dir = dirname(__DIR__, 1);
+        ob_start();
+        //require_once($dir.'/comprobantes/factura_c/factura.html');
+        //$template = ob_get_contents();
         $dompdf = new Dompdf();
-        $dir = dirname(__DIR__, 1);
-        $html = file_get_contents($dir.'/comprobantes/factura_c/factura_c.php');
+        $html = file_get_contents($dir.'/comprobantes/factura_c/factura.html');
         $dompdf->loadHtml($html);
         $dompdf->render();
-        //header("Content-type: application/pdf");
-        //header("Content-Disposition: inline; filename=documento.pdf");
-        echo $dompdf->output();
+        $dir_home = '/data/local/sistema/';
+        file_put_contents($dir_home.'factura'.$datos['numero_comprobante'].'.pdf', $dompdf->output()); //guarda el PDF en un fichero llamado mipdf.pdf*/
+
+        $dir = dirname(__DIR__, 1);
+        $dompdf = new Dompdf();
+        ob_start();
+        include ($dir.'/comprobantes/factura_c/factura.html');
+        $html = ob_get_contents(); //con ob_get_contents muestra por pantalla y genera y almacena el pdf //con ob_get_clean solo genera y almacena el pdf
+        $dompdf->loadHtml($html);
+        $dompdf->render();
+        $dir_home = '/data/local/sistema/';
+        //file_put_contents($dir_home.'factura'.$datos['numero_comprobante'].'.pdf', $dompdf->output()); //guarda el PDF en un fichero llamado mipdf.pdf
+        $nombre = $dir_home.'factura'.$datos['numero_comprobante'].'.pdf';
+        $dompdf->output();
+        //$dompdf->stream("package",array("Attachment"=>1));
+        //$dompdf->stream($nombre);
+        ob_end_clean();
+
+        /*$dompdf = new Dompdf();
+        $dompdf->loadHtml('<h1>Hola mundo</h1><br><a href="https://parzibyte.me/blog">By Parzibyte</a>');
+        ob_clean();
+        $dompdf->render();
+        $dompdf->stream("name.pdf", ['Attachment' => false]);
+        exit(0);*/
     }
 
     public function generar_qr_comprobante_afip($datos = null)

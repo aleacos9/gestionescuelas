@@ -49,6 +49,11 @@ class gestionescuelas_ext_ci extends toba_ci
         $dompdf->stream();*/
     }
 
+    public function estado_servidor_afip()
+    {
+        return dao_consultas::estado_servidor_afip();
+    }
+
     //---- filtro -----------------------------------------------------------------------
 
     public function conf__filtro($form)

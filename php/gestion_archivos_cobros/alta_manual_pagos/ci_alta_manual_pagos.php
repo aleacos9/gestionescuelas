@@ -7,6 +7,17 @@ class ci_alta_manual_pagos extends ci_administrar_formas_cobro
 
     //---- Funciones ---------------------------------------------------------------------
 
+    public function ini()
+    {
+        if (!$this->estado_servidor_afip()) {
+            $mensaje = "El servidor de AFIP no está operando";
+            $mensaje .= "<br/>";
+            $mensaje .= "Tenga en cuenta que si va a procesar pagos, NO se generarán de forma automática las facturas correspondientes.";
+            toba::notificacion()->error($mensaje);
+            return true;
+        }
+    }
+
     /*
     * Retorna los medios de pagos que tienen el parámetro se_muestra_alta_manual en S
     */

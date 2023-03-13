@@ -809,3 +809,17 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/alta-manual-pagos 13/03/2023
+CREATE OR REPLACE FUNCTION altas_parametros_sistema_generar_comprobante_AFIP() RETURNS VOID AS
+$$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM parametros_sistema WHERE parametro = 'genera_comprobante_afip') THEN
+
+        INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
+        VALUES (NEXTVAL('sq_id_parametro'), 'genera_comprobante_afip', 'Genera el comprobante de AFIP', 'Genera comprobante AFIP', 'SI', '1.0.0');
+
+    END IF;
+END;
+$$ LANGUAGE 'plpgsql';

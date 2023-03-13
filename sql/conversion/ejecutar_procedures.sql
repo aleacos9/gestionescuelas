@@ -45,3 +45,6 @@ SELECT cambios_tabla_alumnos_dato_cursada();
 
 --Alejandro feature/alta-manual-pagos 01/11/2022
 SELECT actualizar_anio_cursada_alumnos();
+
+--Alejandro feature/alta-manual-pagos 13/03/2023
+SELECT altas_parametros_sistema_generar_comprobante_AFIP();

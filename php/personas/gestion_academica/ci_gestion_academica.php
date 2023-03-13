@@ -52,6 +52,12 @@ class ci_gestion_academica extends ci_vincular_allegados
                 unset($datos[$dato]);
             }
         }
+
         $this->s__datos_gestion_academica = $datos;
+        foreach (array_keys($this->s__datos_gestion_academica) as $gestion_academica) {
+            if (empty($this->s__datos_gestion_academica[$gestion_academica]['id_alumno'])) {
+                $this->s__datos_gestion_academica[$gestion_academica]['id_alumno'] = $this->s__alumno_editar;
+            }
+        }
     }
 }

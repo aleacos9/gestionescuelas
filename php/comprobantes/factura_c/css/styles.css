@@ -1,0 +1,81 @@
+  .factura {
+    table-layout: fixed;
+  }
+  
+  .fact-info > div > h5 {
+    font-weight: bold;
+  }
+  
+  .factura > thead {
+    border-top: solid 3px #000;
+    border-bottom: 3px solid #000;
+  }
+  
+  .factura > thead > tr > th:nth-child(2),
+  .factura > tbod > tr > td:nth-child(2) {
+    width: 300px;
+  }
+  
+  .factura > thead > tr > th:nth-child(n+3) {
+    text-align: right;
+  }
+  
+  .factura > tbody > tr > td:nth-child(n+3) {
+    text-align: right;
+  }
+  
+  .factura > tfoot > tr > th,
+  .factura > tfoot > tr > th:nth-child(n+3) {
+    font-size: 24px;
+    text-align: right;
+  }
+  
+  .cond {
+    border-top: solid 2px #000;
+  }
+
+  .nombre{
+    position: absolute;
+    height: 30.9vh;
+    margin-left: 180px;
+    margin-top: -164px;
+    border-right: thick solid #181515ce;
+  }
+
+  .logo{
+    border-left: thick solid #181515ce;
+    border-right: thick solid #181515ce;
+  }
+
+  .ladoderecho{
+    position: absolute;
+    margin-left: 700px;
+    margin-top: -120px;
+  }
+
+  .medio{
+    border-left: thick solid #181515ce;
+    border-right: thick solid #181515ce;
+  }
+
+  .abajo1{
+    border-left: thick solid #181515ce;
+    border-right: thick solid #181515ce;
+    height: 60vh;
+  }
+
+  .textofooter{
+   /* position: absolute;
+    margin-top: 300px;
+    margin-left: 1000px;*/
+    text-align: right;
+  }
+
+  footer{
+    border-left: thick solid #181515ce;
+    border-right: thick solid #181515ce; 
+  }
+
+  .textofooter2{
+    text-align: center;
+  }

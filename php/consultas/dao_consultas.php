@@ -1118,7 +1118,7 @@ class dao_consultas
                                                                              INNER JOIN transaccion_cuenta_corriente tcc on (estado_actual.id_alumno_cc = tcc.id_alumno_cc AND tcc.fecha_transaccion = estado_actual.ultimo_cambio)
                                                                              INNER JOIN alumno_cuenta_corriente acc on tcc.id_alumno_cc = acc.id_alumno_cc
                                                                              LEFT OUTER JOIN estado_cuota e on e.id_estado_cuota = tcc.id_estado_cuota
-                                                                             INNER JOIN marca_tarjeta mt on tcc.id_marca_tarjeta = mt.id_marca_tarjeta
+                                                                             LEFT OUTER JOIN marca_tarjeta mt on tcc.id_marca_tarjeta = mt.id_marca_tarjeta
                                                                              INNER JOIN medio_pago mp on tcc.id_medio_pago = mp.id_medio_pago
                                                                     ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
                                           WHERE 1=1 AND substring(acc.cuota, 1, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
@@ -1411,5 +1411,23 @@ class dao_consultas
 
         toba::logger()->debug(__METHOD__." : ".$sql);
         return toba::db()->consultar($sql);
+    }
+
+    public static function estado_servidor_afip()
+    {
+        /*
+         * Valido el estado del servidor AFIP (AppServer) para la generación de los comprobantes
+         * por el momento no valido los parámetros DbServer y AuthServer
+         */
+        $afip = new Afip(array('CUIT' => '27127112784'));
+        $server_status = $afip->ElectronicBilling->GetServerStatus();
+        if ($server_status === NULL) {
+            return false;
+        } else {
+            if ($server_status->AppServer != 'OK') {
+                return false;
+            }
+        }
+        return true;
     }
 }

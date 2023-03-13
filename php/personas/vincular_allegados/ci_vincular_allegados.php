@@ -96,7 +96,13 @@ class ci_vincular_allegados extends ci_abm_personas
                 unset($datos[$dato]);
             }
         }
+
         $this->s__datos_allegados = $datos;
+        foreach (array_keys($this->s__datos_allegados) as $allegado) {
+            if (empty($this->s__datos_allegados[$allegado]['id_alumno'])) {
+                $this->s__datos_allegados[$allegado]['id_alumno'] = $this->s__alumno_editar;
+            }
+        }
     }
 
     //---- Eventos ----------------------------------------------------------------------

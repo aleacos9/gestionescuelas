@@ -7,7 +7,7 @@ class ci_abm_parametros_sistema extends gestionescuelas_ext_ci
     {
         if (isset($this->s__datos_filtro)) {
             $this->s__datos_filtro['aplica_perfil_datos'] = false;
-            if ($this->s__id_perfil_datos) {
+            if (isset($this->s__id_perfil_datos)) {
                 $this->s__datos_filtro['aplica_perfil_datos'] = true;
             }
             $datos = $this->dep('datos')->get_listado($this->s__datos_filtro);

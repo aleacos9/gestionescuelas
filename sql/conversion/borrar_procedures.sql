@@ -48,3 +48,6 @@ DROP FUNCTION IF EXISTS cambios_tabla_alumnos_dato_cursada();
 
 --Alejandro feature/alta-manual-pagos 01/11/2022
 DROP FUNCTION IF EXISTS actualizar_anio_cursada_alumnos();
+
+--Alejandro feature/alta-manual-pagos 13/03/2023
+DROP FUNCTION IF EXISTS altas_parametros_sistema_generar_comprobante_AFIP();
