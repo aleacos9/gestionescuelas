@@ -823,3 +823,21 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/alta-manual-pagos 14/03/2023
+CREATE OR REPLACE FUNCTION alta_columna_estado_tabla_anio() RETURNS VOID AS
+$$
+BEGIN
+    IF NOT EXISTS ( SELECT '' FROM information_schema.columns WHERE table_name = 'anio' and column_name = 'estado') THEN
+
+        ALTER TABLE public.anio
+            ADD COLUMN estado character(1) DEFAULT 'I'::bpchar;
+
+        UPDATE public.anio
+        SET estado = 'A'
+        WHERE id_anio = 3;
+
+    END IF;
+END;
+$$ LANGUAGE 'plpgsql';

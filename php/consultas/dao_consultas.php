@@ -419,10 +419,16 @@ class dao_consultas
             if (isset($filtro['id_anio'])) {
                 $where .= " AND id_anio = '{$filtro['id_anio']}'";
             }
+            if (isset($filtro['solo_activos'])) {
+                if ($filtro['solo_activos'] == 'S') {
+                    $where .= " AND estado = 'A'";
+                }
+            }
         }
 
         $sql = "SELECT id_anio
                       ,anio
+                      ,estado 
 				FROM anio
                 $where
 			   ";
@@ -677,6 +683,14 @@ class dao_consultas
 
     public static function get_datos_cuadro_control_mensual($filtro = null)
     {
+        $where = '';
+
+        if (isset($filtro)) {
+            if (isset($filtro['anio'])) {
+                $where .= " AND substring(acc.cuota, 3,4) = '{$filtro['anio']}'";
+            }
+        }
+
         $sql = "SELECT (CASE WHEN substring(acc.cuota, 1, 2) = '01' THEN 'ENERO'
                              WHEN substring(acc.cuota, 1, 2) = '02' THEN 'FEBRERO'
                              WHEN substring(acc.cuota, 1, 2) = '03' THEN 'MARZO'
@@ -1171,6 +1185,7 @@ class dao_consultas
                                           GROUP BY 1,2) AS total_cuotas_pagas ON total_cuotas_pagas.cuota = acc.cuota
                 
                 WHERE 1=1
+                    $where
                 GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14
                 ORDER BY 1 DESC
                ";

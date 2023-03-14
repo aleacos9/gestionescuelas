@@ -51,3 +51,6 @@ DROP FUNCTION IF EXISTS actualizar_anio_cursada_alumnos();
 
 --Alejandro feature/alta-manual-pagos 13/03/2023
 DROP FUNCTION IF EXISTS altas_parametros_sistema_generar_comprobante_AFIP();
+
+--Alejandro feature/alta-manual-pagos 14/03/2023
+DROP FUNCTION IF EXISTS alta_columna_estado_tabla_anio();
