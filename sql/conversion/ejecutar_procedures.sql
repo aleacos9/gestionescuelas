@@ -51,3 +51,6 @@ SELECT altas_parametros_sistema_generar_comprobante_AFIP();
 
 --Alejandro feature/alta-manual-pagos 14/03/2023
 SELECT alta_columna_estado_tabla_anio();
+
+--Alejandro feature/alta-manual-pagos 20/03/2023
+SELECT alta_parametros_fijos_para_comprobante_electronico();

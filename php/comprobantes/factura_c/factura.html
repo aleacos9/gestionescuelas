@@ -1,6 +1,3 @@
-<?php
-if (!isset($datos)) die();
-?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,7 +7,7 @@ if (!isset($datos)) die();
     <link rel='stylesheet' type='text/css' media='screen' href='css/styles.css'>
 </head>
 <body>
-    
+
 </body>
 </html>
 
@@ -21,7 +18,7 @@ if (!isset($datos)) die();
     <div class="logo row my-3">
         <hr/>
         <div class="col-2">
-            <img src="/php/comprobantes/factura_c/logo.png" width="150px" height="150px"/>
+            <img src="logo.png" width="150px" height="150px"/>
           </div>
       <div class="nombre">
         <h2>Factura N° </h2>
@@ -32,7 +29,7 @@ if (!isset($datos)) die();
     </div>
 
     <div class="ladoderecho">
-        <strong>Punto de Venta: </strong> 1  <strong>      Comprobante N°: </strong>  0000001
+        <strong>Punto de Venta: </strong> 1  <strong>      Comprobante N°: </strong> <?php echo $datos; ?>
         <br>
         <strong>Fecha Emisión: </strong> 05/10/2022
         <br> <br>
@@ -42,21 +39,21 @@ if (!isset($datos)) die();
         <br>
         <strong>Fecha de inicio de actividades: </strong> 05/10/2022
     </div>
-  
-   
-  
+
+
+
     <div class="medio row fact-info mt-3">
       <div class="col-3">
         <hr />
-        <strong>CUIT:</strong> 20-25619134-5    
-        <br><br>       
+        <strong>CUIT:</strong> 20-25619134-5
+        <br><br>
         <strong>Apellido y Nombres: </strong> Cueva, Martín
         <br><br>
         <strong>Condición ante el IVA: </strong> Consumidor Final
         <hr />
       </div>
     </div>
-        
+
     <div class="abajo1 row my-5">
       <table class="table table-borderless factura">
 
@@ -65,10 +62,10 @@ if (!isset($datos)) die();
             <th>Cant.</th>
             <th>Descripcion</th>
             <th>Precio Unitario</th>
-            <th>Importe</th>   
+            <th>Importe</th>
           </tr>
         </thead>
-        <hr />    
+        <hr />
         <tbody>
           <tr>
             <td>1</td>
@@ -79,7 +76,7 @@ if (!isset($datos)) die();
         </tfoot>
       </table>
     </div>
-  
+
     <div class="cond row">
       <div class="col-12 mt-3">
 
@@ -90,7 +87,7 @@ if (!isset($datos)) die();
 
 
 <footer>
-    <hr />    
+    <hr />
     <div class="textofooter">
     <strong>Subtotal: </strong> 5500,00
     <br><br>
@@ -98,8 +95,8 @@ if (!isset($datos)) die();
     <br><br>
     <strong>Importe Total: </strong> 5500,00
    </div>
-    <hr />    
+    <hr />
 
     <div class="textofooter2"><h3>Escuela N° 58 "Sagrada Familia"</h3></div>
-    <hr />   
+    <hr />
 </footer>

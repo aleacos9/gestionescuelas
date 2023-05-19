@@ -43,7 +43,7 @@ class dao_personas
                     $select .= ",md.id_motivo_desercion
                                 ,md.nombre as motivo_desercion";
 
-                    $from .= " INNER JOIN alumno a on p.id_persona = a.id_persona
+                    $from .= " INNER JOIN alumno a on p.id_persona = a.id_persona AND a.regular = 'S'
                                LEFT OUTER JOIN motivo_desercion md on a.id_motivo_desercion = md.id_motivo_desercion";
                 }
                 if ($filtro['solo_alumnos'] == 0) {

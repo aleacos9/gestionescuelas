@@ -691,18 +691,18 @@ class dao_consultas
             }
         }
 
-        $sql = "SELECT (CASE WHEN substring(acc.cuota, 1, 2) = '01' THEN 'ENERO'
-                             WHEN substring(acc.cuota, 1, 2) = '02' THEN 'FEBRERO'
-                             WHEN substring(acc.cuota, 1, 2) = '03' THEN 'MARZO'
-                             WHEN substring(acc.cuota, 1, 2) = '04' THEN 'ABRIL'
-                             WHEN substring(acc.cuota, 1, 2) = '05' THEN 'MAYO'
-                             WHEN substring(acc.cuota, 1, 2) = '06' THEN 'JUNIO'
-                             WHEN substring(acc.cuota, 1, 2) = '07' THEN 'JULIO'
-                             WHEN substring(acc.cuota, 1, 2) = '08' THEN 'AGOSTO'
-                             WHEN substring(acc.cuota, 1, 2) = '09' THEN 'SEPTIEMBRE'
-                             WHEN substring(acc.cuota, 1, 2) = '10' THEN 'OCTUBRE'
-                             WHEN substring(acc.cuota, 1, 2) = '11' THEN 'NOVIEMBRE'
-                             WHEN substring(acc.cuota, 1, 2) = '12' THEN 'DICIEMBRE'
+        $sql = "SELECT (CASE WHEN left(acc.cuota, 2) = '01' THEN 'ENERO'
+                             WHEN left(acc.cuota, 2) = '02' THEN 'FEBRERO'
+                             WHEN left(acc.cuota, 2) = '03' THEN 'MARZO'
+                             WHEN left(acc.cuota, 2) = '04' THEN 'ABRIL'
+                             WHEN left(acc.cuota, 2) = '05' THEN 'MAYO'
+                             WHEN left(acc.cuota, 2) = '06' THEN 'JUNIO'
+                             WHEN left(acc.cuota, 2) = '07' THEN 'JULIO'
+                             WHEN left(acc.cuota, 2) = '08' THEN 'AGOSTO'
+                             WHEN left(acc.cuota, 2) = '09' THEN 'SEPTIEMBRE'
+                             WHEN left(acc.cuota, 2) = '10' THEN 'OCTUBRE'
+                             WHEN left(acc.cuota, 2) = '11' THEN 'NOVIEMBRE'
+                             WHEN left(acc.cuota, 2) = '12' THEN 'DICIEMBRE'
                         END) AS mes
                       ,COALESCE(cargo_mensual_inscripcion.cargo_mensual_inscripcion, 0) AS cargo_mensual_inscripcion
                       ,COALESCE(cargo_mensual_cuota.cargo_mensual_cuota, 0) AS cargo_mensual_cuota
@@ -718,23 +718,23 @@ class dao_consultas
                       ,COALESCE(cantidad_pagadores_deposito.cantidad_pagadores_deposito, 0) AS cantidad_pagadores_deposito
                       ,COALESCE(total_cuotas_pagas.total_cuotas_pagas, 0) AS total_cuotas_pagas
                 FROM alumno_cuenta_corriente acc
-                         INNER JOIN (SELECT (CASE WHEN substring(cuota, 1, 2) = '01' THEN 'ENERO'
-                                                  WHEN substring(cuota, 1, 2) = '02' THEN 'FEBRERO'
-                                                  WHEN substring(cuota, 1, 2) = '03' THEN 'MARZO'
-                                                  WHEN substring(cuota, 1, 2) = '04' THEN 'ABRIL'
-                                                  WHEN substring(cuota, 1, 2) = '05' THEN 'MAYO'
-                                                  WHEN substring(cuota, 1, 2) = '06' THEN 'JUNIO'
-                                                  WHEN substring(cuota, 1, 2) = '07' THEN 'JULIO'
-                                                  WHEN substring(cuota, 1, 2) = '08' THEN 'AGOSTO'
-                                                  WHEN substring(cuota, 1, 2) = '09' THEN 'SEPTIEMBRE'
-                                                  WHEN substring(cuota, 1, 2) = '10' THEN 'OCTUBRE'
-                                                  WHEN substring(cuota, 1, 2) = '11' THEN 'NOVIEMBRE'
-                                                  WHEN substring(cuota, 1, 2) = '12' THEN 'DICIEMBRE'
+                         INNER JOIN (SELECT (CASE WHEN left(cuota, 2) = '01' THEN 'ENERO'
+                                                  WHEN left(cuota, 2) = '02' THEN 'FEBRERO'
+                                                  WHEN left(cuota, 2) = '03' THEN 'MARZO'
+                                                  WHEN left(cuota, 2) = '04' THEN 'ABRIL'
+                                                  WHEN left(cuota, 2) = '05' THEN 'MAYO'
+                                                  WHEN left(cuota, 2) = '06' THEN 'JUNIO'
+                                                  WHEN left(cuota, 2) = '07' THEN 'JULIO'
+                                                  WHEN left(cuota, 2) = '08' THEN 'AGOSTO'
+                                                  WHEN left(cuota, 2) = '09' THEN 'SEPTIEMBRE'
+                                                  WHEN left(cuota, 2) = '10' THEN 'OCTUBRE'
+                                                  WHEN left(cuota, 2) = '11' THEN 'NOVIEMBRE'
+                                                  WHEN left(cuota, 2) = '12' THEN 'DICIEMBRE'
                                             END) AS mes
                                           ,cuota
                                           ,count(id_alumno_cc) AS cargo_mensual_cuota
                                      FROM alumno_cuenta_corriente
-                                     WHERE 1=1 AND substring(cuota, 1, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
+                                     WHERE 1=1 AND left(cuota, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
                                        AND id_cargo_cuenta_corriente = 2
                                      GROUP BY 1, 2) AS cargo_mensual_cuota ON cargo_mensual_cuota.cuota = acc.cuota
                          LEFT OUTER JOIN (SELECT CASE WHEN substr(fecha_generacion_cc::varchar,1,7) = '2022-11' THEN 'NOVIEMBRE' END AS mes
@@ -744,37 +744,37 @@ class dao_consultas
                                           WHERE 1=1
                                             AND id_cargo_cuenta_corriente = 1
                                           GROUP BY 1, 2) AS cargo_mensual_inscripcion ON cargo_mensual_inscripcion.cuota = acc.cuota
-                         LEFT OUTER JOIN (SELECT (CASE WHEN substring(cuota, 1, 2) = '01' THEN 'ENERO'
-                                                       WHEN substring(cuota, 1, 2) = '02' THEN 'FEBRERO'
-                                                       WHEN substring(cuota, 1, 2) = '03' THEN 'MARZO'
-                                                       WHEN substring(cuota, 1, 2) = '04' THEN 'ABRIL'
-                                                       WHEN substring(cuota, 1, 2) = '05' THEN 'MAYO'
-                                                       WHEN substring(cuota, 1, 2) = '06' THEN 'JUNIO'
-                                                       WHEN substring(cuota, 1, 2) = '07' THEN 'JULIO'
-                                                       WHEN substring(cuota, 1, 2) = '07' THEN 'AGOSTO'
-                                                       WHEN substring(cuota, 1, 2) = '07' THEN 'SEPTIEMBRE'
-                                                       WHEN substring(cuota, 1, 2) = '07' THEN 'OCTUBRE'
-                                                       WHEN substring(cuota, 1, 2) = '07' THEN 'NOVIEMBRE'
-                                                       WHEN substring(cuota, 1, 2) = '07' THEN 'DICIEMBRE'
+                         LEFT OUTER JOIN (SELECT (CASE WHEN left(cuota, 2) = '01' THEN 'ENERO'
+                                                       WHEN left(cuota, 2) = '02' THEN 'FEBRERO'
+                                                       WHEN left(cuota, 2) = '03' THEN 'MARZO'
+                                                       WHEN left(cuota, 2) = '04' THEN 'ABRIL'
+                                                       WHEN left(cuota, 2) = '05' THEN 'MAYO'
+                                                       WHEN left(cuota, 2) = '06' THEN 'JUNIO'
+                                                       WHEN left(cuota, 2) = '07' THEN 'JULIO'
+                                                       WHEN left(cuota, 2) = '07' THEN 'AGOSTO'
+                                                       WHEN left(cuota, 2) = '07' THEN 'SEPTIEMBRE'
+                                                       WHEN left(cuota, 2) = '07' THEN 'OCTUBRE'
+                                                       WHEN left(cuota, 2) = '07' THEN 'NOVIEMBRE'
+                                                       WHEN left(cuota, 2) = '07' THEN 'DICIEMBRE'
                                                   END) AS mes
                                                  ,cuota
                                                  ,count(id_alumno_cc) AS total_cargo_mensual
                                          FROM alumno_cuenta_corriente
-                                         WHERE 1=1 AND substring(cuota, 1, 2) IN ('01', '02','03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
+                                         WHERE 1=1 AND left(cuota, 2) IN ('01', '02','03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
                                          GROUP BY 1, 2) AS total_cargo_mensual ON total_cargo_mensual.cuota = acc.cuota
                 
-                         LEFT OUTER JOIN (SELECT (CASE WHEN substring(cuota, 1, 2) = '01' THEN 'ENERO'
-                                                      WHEN substring(cuota, 1, 2) = '02' THEN 'FEBRERO'
-                                                      WHEN substring(cuota, 1, 2) = '03' THEN 'MARZO'
-                                                      WHEN substring(cuota, 1, 2) = '04' THEN 'ABRIL'
-                                                      WHEN substring(cuota, 1, 2) = '05' THEN 'MAYO'
-                                                      WHEN substring(cuota, 1, 2) = '06' THEN 'JUNIO'
-                                                      WHEN substring(cuota, 1, 2) = '07' THEN 'JULIO'
-                                                      WHEN substring(cuota, 1, 2) = '08' THEN 'AGOSTO'
-                                                      WHEN substring(cuota, 1, 2) = '09' THEN 'SEPTIEMBRE'
-                                                      WHEN substring(cuota, 1, 2) = '10' THEN 'OCTUBRE'
-                                                      WHEN substring(cuota, 1, 2) = '11' THEN 'NOVIEMBRE'
-                                                      WHEN substring(cuota, 1, 2) = '12' THEN 'DICIEMBRE'
+                         LEFT OUTER JOIN (SELECT (CASE WHEN left(cuota, 2) = '01' THEN 'ENERO'
+                                                      WHEN left(cuota, 2) = '02' THEN 'FEBRERO'
+                                                      WHEN left(cuota, 2) = '03' THEN 'MARZO'
+                                                      WHEN left(cuota, 2) = '04' THEN 'ABRIL'
+                                                      WHEN left(cuota, 2) = '05' THEN 'MAYO'
+                                                      WHEN left(cuota, 2) = '06' THEN 'JUNIO'
+                                                      WHEN left(cuota, 2) = '07' THEN 'JULIO'
+                                                      WHEN left(cuota, 2) = '08' THEN 'AGOSTO'
+                                                      WHEN left(cuota, 2) = '09' THEN 'SEPTIEMBRE'
+                                                      WHEN left(cuota, 2) = '10' THEN 'OCTUBRE'
+                                                      WHEN left(cuota, 2) = '11' THEN 'NOVIEMBRE'
+                                                      WHEN left(cuota, 2) = '12' THEN 'DICIEMBRE'
                                                 END) AS mes
                                                ,cuota
                                                ,count(DISTINCT(b.id_alumno_cc)) AS cuotas_impagas_generadas
@@ -797,22 +797,22 @@ class dao_consultas
                                                                     LEFT OUTER JOIN motivo_rechazo mr on tcc.id_motivo_rechazo1 = mr.id_motivo_rechazo
                                                                     LEFT OUTER JOIN estado_cuota e on e.id_estado_cuota = tcc.id_estado_cuota
                                                            ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
-                                 WHERE 1=1 AND substring(acc.cuota, 1, 2) IN ('01', '02','03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
+                                 WHERE 1=1 AND left(acc.cuota, 2) IN ('01', '02','03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
                                    AND b.id_estado_cuota IN (1)
                                  GROUP BY 1,2) AS cuotas_impagas_generadas ON cuotas_impagas_generadas.cuota = acc.cuota
                 
-                         LEFT OUTER JOIN (SELECT (CASE WHEN substring(cuota, 1, 2) = '01' THEN 'ENERO'
-                                                       WHEN substring(cuota, 1, 2) = '02' THEN 'FEBRERO'
-                                                       WHEN substring(cuota, 1, 2) = '03' THEN 'MARZO'
-                                                       WHEN substring(cuota, 1, 2) = '04' THEN 'ABRIL'
-                                                       WHEN substring(cuota, 1, 2) = '05' THEN 'MAYO'
-                                                       WHEN substring(cuota, 1, 2) = '06' THEN 'JUNIO'
-                                                       WHEN substring(cuota, 1, 2) = '07' THEN 'JULIO'
-                                                       WHEN substring(cuota, 1, 2) = '08' THEN 'AGOSTO'
-                                                       WHEN substring(cuota, 1, 2) = '09' THEN 'SEPTIEMBRE'
-                                                       WHEN substring(cuota, 1, 2) = '10' THEN 'OCTUBRE'
-                                                       WHEN substring(cuota, 1, 2) = '11' THEN 'NOVIEMBRE'
-                                                       WHEN substring(cuota, 1, 2) = '12' THEN 'DICIEMBRE'
+                         LEFT OUTER JOIN (SELECT (CASE WHEN left(cuota, 2) = '01' THEN 'ENERO'
+                                                       WHEN left(cuota, 2) = '02' THEN 'FEBRERO'
+                                                       WHEN left(cuota, 2) = '03' THEN 'MARZO'
+                                                       WHEN left(cuota, 2) = '04' THEN 'ABRIL'
+                                                       WHEN left(cuota, 2) = '05' THEN 'MAYO'
+                                                       WHEN left(cuota, 2) = '06' THEN 'JUNIO'
+                                                       WHEN left(cuota, 2) = '07' THEN 'JULIO'
+                                                       WHEN left(cuota, 2) = '08' THEN 'AGOSTO'
+                                                       WHEN left(cuota, 2) = '09' THEN 'SEPTIEMBRE'
+                                                       WHEN left(cuota, 2) = '10' THEN 'OCTUBRE'
+                                                       WHEN left(cuota, 2) = '11' THEN 'NOVIEMBRE'
+                                                       WHEN left(cuota, 2) = '12' THEN 'DICIEMBRE'
                                                   END) AS mes
                                                  ,cuota
                                                  ,count(DISTINCT(b.id_alumno_cc)) AS cuotas_impagas_liquidadas
@@ -835,22 +835,22 @@ class dao_consultas
                                                                              LEFT OUTER JOIN motivo_rechazo mr on tcc.id_motivo_rechazo1 = mr.id_motivo_rechazo
                                                                              LEFT OUTER JOIN estado_cuota e on e.id_estado_cuota = tcc.id_estado_cuota
                                                                     ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
-                                          WHERE 1=1 AND substring(acc.cuota, 1, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
+                                          WHERE 1=1 AND left(acc.cuota, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
                                             AND b.id_estado_cuota IN (2)
                                           GROUP BY 1,2) AS cuotas_impagas_liquidadas ON cuotas_impagas_liquidadas.cuota = acc.cuota
                 
-                         LEFT OUTER JOIN (SELECT (CASE WHEN substring(cuota, 1, 2) = '01' THEN 'ENERO'
-                                                       WHEN substring(cuota, 1, 2) = '02' THEN 'FEBRERO'
-                                                       WHEN substring(cuota, 1, 2) = '03' THEN 'MARZO'
-                                                       WHEN substring(cuota, 1, 2) = '04' THEN 'ABRIL'
-                                                       WHEN substring(cuota, 1, 2) = '05' THEN 'MAYO'
-                                                       WHEN substring(cuota, 1, 2) = '06' THEN 'JUNIO'
-                                                       WHEN substring(cuota, 1, 2) = '07' THEN 'JULIO'
-                                                       WHEN substring(cuota, 1, 2) = '08' THEN 'AGOSTO'
-                                                       WHEN substring(cuota, 1, 2) = '09' THEN 'SEPTIEMBRE'
-                                                       WHEN substring(cuota, 1, 2) = '10' THEN 'OCTUBRE'
-                                                       WHEN substring(cuota, 1, 2) = '11' THEN 'NOVIEMBRE'
-                                                       WHEN substring(cuota, 1, 2) = '12' THEN 'DICIEMBRE'
+                         LEFT OUTER JOIN (SELECT (CASE WHEN left(cuota, 2) = '01' THEN 'ENERO'
+                                                       WHEN left(cuota, 2) = '02' THEN 'FEBRERO'
+                                                       WHEN left(cuota, 2) = '03' THEN 'MARZO'
+                                                       WHEN left(cuota, 2) = '04' THEN 'ABRIL'
+                                                       WHEN left(cuota, 2) = '05' THEN 'MAYO'
+                                                       WHEN left(cuota, 2) = '06' THEN 'JUNIO'
+                                                       WHEN left(cuota, 2) = '07' THEN 'JULIO'
+                                                       WHEN left(cuota, 2) = '08' THEN 'AGOSTO'
+                                                       WHEN left(cuota, 2) = '09' THEN 'SEPTIEMBRE'
+                                                       WHEN left(cuota, 2) = '10' THEN 'OCTUBRE'
+                                                       WHEN left(cuota, 2) = '11' THEN 'NOVIEMBRE'
+                                                       WHEN left(cuota, 2) = '12' THEN 'DICIEMBRE'
                                                   END) AS mes
                                                  ,cuota
                                                  ,count(DISTINCT(b.id_alumno_cc)) AS cuotas_impagas_rechazadas
@@ -873,22 +873,22 @@ class dao_consultas
                                                                             LEFT OUTER JOIN motivo_rechazo mr on tcc.id_motivo_rechazo1 = mr.id_motivo_rechazo
                                                                             LEFT OUTER JOIN estado_cuota e on e.id_estado_cuota = tcc.id_estado_cuota
                                                                    ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
-                                          WHERE 1=1 AND substring(acc.cuota, 1, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
+                                          WHERE 1=1 AND left(acc.cuota, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
                                             AND b.id_estado_cuota IN (4)
                                           GROUP BY 1,2) AS cuotas_impagas_rechazadas ON cuotas_impagas_rechazadas.cuota = acc.cuota
                 
-                         LEFT OUTER JOIN (SELECT (CASE WHEN substring(cuota, 1, 2) = '01' THEN 'ENERO'
-                                                       WHEN substring(cuota, 1, 2) = '02' THEN 'FEBRERO'
-                                                       WHEN substring(cuota, 1, 2) = '03' THEN 'MARZO'
-                                                       WHEN substring(cuota, 1, 2) = '04' THEN 'ABRIL'
-                                                       WHEN substring(cuota, 1, 2) = '05' THEN 'MAYO'
-                                                       WHEN substring(cuota, 1, 2) = '06' THEN 'JUNIO'
-                                                       WHEN substring(cuota, 1, 2) = '07' THEN 'JULIO'
-                                                       WHEN substring(cuota, 1, 2) = '08' THEN 'AGOSTO'
-                                                       WHEN substring(cuota, 1, 2) = '09' THEN 'SEPTIEMBRE'
-                                                       WHEN substring(cuota, 1, 2) = '10' THEN 'OCTUBRE'
-                                                       WHEN substring(cuota, 1, 2) = '11' THEN 'NOVIEMBRE'
-                                                       WHEN substring(cuota, 1, 2) = '12' THEN 'DICIEMBRE'
+                         LEFT OUTER JOIN (SELECT (CASE WHEN left(cuota, 2) = '01' THEN 'ENERO'
+                                                       WHEN left(cuota, 2) = '02' THEN 'FEBRERO'
+                                                       WHEN left(cuota, 2) = '03' THEN 'MARZO'
+                                                       WHEN left(cuota, 2) = '04' THEN 'ABRIL'
+                                                       WHEN left(cuota, 2) = '05' THEN 'MAYO'
+                                                       WHEN left(cuota, 2) = '06' THEN 'JUNIO'
+                                                       WHEN left(cuota, 2) = '07' THEN 'JULIO'
+                                                       WHEN left(cuota, 2) = '08' THEN 'AGOSTO'
+                                                       WHEN left(cuota, 2) = '09' THEN 'SEPTIEMBRE'
+                                                       WHEN left(cuota, 2) = '10' THEN 'OCTUBRE'
+                                                       WHEN left(cuota, 2) = '11' THEN 'NOVIEMBRE'
+                                                       WHEN left(cuota, 2) = '12' THEN 'DICIEMBRE'
                                                   END) AS mes
                                                  ,cuota
                                                  ,count(DISTINCT(b.id_alumno_cc)) AS total_cuotas_impagas
@@ -911,22 +911,22 @@ class dao_consultas
                                                                             LEFT OUTER JOIN motivo_rechazo mr on tcc.id_motivo_rechazo1 = mr.id_motivo_rechazo
                                                                             LEFT OUTER JOIN estado_cuota e on e.id_estado_cuota = tcc.id_estado_cuota
                                                                    ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
-                                          WHERE 1=1 AND substring(acc.cuota, 1, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
+                                          WHERE 1=1 AND left(acc.cuota, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
                                             AND b.id_estado_cuota IN (1, 2, 4)
                                           GROUP BY 1,2) AS total_cuotas_impagas ON total_cuotas_impagas.cuota = acc.cuota
                 
-                         LEFT OUTER JOIN (SELECT (CASE WHEN substring(cuota, 1, 2) = '01' THEN 'ENERO'
-                                                      WHEN substring(cuota, 1, 2) = '02' THEN 'FEBRERO'
-                                                      WHEN substring(cuota, 1, 2) = '03' THEN 'MARZO'
-                                                      WHEN substring(cuota, 1, 2) = '04' THEN 'ABRIL'
-                                                      WHEN substring(cuota, 1, 2) = '05' THEN 'MAYO'
-                                                      WHEN substring(cuota, 1, 2) = '06' THEN 'JUNIO'
-                                                      WHEN substring(cuota, 1, 2) = '07' THEN 'JULIO'
-                                                      WHEN substring(cuota, 1, 2) = '08' THEN 'AGOSTO'
-                                                      WHEN substring(cuota, 1, 2) = '09' THEN 'SEPTIEMBRE'
-                                                      WHEN substring(cuota, 1, 2) = '10' THEN 'OCTUBRE'
-                                                      WHEN substring(cuota, 1, 2) = '11' THEN 'NOVIEMBRE'
-                                                      WHEN substring(cuota, 1, 2) = '12' THEN 'DICIEMBRE'
+                         LEFT OUTER JOIN (SELECT (CASE WHEN left(cuota, 2) = '01' THEN 'ENERO'
+                                                      WHEN left(cuota, 2) = '02' THEN 'FEBRERO'
+                                                      WHEN left(cuota, 2) = '03' THEN 'MARZO'
+                                                      WHEN left(cuota, 2) = '04' THEN 'ABRIL'
+                                                      WHEN left(cuota, 2) = '05' THEN 'MAYO'
+                                                      WHEN left(cuota, 2) = '06' THEN 'JUNIO'
+                                                      WHEN left(cuota, 2) = '07' THEN 'JULIO'
+                                                      WHEN left(cuota, 2) = '08' THEN 'AGOSTO'
+                                                      WHEN left(cuota, 2) = '09' THEN 'SEPTIEMBRE'
+                                                      WHEN left(cuota, 2) = '10' THEN 'OCTUBRE'
+                                                      WHEN left(cuota, 2) = '11' THEN 'NOVIEMBRE'
+                                                      WHEN left(cuota, 2) = '12' THEN 'DICIEMBRE'
                                                   END) AS mes
                                                  ,cuota
                                                  ,count(DISTINCT(b.id_alumno_cc)) AS cantidad_pagadores_transferencia
@@ -955,23 +955,23 @@ class dao_consultas
                                                                              LEFT OUTER JOIN marca_tarjeta mt on tcc.id_marca_tarjeta = mt.id_marca_tarjeta
                                                                              INNER JOIN medio_pago mp on tcc.id_medio_pago = mp.id_medio_pago
                                                                     ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
-                                          WHERE 1=1 AND substring(acc.cuota, 1, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
+                                          WHERE 1=1 AND left(acc.cuota, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
                                             AND b.id_estado_cuota = 3 --PAGAS
                                             AND b.id_medio_pago = 2
                                           GROUP BY 1,2) AS cantidad_pagadores_transferencia ON cantidad_pagadores_transferencia.cuota = acc.cuota
                 
-                         LEFT OUTER JOIN (SELECT (CASE WHEN substring(cuota, 1, 2) = '01' THEN 'ENERO'
-                                                       WHEN substring(cuota, 1, 2) = '02' THEN 'FEBRERO'
-                                                       WHEN substring(cuota, 1, 2) = '03' THEN 'MARZO'
-                                                       WHEN substring(cuota, 1, 2) = '04' THEN 'ABRIL'
-                                                       WHEN substring(cuota, 1, 2) = '05' THEN 'MAYO'
-                                                       WHEN substring(cuota, 1, 2) = '06' THEN 'JUNIO'
-                                                       WHEN substring(cuota, 1, 2) = '07' THEN 'JULIO'
-                                                       WHEN substring(cuota, 1, 2) = '08' THEN 'AGOSTO'
-                                                       WHEN substring(cuota, 1, 2) = '09' THEN 'SEPTIEMBRE'
-                                                       WHEN substring(cuota, 1, 2) = '10' THEN 'OCTUBRE'
-                                                       WHEN substring(cuota, 1, 2) = '11' THEN 'NOVIEMBRE'
-                                                       WHEN substring(cuota, 1, 2) = '12' THEN 'DICIEMBRE'
+                         LEFT OUTER JOIN (SELECT (CASE WHEN left(cuota, 2) = '01' THEN 'ENERO'
+                                                       WHEN left(cuota, 2) = '02' THEN 'FEBRERO'
+                                                       WHEN left(cuota, 2) = '03' THEN 'MARZO'
+                                                       WHEN left(cuota, 2) = '04' THEN 'ABRIL'
+                                                       WHEN left(cuota, 2) = '05' THEN 'MAYO'
+                                                       WHEN left(cuota, 2) = '06' THEN 'JUNIO'
+                                                       WHEN left(cuota, 2) = '07' THEN 'JULIO'
+                                                       WHEN left(cuota, 2) = '08' THEN 'AGOSTO'
+                                                       WHEN left(cuota, 2) = '09' THEN 'SEPTIEMBRE'
+                                                       WHEN left(cuota, 2) = '10' THEN 'OCTUBRE'
+                                                       WHEN left(cuota, 2) = '11' THEN 'NOVIEMBRE'
+                                                       WHEN left(cuota, 2) = '12' THEN 'DICIEMBRE'
                                                   END) AS mes
                                                 ,cuota
                                                 ,count(DISTINCT(b.id_alumno_cc)) AS cantidad_pagadores_debito
@@ -1000,23 +1000,23 @@ class dao_consultas
                                                                              INNER JOIN marca_tarjeta mt on tcc.id_marca_tarjeta = mt.id_marca_tarjeta
                                                                              INNER JOIN medio_pago mp on tcc.id_medio_pago = mp.id_medio_pago
                                                                     ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
-                                          WHERE 1=1 AND substring(acc.cuota, 1, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
+                                          WHERE 1=1 AND left(acc.cuota, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
                                             AND b.id_estado_cuota = 3 --PAGAS
                                             AND b.id_medio_pago = 3
                                           GROUP BY 1,2) AS cantidad_pagadores_debito ON cantidad_pagadores_debito.cuota = acc.cuota
                 
-                         LEFT OUTER JOIN (SELECT (CASE WHEN substring(cuota, 1, 2) = '01' THEN 'ENERO'
-                                                       WHEN substring(cuota, 1, 2) = '02' THEN 'FEBRERO'
-                                                       WHEN substring(cuota, 1, 2) = '03' THEN 'MARZO'
-                                                       WHEN substring(cuota, 1, 2) = '04' THEN 'ABRIL'
-                                                       WHEN substring(cuota, 1, 2) = '05' THEN 'MAYO'
-                                                       WHEN substring(cuota, 1, 2) = '06' THEN 'JUNIO'
-                                                       WHEN substring(cuota, 1, 2) = '07' THEN 'JULIO'
-                                                       WHEN substring(cuota, 1, 2) = '08' THEN 'AGOSTO'
-                                                       WHEN substring(cuota, 1, 2) = '09' THEN 'SEPTIEMBRE'
-                                                       WHEN substring(cuota, 1, 2) = '10' THEN 'OCTUBRE'
-                                                       WHEN substring(cuota, 1, 2) = '11' THEN 'NOVIEMBRE'
-                                                       WHEN substring(cuota, 1, 2) = '12' THEN 'DICIEMBRE'
+                         LEFT OUTER JOIN (SELECT (CASE WHEN left(cuota, 2) = '01' THEN 'ENERO'
+                                                       WHEN left(cuota, 2) = '02' THEN 'FEBRERO'
+                                                       WHEN left(cuota, 2) = '03' THEN 'MARZO'
+                                                       WHEN left(cuota, 2) = '04' THEN 'ABRIL'
+                                                       WHEN left(cuota, 2) = '05' THEN 'MAYO'
+                                                       WHEN left(cuota, 2) = '06' THEN 'JUNIO'
+                                                       WHEN left(cuota, 2) = '07' THEN 'JULIO'
+                                                       WHEN left(cuota, 2) = '08' THEN 'AGOSTO'
+                                                       WHEN left(cuota, 2) = '09' THEN 'SEPTIEMBRE'
+                                                       WHEN left(cuota, 2) = '10' THEN 'OCTUBRE'
+                                                       WHEN left(cuota, 2) = '11' THEN 'NOVIEMBRE'
+                                                       WHEN left(cuota, 2) = '12' THEN 'DICIEMBRE'
                                                   END) AS mes
                                                  ,cuota
                                                  ,count(DISTINCT(b.id_alumno_cc)) AS cantidad_pagadores_credito
@@ -1045,23 +1045,23 @@ class dao_consultas
                                                                              INNER JOIN marca_tarjeta mt on tcc.id_marca_tarjeta = mt.id_marca_tarjeta
                                                                              INNER JOIN medio_pago mp on tcc.id_medio_pago = mp.id_medio_pago
                                                                     ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
-                                          WHERE 1=1 AND substring(acc.cuota, 1, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
+                                          WHERE 1=1 AND left(acc.cuota, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
                                             AND b.id_estado_cuota = 3 --PAGAS
                                             AND b.id_medio_pago = 4
                                           GROUP BY 1,2) AS cantidad_pagadores_credito ON cantidad_pagadores_credito.cuota = acc.cuota
                 
-                         LEFT OUTER JOIN (SELECT (CASE WHEN substring(cuota, 1, 2) = '01' THEN 'ENERO'
-                                                       WHEN substring(cuota, 1, 2) = '02' THEN 'FEBRERO'
-                                                       WHEN substring(cuota, 1, 2) = '03' THEN 'MARZO'
-                                                       WHEN substring(cuota, 1, 2) = '04' THEN 'ABRIL'
-                                                       WHEN substring(cuota, 1, 2) = '05' THEN 'MAYO'
-                                                       WHEN substring(cuota, 1, 2) = '06' THEN 'JUNIO'
-                                                       WHEN substring(cuota, 1, 2) = '07' THEN 'JULIO'
-                                                       WHEN substring(cuota, 1, 2) = '08' THEN 'AGOSTO'
-                                                       WHEN substring(cuota, 1, 2) = '09' THEN 'SEPTIEMBRE'
-                                                       WHEN substring(cuota, 1, 2) = '10' THEN 'OCTUBRE'
-                                                       WHEN substring(cuota, 1, 2) = '11' THEN 'NOVIEMBRE'
-                                                       WHEN substring(cuota, 1, 2) = '12' THEN 'DICIEMBRE'
+                         LEFT OUTER JOIN (SELECT (CASE WHEN left(cuota, 2) = '01' THEN 'ENERO'
+                                                       WHEN left(cuota, 2) = '02' THEN 'FEBRERO'
+                                                       WHEN left(cuota, 2) = '03' THEN 'MARZO'
+                                                       WHEN left(cuota, 2) = '04' THEN 'ABRIL'
+                                                       WHEN left(cuota, 2) = '05' THEN 'MAYO'
+                                                       WHEN left(cuota, 2) = '06' THEN 'JUNIO'
+                                                       WHEN left(cuota, 2) = '07' THEN 'JULIO'
+                                                       WHEN left(cuota, 2) = '08' THEN 'AGOSTO'
+                                                       WHEN left(cuota, 2) = '09' THEN 'SEPTIEMBRE'
+                                                       WHEN left(cuota, 2) = '10' THEN 'OCTUBRE'
+                                                       WHEN left(cuota, 2) = '11' THEN 'NOVIEMBRE'
+                                                       WHEN left(cuota, 2) = '12' THEN 'DICIEMBRE'
                                                   END) AS mes
                                                  ,cuota
                                                  ,count(DISTINCT(b.id_alumno_cc)) AS cantidad_pagadores_posnet
@@ -1090,23 +1090,23 @@ class dao_consultas
                                                                              INNER JOIN marca_tarjeta mt on tcc.id_marca_tarjeta = mt.id_marca_tarjeta
                                                                              INNER JOIN medio_pago mp on tcc.id_medio_pago = mp.id_medio_pago
                                                                     ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
-                                          WHERE 1=1 AND substring(acc.cuota, 1, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
+                                          WHERE 1=1 AND left(acc.cuota, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
                                             AND b.id_estado_cuota = 3 --PAGAS
                                             AND b.id_medio_pago = 5
                                           GROUP BY 1,2) AS cantidad_pagadores_posnet ON cantidad_pagadores_posnet.cuota = acc.cuota
                 
-                         LEFT OUTER JOIN (SELECT (CASE WHEN substring(cuota, 1, 2) = '01' THEN 'ENERO'
-                                                       WHEN substring(cuota, 1, 2) = '02' THEN 'FEBRERO'
-                                                       WHEN substring(cuota, 1, 2) = '03' THEN 'MARZO'
-                                                       WHEN substring(cuota, 1, 2) = '04' THEN 'ABRIL'
-                                                       WHEN substring(cuota, 1, 2) = '05' THEN 'MAYO'
-                                                       WHEN substring(cuota, 1, 2) = '06' THEN 'JUNIO'
-                                                       WHEN substring(cuota, 1, 2) = '07' THEN 'JULIO'
-                                                       WHEN substring(cuota, 1, 2) = '08' THEN 'AGOSTO'
-                                                       WHEN substring(cuota, 1, 2) = '09' THEN 'SEPTIEMBRE'
-                                                       WHEN substring(cuota, 1, 2) = '10' THEN 'OCTUBRE'
-                                                       WHEN substring(cuota, 1, 2) = '11' THEN 'NOVIEMBRE'
-                                                       WHEN substring(cuota, 1, 2) = '12' THEN 'DICIEMBRE'
+                         LEFT OUTER JOIN (SELECT (CASE WHEN left(cuota, 2) = '01' THEN 'ENERO'
+                                                       WHEN left(cuota, 2) = '02' THEN 'FEBRERO'
+                                                       WHEN left(cuota, 2) = '03' THEN 'MARZO'
+                                                       WHEN left(cuota, 2) = '04' THEN 'ABRIL'
+                                                       WHEN left(cuota, 2) = '05' THEN 'MAYO'
+                                                       WHEN left(cuota, 2) = '06' THEN 'JUNIO'
+                                                       WHEN left(cuota, 2) = '07' THEN 'JULIO'
+                                                       WHEN left(cuota, 2) = '08' THEN 'AGOSTO'
+                                                       WHEN left(cuota, 2) = '09' THEN 'SEPTIEMBRE'
+                                                       WHEN left(cuota, 2) = '10' THEN 'OCTUBRE'
+                                                       WHEN left(cuota, 2) = '11' THEN 'NOVIEMBRE'
+                                                       WHEN left(cuota, 2) = '12' THEN 'DICIEMBRE'
                                                   END) AS mes
                                                  ,cuota
                                                  ,count(DISTINCT(b.id_alumno_cc)) AS cantidad_pagadores_deposito
@@ -1135,23 +1135,23 @@ class dao_consultas
                                                                              LEFT OUTER JOIN marca_tarjeta mt on tcc.id_marca_tarjeta = mt.id_marca_tarjeta
                                                                              INNER JOIN medio_pago mp on tcc.id_medio_pago = mp.id_medio_pago
                                                                     ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
-                                          WHERE 1=1 AND substring(acc.cuota, 1, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
+                                          WHERE 1=1 AND left(acc.cuota, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
                                             AND b.id_estado_cuota = 3 --PAGAS
                                             AND b.id_medio_pago = 6
                                           GROUP BY 1,2) AS cantidad_pagadores_deposito ON cantidad_pagadores_deposito.cuota = acc.cuota
                 
-                         LEFT OUTER JOIN (SELECT (CASE WHEN substring(cuota, 1, 2) = '01' THEN 'ENERO'
-                                                       WHEN substring(cuota, 1, 2) = '02' THEN 'FEBRERO'
-                                                       WHEN substring(cuota, 1, 2) = '03' THEN 'MARZO'
-                                                       WHEN substring(cuota, 1, 2) = '04' THEN 'ABRIL'
-                                                       WHEN substring(cuota, 1, 2) = '05' THEN 'MAYO'
-                                                       WHEN substring(cuota, 1, 2) = '06' THEN 'JUNIO'
-                                                       WHEN substring(cuota, 1, 2) = '07' THEN 'JULIO'
-                                                       WHEN substring(cuota, 1, 2) = '08' THEN 'AGOSTO'
-                                                       WHEN substring(cuota, 1, 2) = '09' THEN 'SEPTIEMBRE'
-                                                       WHEN substring(cuota, 1, 2) = '10' THEN 'OCTUBRE'
-                                                       WHEN substring(cuota, 1, 2) = '11' THEN 'NOVIEMBRE'
-                                                       WHEN substring(cuota, 1, 2) = '12' THEN 'DICIEMBRE'
+                         LEFT OUTER JOIN (SELECT (CASE WHEN left(cuota, 2) = '01' THEN 'ENERO'
+                                                       WHEN left(cuota, 2) = '02' THEN 'FEBRERO'
+                                                       WHEN left(cuota, 2) = '03' THEN 'MARZO'
+                                                       WHEN left(cuota, 2) = '04' THEN 'ABRIL'
+                                                       WHEN left(cuota, 2) = '05' THEN 'MAYO'
+                                                       WHEN left(cuota, 2) = '06' THEN 'JUNIO'
+                                                       WHEN left(cuota, 2) = '07' THEN 'JULIO'
+                                                       WHEN left(cuota, 2) = '08' THEN 'AGOSTO'
+                                                       WHEN left(cuota, 2) = '09' THEN 'SEPTIEMBRE'
+                                                       WHEN left(cuota, 2) = '10' THEN 'OCTUBRE'
+                                                       WHEN left(cuota, 2) = '11' THEN 'NOVIEMBRE'
+                                                       WHEN left(cuota, 2) = '12' THEN 'DICIEMBRE'
                                                   END) AS mes
                                                  ,cuota
                                                  ,count(DISTINCT(b.id_alumno_cc)) AS total_cuotas_pagas
@@ -1180,7 +1180,7 @@ class dao_consultas
                                                                             INNER JOIN marca_tarjeta mt on tcc.id_marca_tarjeta = mt.id_marca_tarjeta
                                                                             INNER JOIN medio_pago mp on tcc.id_medio_pago = mp.id_medio_pago
                                                                    ORDER BY tcc.fecha_transaccion DESC) AS b ON b.id_alumno_cc = trcc.id_alumno_cc
-                                          WHERE 1=1 AND substring(acc.cuota, 1, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
+                                          WHERE 1=1 AND left(acc.cuota, 2) IN ('03', '04', '05', '06', '07', '08', '09', '10', '11', '12')
                                             AND b.id_estado_cuota = 3
                                           GROUP BY 1,2) AS total_cuotas_pagas ON total_cuotas_pagas.cuota = acc.cuota
                 
@@ -1444,5 +1444,34 @@ class dao_consultas
             }
         }
         return true;
+    }
+
+    /*
+     * Retorna los datos necesarios del alumno y la cuota que se abona para mostrar en la factura AFIP
+     */
+    public static function get_datos_alumno_cuenta_corriente($filtro=null)
+    {
+        $where = 'WHERE 1=1';
+
+        if (isset($filtro)) {
+            if (isset($filtro['id_alumno_cc'])) {
+                $where .= " AND id_alumno_cc = '{$filtro['id_alumno_cc']}'";
+            }
+        }
+
+        $sql = "SELECT acc.id_alumno_cc
+                      ,acc.cuota
+                      ,acc.descripcion
+                      ,p.nombres
+                      ,p.apellidos
+                      ,(p.apellidos ||', '|| p.nombres) as persona 
+                FROM alumno_cuenta_corriente acc
+                    INNER JOIN alumno a on acc.id_alumno = a.id_alumno
+                    INNER JOIN persona p on a.id_persona = p.id_persona
+                $where
+               ";
+
+        toba::logger()->debug(__METHOD__." : ".$sql);
+        return toba::db()->consultar($sql);
     }
 }

@@ -1569,6 +1569,7 @@ class persona
                        ,direccion_numero = $direccion_numero
                        ,direccion_piso = $direccion_piso
                        ,direccion_depto = $direccion_depto
+                       ,id_motivo_desercion = $id_motivo_desercion
                     WHERE id_persona = {$this->persona}
                         AND id_alumno = {$datos[0]['id_alumno']}
                    ";
@@ -1841,8 +1842,8 @@ class persona
 
         $inserts = $valores_inserts = '';
         if ($this->modo == 'alta_masiva') {
-            $inserts = ", fecha_respuesta_prisma, id_motivo_rechazo1, id_motivo_rechazo2, codigo_error_debito, descripcion_error_debito";
-            $valores_inserts = ", '{$this->fecha_respuesta_prisma}', {$this->id_motivo_rechazo1}, {$this->id_motivo_rechazo2}, '{$this->codigo_error_debito}', '{$this->descripcion_error_debito}'";
+            $inserts = ", fecha_respuesta_prisma, id_motivo_rechazo1, id_motivo_rechazo2, codigo_error_debito, descripcion_error_debito, id_medio_pago";
+            $valores_inserts = ", '{$this->fecha_respuesta_prisma}', {$this->id_motivo_rechazo1}, {$this->id_motivo_rechazo2}, '{$this->codigo_error_debito}', '{$this->descripcion_error_debito}', '{$this->id_medio_pago}'";
         } elseif ($this->modo == 'alta_individual') {
             $inserts = ", fecha_pago, numero_comprobante, numero_lote, numero_autorizacion, id_medio_pago, id_marca_tarjeta";
             $valores_inserts = ", '{$this->fecha_pago}', {$this->numero_comprobante}, {$this->numero_lote}, {$this->numero_autorizacion}, '{$this->id_medio_pago}', {$this->id_marca_tarjeta}";
@@ -1892,7 +1893,9 @@ class persona
 
     public function generar_comprobante_afip()
     {
-        $afip = new Afip(array('CUIT' => '27127112784'));
+        $cuit_institucion = dao_consultas::catalogo_de_parametros('cuit_institucion');
+        $afip = new Afip(array('CUIT' => $cuit_institucion));
+        //$afip = new Afip(array('CUIT' => '30670917688')); //27127112784
 
         $importe = 0;
         if (isset($this->importe_pago)) {
@@ -1926,6 +1929,7 @@ class persona
         echo $res['voucher_number']; //Número asignado al comprobante*/
 
         $datos['numero_comprobante'] = $res['voucher_number'];
+        $datos['id_alumno_cc'] = $this->id_alumno_cc;
         $datos['tipo_comprobante'] = 11; //Factura C
         $datos['punto_venta'] = 1;
         $this->obtener_datos_comprobante_afip($datos);
@@ -1934,7 +1938,8 @@ class persona
     public function obtener_datos_comprobante_afip($datos = null)
     {
         if (isset($datos['numero_comprobante'])) {
-            $afip = new Afip(array('CUIT' => '27127112784'));
+            $cuit_institucion = dao_consultas::catalogo_de_parametros('cuit_institucion');
+            $afip = new Afip(array('CUIT' => $cuit_institucion));
             $voucher_info = $afip->ElectronicBilling->GetVoucherInfo($datos['numero_comprobante'],$datos['punto_venta'],$datos['tipo_comprobante']); //Devuelve la información del comprobante 1 para el punto de venta 1 y el tipo de comprobante 11 (Factura C)
             //ei_arbol($voucher_info);
             if ($voucher_info === NULL) {
@@ -1947,44 +1952,66 @@ class persona
             }*/
             $datos_a_pasar = get_object_vars($voucher_info);
             $datos_a_pasar['numero_comprobante'] = $datos['numero_comprobante'];
+            $datos_a_pasar['id_alumno_cc'] = $datos['id_alumno_cc'];
+            toba::logger()->error($datos_a_pasar);
             self::mostrar_comprobante_afip($datos_a_pasar);
         }
     }
 
     public function mostrar_comprobante_afip($datos = null)
     {
-        /*$dir = dirname(__DIR__, 1);
-        ob_start();
-        //require_once($dir.'/comprobantes/factura_c/factura.html');
-        //$template = ob_get_contents();
-        $dompdf = new Dompdf();
-        $html = file_get_contents($dir.'/comprobantes/factura_c/factura.html');
-        $dompdf->loadHtml($html);
-        $dompdf->render();
-        $dir_home = '/data/local/sistema/';
-        file_put_contents($dir_home.'factura'.$datos['numero_comprobante'].'.pdf', $dompdf->output()); //guarda el PDF en un fichero llamado mipdf.pdf*/
+        //Defino los datos fijos de la factura
+        $cuit_institucion = dao_consultas::catalogo_de_parametros('cuit_institucion');
+        $iibb_institucion = dao_consultas::catalogo_de_parametros('iibb_institucion');
+        $fecha_inicio_actividades_institucion = dao_consultas::catalogo_de_parametros('fecha_inicio_actividades_institucion');
+        $razon_social_institucion = dao_consultas::catalogo_de_parametros('razon_social_institucion');
+        $domicilio_comercial_institucion = dao_consultas::catalogo_de_parametros('domicilio_comercial_institucion');
+        $condicion_frente_iva_institucion = dao_consultas::catalogo_de_parametros('condicion_frente_iva_institucion');
+        $condicion_frente_iva_cliente = dao_consultas::catalogo_de_parametros('condicion_frente_iva_cliente');
 
+        //Definimos los datos variables de la factura
+        $fecha = fecha::formatear_para_pantalla($datos['CbteFch']);
+        $punto_venta = str_pad($datos['PtoVta'], 5, '0', STR_PAD_LEFT);
+        $numero = str_pad($datos['numero_comprobante'], 8, '0', STR_PAD_LEFT);
+        $subtotal = $datos['ImpNeto'];
+        $otros_tributos = $datos['ImpTrib'];
+        $importe_total = $datos['ImpTotal'];
+        $cae = $datos['CodAutorizacion'];
+        $fecha_vto_cae = fecha::formatear_para_pantalla($datos['FchVto']);
+        $cuit_cliente = $datos['DocNro'];
+        $datos_cargo = dao_consultas::get_datos_alumno_cuenta_corriente($datos);
+        if (isset($datos_cargo)) {
+            if (isset($datos_cargo[0]['descripcion'])) {
+                $descripcion = $datos_cargo[0]['descripcion'];
+            }
+            if (isset($datos_cargo[0]['persona'])) {
+                $apellido_nombre_cliente = $datos_cargo[0]['persona'];
+            }
+        }
+
+        //Cargamos la plantilla HTML con los valores
+        ob_start();
         $dir = dirname(__DIR__, 1);
-        $dompdf = new Dompdf();
-        ob_start();
-        include ($dir.'/comprobantes/factura_c/factura.html');
-        $html = ob_get_contents(); //con ob_get_contents muestra por pantalla y genera y almacena el pdf //con ob_get_clean solo genera y almacena el pdf
-        $dompdf->loadHtml($html);
-        $dompdf->render();
-        $dir_home = '/data/local/sistema/';
-        //file_put_contents($dir_home.'factura'.$datos['numero_comprobante'].'.pdf', $dompdf->output()); //guarda el PDF en un fichero llamado mipdf.pdf
-        $nombre = $dir_home.'factura'.$datos['numero_comprobante'].'.pdf';
-        $dompdf->output();
-        //$dompdf->stream("package",array("Attachment"=>1));
-        //$dompdf->stream($nombre);
-        ob_end_clean();
+        include $dir.'/comprobantes/factura_c/factura2.html';
+        $html = ob_get_clean();
 
-        /*$dompdf = new Dompdf();
-        $dompdf->loadHtml('<h1>Hola mundo</h1><br><a href="https://parzibyte.me/blog">By Parzibyte</a>');
-        ob_clean();
+        $dompdf = new Dompdf();
+        $dompdf->set_option('default_charset', 'UTF-8');
+        $options = $dompdf->getOptions();
+        $options->setIsRemoteEnabled(true);
+
+        //Cargamos el contenido HTML en Dompdf
+        $dompdf->loadHtml($html);
+
+        //Definimos el tamaño y la orientación de la página
+        $dompdf->setPaper('A4', 'portrait');
+
+        //Renderizamos el contenido HTML como PDF
         $dompdf->render();
-        $dompdf->stream("name.pdf", ['Attachment' => false]);
-        exit(0);*/
+
+        //Generar el PDF
+        $dir_home = '/data/local/sistema/';
+        file_put_contents($dir_home.'factura'.$datos['numero_comprobante'].'.pdf', $dompdf->output());
     }
 
     public function generar_qr_comprobante_afip($datos = null)

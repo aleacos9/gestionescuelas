@@ -841,3 +841,28 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/alta-manual-pagos 20/03/2023
+CREATE OR REPLACE FUNCTION alta_parametros_fijos_para_comprobante_electronico() RETURNS VOID AS
+$$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM parametros_sistema WHERE parametro = 'cuit_institucion') THEN
+
+        INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
+        VALUES (NEXTVAL('sq_id_parametro'), 'cuit_institucion', 'CUIT de la Institución', 'CUIT institución', '30670917688', '1.0.0');
+        INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
+        VALUES (NEXTVAL('sq_id_parametro'), 'iibb_institucion', 'IIBB de la Institución', 'IIBB institución', 'EXENTO', '1.0.0');
+        INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
+        VALUES (NEXTVAL('sq_id_parametro'), 'fecha_inicio_actividades_institucion', 'Fecha de inicio de actividades', 'Fecha de inicio de actividades', '01/02/2000', '1.0.0');
+        INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
+        VALUES (NEXTVAL('sq_id_parametro'), 'razon_social_institucion', 'Razón Social de la Institución', 'Razón Social Institución', 'Esc. Priv. Sagrada Familia N 58', '1.0.0');
+        INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
+        VALUES (NEXTVAL('sq_id_parametro'), 'domicilio_comercial_institucion', 'Domicilio comercial de la Institución', 'Domicilio comercial Institución', 'Monsenor Rosch 4699 - Villa Zorraquin, Entre Rios', '1.0.0');
+        INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
+        VALUES (NEXTVAL('sq_id_parametro'), 'condicion_frente_iva_institucion', 'Condición frente al IVA de la Institución', 'Condición frente al IVA Institución', 'IVA Sujeto Exento', '1.0.0');
+        INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
+        VALUES (NEXTVAL('sq_id_parametro'), 'condicion_frente_iva_cliente', 'Condición frente al IVA del cliente', 'Condición frente al IVA cliente', 'Consumidor Final', '1.0.0');
+    END IF;
+END;
+$$ LANGUAGE 'plpgsql';
