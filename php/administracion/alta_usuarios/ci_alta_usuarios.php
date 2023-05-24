@@ -4,7 +4,7 @@ class ci_alta_usuarios extends gestionescuelas_ext_ci
     protected $s__datos_seleccion;
     protected $s__array_datos_invalidos = array();
     protected $s__array_usuarios_creados = array();
-    protected $s__db_toba = 'toba_3';
+    protected $s__db_toba = 'toba_3_3';
 
     //---- cuadro -----------------------------------------------------------------------
 

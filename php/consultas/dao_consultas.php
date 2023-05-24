@@ -1342,7 +1342,7 @@ class dao_consultas
 		       ";
 
         toba::logger()->debug(__METHOD__." : ".$sql);
-        $datos = toba::db('toba_3')->consultar($sql);
+        $datos = toba::db('toba_3_3')->consultar($sql);
 
         if (isset($datos) && ($ordena == true)) {
             return self::ordenar_perfiles_funcionales($datos);
