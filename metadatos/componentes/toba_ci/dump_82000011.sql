@@ -180,6 +180,18 @@ INSERT INTO apex_objeto_mt_me (objeto_mt_me_proyecto, objeto_mt_me, ev_procesar_
 --- INICIO Grupo de desarrollo 82
 INSERT INTO apex_objeto_dependencias (proyecto, dep_id, objeto_consumidor, objeto_proveedor, identificador, parametros_a, parametros_b, parametros_c, inicializar, orden) VALUES (
 	'gestionescuelas', --proyecto
+	'82000028', --dep_id
+	'82000011', --objeto_consumidor
+	'82000041', --objeto_proveedor
+	'cuadro_alumnos_vinculados', --identificador
+	NULL, --parametros_a
+	NULL, --parametros_b
+	NULL, --parametros_c
+	NULL, --inicializar
+	NULL  --orden
+);
+INSERT INTO apex_objeto_dependencias (proyecto, dep_id, objeto_consumidor, objeto_proveedor, identificador, parametros_a, parametros_b, parametros_c, inicializar, orden) VALUES (
+	'gestionescuelas', --proyecto
 	'82000011', --dep_id
 	'82000011', --objeto_consumidor
 	'82000014', --objeto_proveedor
@@ -250,7 +262,7 @@ INSERT INTO apex_objeto_ci_pantalla (objeto_ci_proyecto, objeto_ci, pantalla, id
 	NULL, --subclase_archivo
 	NULL, --template
 	NULL, --template_impresion
-	NULL  --punto_montaje
+	'82000001'  --punto_montaje
 );
 INSERT INTO apex_objeto_ci_pantalla (objeto_ci_proyecto, objeto_ci, pantalla, identificador, orden, etiqueta, descripcion, tip, imagen_recurso_origen, imagen, objetos, eventos, subclase, subclase_archivo, template, template_impresion, punto_montaje) VALUES (
 	'gestionescuelas', --objeto_ci_proyecto
@@ -309,6 +321,25 @@ INSERT INTO apex_objeto_ci_pantalla (objeto_ci_proyecto, objeto_ci, pantalla, id
 	NULL, --template_impresion
 	NULL  --punto_montaje
 );
+INSERT INTO apex_objeto_ci_pantalla (objeto_ci_proyecto, objeto_ci, pantalla, identificador, orden, etiqueta, descripcion, tip, imagen_recurso_origen, imagen, objetos, eventos, subclase, subclase_archivo, template, template_impresion, punto_montaje) VALUES (
+	'gestionescuelas', --objeto_ci_proyecto
+	'82000011', --objeto_ci
+	'82000019', --pantalla
+	'pant_datos_allegados', --identificador
+	'5', --orden
+	'Alumnos vinculados', --etiqueta
+	NULL, --descripcion
+	NULL, --tip
+	'apex', --imagen_recurso_origen
+	NULL, --imagen
+	NULL, --objetos
+	NULL, --eventos
+	NULL, --subclase
+	NULL, --subclase_archivo
+	NULL, --template
+	NULL, --template_impresion
+	'82000001'  --punto_montaje
+);
 --- FIN Grupo de desarrollo 82
 
 ------------------------------------------------------------
@@ -341,6 +372,13 @@ INSERT INTO apex_objetos_pantalla (proyecto, pantalla, objeto_ci, orden, dep_id)
 	'82000011', --objeto_ci
 	'0', --orden
 	'82000013'  --dep_id
+);
+INSERT INTO apex_objetos_pantalla (proyecto, pantalla, objeto_ci, orden, dep_id) VALUES (
+	'gestionescuelas', --proyecto
+	'82000019', --pantalla
+	'82000011', --objeto_ci
+	'0', --orden
+	'82000028'  --dep_id
 );
 
 ------------------------------------------------------------
@@ -414,6 +452,12 @@ INSERT INTO apex_eventos_pantalla (pantalla, objeto_ci, evento_id, proyecto) VAL
 );
 INSERT INTO apex_eventos_pantalla (pantalla, objeto_ci, evento_id, proyecto) VALUES (
 	'82000009', --pantalla
+	'82000011', --objeto_ci
+	'82000015', --evento_id
+	'gestionescuelas'  --proyecto
+);
+INSERT INTO apex_eventos_pantalla (pantalla, objeto_ci, evento_id, proyecto) VALUES (
+	'82000019', --pantalla
 	'82000011', --objeto_ci
 	'82000015', --evento_id
 	'gestionescuelas'  --proyecto

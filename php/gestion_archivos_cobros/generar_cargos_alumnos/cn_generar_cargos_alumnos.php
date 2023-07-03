@@ -14,19 +14,70 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
         if (isset($this->datos_formulario)) {
             if ((is_array($this->datos_formulario['id_persona'])) && ($this->datos_formulario['forma_generacion'] == 'G')) {
                 foreach ($this->datos_formulario['id_persona'] as $key => $value) {
-                    $persona = new persona($value);
-                    $persona->set_datos_generacion_cargos($this->datos_formulario);
-                    $persona->generar_cargos_persona();
+                    $this->procesar_especifico($value);
                 }
             } elseif ((!is_array($this->datos_formulario['id_persona'])) && ($this->datos_formulario['forma_generacion'] == 'I')) {
-                $persona = new persona($this->datos_formulario['id_persona']);
-                $persona->set_datos_generacion_cargos($this->datos_formulario);
-                $persona->generar_cargos_persona();
+                $this->procesar_especifico($this->datos_formulario['id_persona']);
             } else {
                 throw new toba_error("Ha ocurrido un error en la generación de los cargos a alumnos, revise los datos ingresados o contáctese con un administrador del sistema.");
             }
         }
 	}
+
+    public function procesar_especifico($persona)
+    {
+        $persona = new persona($persona);
+
+        //Me fijo si el nivel al cual concurre actualmente el alumno, permite el pago de la inscripción en cuotas
+        $this->datos_formulario['actualiza_pago_inscripcion_en_cuotas'] = false;
+        if ($this->datos_formulario['cargo_a_generar'] == 1) {
+            if ($persona->get_nivel_actual_cursada() == 1) {
+                if ((dao_consultas::catalogo_de_parametros("cobra_inscripcion_en_cuotas_inicial")) == 'SI') {
+                    $persona->get_datos_tutor();
+                    $id_tutor = $persona->get_id_tutor();
+                    if (isset($id_tutor)) {
+                        $tutorias = dao_personas::get_cantidad_tutorias_x_persona(array('id_persona' => $id_tutor));
+                        $cantidad_alumnos_tutoria = $tutorias[0]['tutorias'];
+
+                        if (isset($cantidad_alumnos_tutoria) && ($cantidad_alumnos_tutoria > 1)) {
+                            //actualizo el campo paga_inscripcion_en_cuotas de la tabla alumno
+                            $this->datos_formulario['actualiza_pago_inscripcion_en_cuotas'] = true;
+                        }
+                    }
+                }
+                $this->datos_formulario['importe_cuota'] = dao_consultas::catalogo_de_parametros("importe_inscripcion_inicial");
+            }
+            if ($persona->get_nivel_actual_cursada() == 2) {
+                if ((dao_consultas::catalogo_de_parametros("cobra_inscripcion_en_cuotas_primario")) == 'SI') {
+                    $persona->get_datos_tutor();
+                    $id_tutor = $persona->get_id_tutor();
+                    if (isset($id_tutor)) {
+                        $tutorias = dao_personas::get_cantidad_tutorias_x_persona(array('id_persona' => $id_tutor));
+                        $cantidad_alumnos_tutoria = $tutorias[0]['tutorias'];
+
+                        if (isset($cantidad_alumnos_tutoria) && ($cantidad_alumnos_tutoria > 1)) {
+                            //actualizo el campo paga_inscripcion_en_cuotas de la tabla alumno
+                            $this->datos_formulario['actualiza_pago_inscripcion_en_cuotas'] = true;
+                        }
+                    }
+                }
+                $this->datos_formulario['importe_cuota'] = dao_consultas::catalogo_de_parametros("importe_inscripcion_primario");
+            }
+        }
+        if ($this->datos_formulario['cargo_a_generar'] == 1) {
+            if (($persona->get_grado_actual_cursada() == 8) && ($persona->get_anio_actual_cursada() == 2)) {
+                toba::logger()->error('Para el alumno: ' . $persona->get_id_alumno() . ' no se le genera el costo de la inscripción ya que está cursando 6to grado, por lo tanto es un egresado.');
+            } else {
+                $this->datos_formulario['id_alumno'] = $persona->get_id_alumno();
+                $persona->set_datos_generacion_cargos($this->datos_formulario);
+                $persona->generar_cargos_persona();
+            }
+        } else {
+            $this->datos_formulario['id_alumno'] = $persona->get_id_alumno();
+            $persona->set_datos_generacion_cargos($this->datos_formulario);
+            $persona->generar_cargos_persona();
+        }
+    }
 
     public function validar()
     {
@@ -52,6 +103,13 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
                     if (empty($this->datos_formulario['cuota']) OR empty($this->datos_formulario['anio']))  {
                         throw new toba_error("Debe seleccionar una cuota y un año antes de procesar.");
                     }
+                }
+            }
+
+            //Valido que si el parámetro ingresa_importe_en_generacion_cargos está en SI => se cargue un importe
+            if (dao_consultas::catalogo_de_parametros("ingresa_importe_en_generacion_cargos") == 'SI') {
+                if (empty($this->datos_formulario['importe_cuota'])) {
+                    throw new toba_error("Debe ingresar un importe antes de procesar.");
                 }
             }
         }

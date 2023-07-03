@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel='stylesheet' type='text/css' media='screen' href='css/styles.css'>
+</head>
+<body>
+
+</body>
+</html>
+
+
+</div><div id="app" class="col-11">
+
+
+    <div class="logo row my-3">
+        <hr/>
+        <div class="col-2">
+            <img src="logo.png" width="150px" height="150px"/>
+          </div>
+      <div class="nombre">
+        <h2>Factura N° </h2>
+        <h1>Escuela N° 58 "Sagrada Familia"</h1>
+        <p>Av. Monseñor Ricardo Rösch 4699</p>
+      </div>
+      <hr/>
+    </div>
+
+    <div class="ladoderecho">
+        <strong>Punto de Venta: </strong> 1  <strong>      Comprobante N°: </strong> <?php echo $datos; ?>
+        <br>
+        <strong>Fecha Emisión: </strong> 05/10/2022
+        <br> <br>
+        <strong>CUIT: </strong> 27127112784
+        <br>
+        <strong>Ingresos Brutos: </strong> 27127112784
+        <br>
+        <strong>Fecha de inicio de actividades: </strong> 05/10/2022
+    </div>
+
+
+
+    <div class="medio row fact-info mt-3">
+      <div class="col-3">
+        <hr />
+        <strong>CUIT:</strong> 20-25619134-5
+        <br><br>
+        <strong>Apellido y Nombres: </strong> Cueva, Martín
+        <br><br>
+        <strong>Condición ante el IVA: </strong> Consumidor Final
+        <hr />
+      </div>
+    </div>
+
+    <div class="abajo1 row my-5">
+      <table class="table table-borderless factura">
+
+        <thead>
+          <tr>
+            <th>Cant.</th>
+            <th>Descripcion</th>
+            <th>Precio Unitario</th>
+            <th>Importe</th>
+          </tr>
+        </thead>
+        <hr />
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>Cuota Mes de Octubre 2022</td>
+            <td>5500.00</td>
+            <td>5500.00</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="cond row">
+      <div class="col-12 mt-3">
+
+        </p>
+      </div>
+    </div>
+</div>
+
+
+<footer>
+    <hr />
+    <div class="textofooter">
+    <strong>Subtotal: </strong> 5500,00
+    <br><br>
+    <strong>Importe Otros Tributos: </strong> 0,00
+    <br><br>
+    <strong>Importe Total: </strong> 5500,00
+   </div>
+    <hr />
+
+    <div class="textofooter2"><h3>Escuela N° 58 "Sagrada Familia"</h3></div>
+    <hr />
+</footer>

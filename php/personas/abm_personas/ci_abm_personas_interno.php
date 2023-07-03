@@ -48,6 +48,7 @@ class ci_abm_personas_interno extends ci_abm_personas
                 }
             }
 
+            $this->s__datos_allegados = $persona->get_alumnos_vinculados();
         }
     }
 
@@ -71,14 +72,34 @@ class ci_abm_personas_interno extends ci_abm_personas
         $this->activar_pestanias();
     }
 
+    public function conf__pant_datos_allegados()
+    {
+        $this->activar_pestanias();
+    }
+
     public function activar_pestanias()
     {
         //Activo/desactivo la pantalla Alumno en función del valor del ef es_alumno
         if (!empty($this->s__datos_persona)) {
             if ($this->s__datos_persona['es_alumno'] == 'N') {
                 $this->pantalla()->tab('pant_datos_alumno')->desactivar();
+                $this->pantalla()->tab('pant_datos_allegados')->activar();
             } else {
                 $this->pantalla()->tab('pant_datos_alumno')->activar();
+                $this->pantalla()->tab('pant_datos_allegados')->desactivar();
+            }
+        }
+    }
+
+    public function controlar_alta_documento($datos)
+    {
+        if ($this->s__documentos) {
+            foreach ($this->s__documentos as $doc) {
+                if (!isset($doc['estado']) || $doc['estado'] != 'B') {
+                    if ( ($doc['id'] == $datos['id']) && ($doc['identificacion'] == $datos['identificacion']) ) {
+                        throw new toba_error("El tipo y número de documento ya está dado de alta.");
+                    }
+                }
             }
         }
     }
@@ -126,10 +147,12 @@ class ci_abm_personas_interno extends ci_abm_personas
 
 	public function evt__form_documentos__alta($datos)
 	{
+        $datos['estado'] = 'A'; //Se marca para darlo de alta luego en la base
+        $this->controlar_alta_documento($datos);
         $this->s__documentos[] = $datos;
-	}
+    }
 
-	public function evt__form_documentos__modificacion($datos)
+    public function evt__form_documentos__modificacion($datos)
 	{
         $this->s__documentos[$this->s__documento_seleccionado] = $datos;
         unset($this->s__documento_seleccionado);
@@ -145,10 +168,23 @@ class ci_abm_personas_interno extends ci_abm_personas
 	public function conf__cuadro_documentos($cuadro)
 	{
         if (!empty($this->s__documentos)) {
-            foreach (array_keys($this->s__documentos) as $k) {
-                $this->s__documentos[$k]['id_tipo_documento'] = $k;
+            //Muestro las filas que tienen estado <> 'B' o que no tienen seteado el estado
+            $salida = array();
+            foreach (array_keys($this->s__documentos) as $id) {
+                $this->s__documentos[$id]['id_tipo_documento'] = $id;
+                if ($this->s__documentos[$id]['activo'] == 'S') {
+                    $this->s__documentos[$id]['activo_completo'] = 'Si';
+                } else {
+                    $this->s__documentos[$id]['activo_completo'] = 'No';
+                }
+                //Obtengo la descripción del tipo del documento
+                $descripcion_tipo_documento = dao_consultas::get_tipos_documentos($this->s__documentos[$id]['id_tipo_documento']);
+                $this->s__documentos[$id]['tipo_documento'] = $descripcion_tipo_documento[0]['nombre'];
+                if (!isset($this->s__documentos[$id]['estado']) || $this->s__documentos[$id]['estado'] != 'B') {
+                    $salida[] = $this->s__documentos[$id];
+                }
             }
-            $cuadro->set_datos($this->s__documentos);
+            $cuadro->set_datos($salida);
         }
 	}
 
@@ -159,8 +195,19 @@ class ci_abm_personas_interno extends ci_abm_personas
 
 	public function evt__cuadro_documentos__eliminar($seleccion)
 	{
+        /*foreach ($this->s__documentos as $key => $doc) {
+            if (isset($doc['estado']) && $doc['estado'] == 'A') {
+                //es un alta temporal, por lo tanto se saca del array
+                unset($this->s__documentos[$key]);
+            } else {
+                //Está en la base, por lo tanto se marca para darlo de baja
+                $this->s__documentos[$key]['estado'] = 'B';
+            }
+            break;
+        }*/
+
         foreach (array_keys($this->s__documentos) as $d) {
-            if ($d == $seleccion['id']) {
+            if ($d == $seleccion['id_tipo_documento']) {
                 unset($this->s__documentos[$d]);
             }
         }
@@ -183,6 +230,17 @@ class ci_abm_personas_interno extends ci_abm_personas
     }
 
     //---- FIN pant_datos_alumno ---------------------------------------------------------
+
+    //---- cuadro_alumnos_vinculados -----------------------------------------------------
+
+    public function conf__cuadro_alumnos_vinculados($cuadro)
+    {
+        if (!empty($this->s__datos_allegados)) {
+            $cuadro->set_datos($this->s__datos_allegados);
+        }
+    }
+
+    //---- FIN pant_datos_allegados ------------------------------------------------------
 
 	//---- Eventos ----------------------------------------------------------------------
 

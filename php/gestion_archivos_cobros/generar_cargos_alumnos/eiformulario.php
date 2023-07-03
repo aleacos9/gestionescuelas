@@ -4,12 +4,22 @@ class eiformulario extends gestionescuelas_ei_formulario
 	function extender_objeto_js()
 	{
 		$importe_mensual_cuota_x_grado = dao_consultas::catalogo_de_parametros("importe_mensual_cuota_x_grado");
-		
+		$ingresa_importe_en_generacion_cargos = dao_consultas::catalogo_de_parametros("ingresa_importe_en_generacion_cargos");
+
 		echo "
 		{$this->objeto_js}.ini = function()
 		{
 			var importe_mensual_cuota_x_grado = '{$importe_mensual_cuota_x_grado}';
-			if (importe_mensual_cuota_x_grado == 'SI'){
+			var ingresa_importe_en_generacion_cargos = '{$ingresa_importe_en_generacion_cargos}';
+			
+			if (ingresa_importe_en_generacion_cargos == 'SI') {
+			    this.ef('importe_cuota').mostrar();
+			    this.ef('importe_cuota').set_obligatorio(1);
+			} else {
+				this.ef('importe_cuota').ocultar();
+			}
+			
+			if (importe_mensual_cuota_x_grado == 'SI') {
 				this.ef('grado').mostrar();
 			} else {
 				this.ef('grado').ocultar();
@@ -57,7 +67,5 @@ class eiformulario extends gestionescuelas_ei_formulario
 		}
 		";
 	}
-
-
 }
 ?>

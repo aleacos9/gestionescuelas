@@ -8,9 +8,9 @@ class ci_administrar_formas_cobro extends ci_vincular_allegados
     /*
     * Retorna los medios de pagos
     */
-    public function get_medios_pagos_ci()
+    public function get_medios_pagos_ci($filtro = null)
     {
-        return dao_consultas::get_medios_pagos();
+        return dao_consultas::get_medios_pagos($filtro);
     }
 
     /*
@@ -18,7 +18,8 @@ class ci_administrar_formas_cobro extends ci_vincular_allegados
     */
     public function get_marcas_tarjetas_ci()
     {
-        return dao_consultas::get_marcas_tarjetas();
+        $filtro['permite_posnet'] = true;
+        return dao_consultas::get_marcas_tarjetas($filtro);
     }
 
     /*
@@ -31,9 +32,10 @@ class ci_administrar_formas_cobro extends ci_vincular_allegados
 
     public function cargar_datos()
     {
-        if (!empty($this->s__alumno_editar)) {
-            $persona = new persona($this->s__alumno_editar);
+        if (!empty($this->s__persona_editar)) {
+            $persona = new persona($this->s__persona_editar);
             $this->s__datos_formas_cobro = $persona->get_datos_formas_cobro();
+            $this->s__nombre_alumno = $persona->get_nombre_completo_alumno();
         }
     }
 
@@ -57,10 +59,16 @@ class ci_administrar_formas_cobro extends ci_vincular_allegados
 
     function conf__formulario_ml($form_ml)
     {
+        if ($this->s__alumno_editar) {
+            $form_ml->set_titulo('<div class="titulo_alumno">'.$this->s__nombre_alumno.'</div>');
+        }
+
         if (!empty($this->s__datos_formas_cobro)) {
             foreach (array_keys($this->s__datos_formas_cobro) as $id) {
-                if ($this->s__datos_formas_cobro[$id]['apex_ei_analisis_fila'] == 'B') {
-                    unset($this->s__datos_formas_cobro[$id]);
+                if (isset($this->s__datos_formas_cobro[$id]['apex_ei_analisis_fila'])) {
+                    if ($this->s__datos_formas_cobro[$id]['apex_ei_analisis_fila'] == 'B') {
+                        unset($this->s__datos_formas_cobro[$id]);
+                    }
                 }
             }
             $form_ml->set_datos($this->s__datos_formas_cobro);
@@ -69,6 +77,12 @@ class ci_administrar_formas_cobro extends ci_vincular_allegados
 
     function evt__formulario_ml__modificacion($datos)
     {
+        foreach (array_keys($datos) as $dato) {
+            if ($datos[$dato]['apex_ei_analisis_fila'] == 'B') {
+                unset($datos[$dato]);
+            }
+        }
+
         $this->s__datos_formas_cobro = $datos;
         foreach (array_keys($this->s__datos_formas_cobro) as $formas_cobro) {
             if (empty($this->s__datos_formas_cobro[$formas_cobro]['id_alumno'])) {

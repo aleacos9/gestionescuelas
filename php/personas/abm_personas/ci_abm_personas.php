@@ -5,7 +5,6 @@ class ci_abm_personas extends gestionescuelas_ext_ci
     protected $s__domicilios = array();
     protected $s__documentos = array();
     protected $s__datos_alumno = array();
-    protected $s__persona_editar;
     protected $s__dar_baja = false;
 
     //---- Funciones ---------------------------------------------------------------------

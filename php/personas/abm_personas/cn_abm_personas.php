@@ -16,20 +16,21 @@ class cn_abm_personas extends gestionescuelas_cn
         } else {
             $persona = new persona();
         }
+
         $persona->set_datos_persona($this->datos_persona);
         $persona->set_persona_documentos($this->documentos);
         $persona->set_datos_alumno($this->datos_persona);
+
         if ($this->dar_baja) {
-            $persona->set_estado('B');
+            $persona->set_activo('B');
         }
         $persona->grabar();
 
         $mensaje = '';
         if ($this->dar_baja) {
             $mensaje .= " La persona fue dada de baja.";
-
+            toba::notificacion()->agregar($mensaje, 'info');
         }
-
 	    return "ok";
 	}
 
