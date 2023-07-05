@@ -739,6 +739,12 @@ class persona
         return $this->id_persona;
     }
 
+    public function get_persona_insertada()
+    {
+        toba::logger()->info("get_persona_insertada");
+        return $this->persona;
+    }
+
     public function get_apellidos()
     {
         toba::logger()->info("get_apellidos");

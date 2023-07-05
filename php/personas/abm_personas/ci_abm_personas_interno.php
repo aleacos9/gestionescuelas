@@ -249,7 +249,7 @@ class ci_abm_personas_interno extends ci_abm_personas
         $this->validar();
         $this->set_datos_cn();
         $rta = $this->cn()->procesar();
-        if (strtolower($rta) == 'ok') {
+        if (strtolower($rta['rta']) == 'ok') {
             $this->limpiar_memoria();
             $this->controlador()->disparar_limpieza_memoria();
             $this->controlador()->set_pantalla("seleccion");
@@ -263,9 +263,10 @@ class ci_abm_personas_interno extends ci_abm_personas
         $this->validar();
         $this->set_datos_cn();
         $rta = $this->cn()->procesar();
-        if (strtolower($rta) == 'ok') {
-            //$this->limpiar_memoria();
-            //$this->controlador()->disparar_limpieza_memoria();
+        if (strtolower($rta['rta']) == 'ok') {
+            if (isset($rta['id_persona'])) {
+                $this->s__datos_persona['id_persona'] = $rta['id_persona'];
+            }
         } else {
             throw new toba_error("Ha ocurrido un error inesperado: $rta");
         }
@@ -283,4 +284,3 @@ class ci_abm_personas_interno extends ci_abm_personas
     }
 
 }
-?>

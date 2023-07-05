@@ -31,7 +31,12 @@ class cn_abm_personas extends gestionescuelas_cn
             $mensaje .= " La persona fue dada de baja.";
             toba::notificacion()->agregar($mensaje, 'info');
         }
-	    return "ok";
+
+        $rta['rta'] = 'ok';
+        if (!isset($this->datos_persona['id_persona'])) {
+            $rta['id_persona'] = $persona->get_persona_insertada();
+        }
+        return $rta;
 	}
 
     public function validar()
