@@ -1,5 +1,5 @@
 <?php
-class ci_cuenta_corriente extends ci_alta_manual_pagos //gestionescuelas_ext_ci
+class ci_cuenta_corriente extends gestionescuelas_ext_ci //ci_alta_manual_pagos
 {
     protected $s__datos_cuenta_corriente = array();
 
@@ -21,6 +21,16 @@ class ci_cuenta_corriente extends ci_alta_manual_pagos //gestionescuelas_ext_ci
                 if (isset($this->s__id_persona)) {
                     $obj_persona = new persona($this->s__id_persona);
                     $alumnos_vinculados = $obj_persona->get_alumnos_vinculados();
+                    //Debo recorrer cada alumno asociado a la persona y obtener el saldo de la deuda corriente
+                    if (isset($alumnos_vinculados)) {
+                        foreach (array_keys($alumnos_vinculados) as $alumno) {
+                            $obj_alumno = new persona($alumnos_vinculados[$alumno]['id_persona_alumno']);
+                            $saldo_deuda_corriente = $obj_alumno->get_saldo_deuda_corriente();
+                            if (isset($saldo_deuda_corriente)) {
+                                $alumnos_vinculados[$alumno]['saldo'] = $saldo_deuda_corriente['saldo'];
+                            }
+                        }
+                    }
                     $cuadro->set_datos($alumnos_vinculados);
                 }
             }
@@ -40,11 +50,9 @@ class ci_cuenta_corriente extends ci_alta_manual_pagos //gestionescuelas_ext_ci
     {
         if (!isset($this->s__datos_filtro)) {
             $fecha = new fecha();
-            $fechas_defecto = array('fecha_desde' => date("Y-01-01"), 'fecha_hasta' => $fecha->get_fecha_db());
-            $form->set_datos_defecto($fechas_defecto);
-        } else {
-            $form->set_datos($this->s__datos_filtro);
+            $this->s__datos_filtro = array('fecha_desde' => date("Y-01-01"), 'fecha_hasta' => $fecha->get_fecha_db());
         }
+        $form->set_datos($this->s__datos_filtro);
     }
 
     public function evt__filtro__filtrar($datos)
@@ -75,9 +83,6 @@ class ci_cuenta_corriente extends ci_alta_manual_pagos //gestionescuelas_ext_ci
         if ($this->s__alumno_editar) {
             $cuadro->set_titulo('<div class="titulo_alumno">'.$this->s__nombre_alumno.'</div>');
         }
-        /*if (!empty($this->s__datos_cuenta_corriente)) {
-            $cuadro->set_datos($this->s__datos_cuenta_corriente);
-        }*/
         if (isset($this->s__datos_filtro)) {
             $this->s__datos_filtro['id_persona'] = $this->s__alumno_editar;
             $cuadro->set_datos(dao_personas::get_deuda_por_alumno($this->s__datos_filtro));

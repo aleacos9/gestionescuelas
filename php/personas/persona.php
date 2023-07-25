@@ -81,6 +81,7 @@ class persona
     protected $importe_pago;
     protected $mostrar_mensaje_individual;
     protected $modo;
+    protected $saldo_deuda_corriente;
 
     protected $datos = array();
     protected $datos_alumno = array();
@@ -945,6 +946,12 @@ class persona
         return $this->datos_deuda_corriente;
     }
 
+    public function get_saldo_deuda_corriente()
+    {
+        toba::logger()->info("get_saldo_deuda_corriente");
+        return $this->saldo_deuda_corriente[0];
+    }
+
     public function get_fecha_transaccion()
     {
         toba::logger()->info("get_fecha_transaccion");
@@ -1425,6 +1432,37 @@ class persona
 
         toba::logger()->debug(__METHOD__." : ".$sql);
         $this->datos_deuda_corriente = consultar_fuente($sql);
+
+        // Obtiene el saldo de la deuda corriente de la persona
+        $sql = "SELECT a.id_persona
+                      --,a.id_persona as id_persona_alumno
+                      --,a.id_alumno
+                      ,(COALESCE(subconsulta_saldo.saldo, 0)) as saldo
+                FROM alumno a
+                         INNER JOIN persona p on p.id_persona = a.id_persona
+                         LEFT OUTER JOIN (persona_tipo_documento ptd JOIN tipo_documento td
+                                          on ptd.id_tipo_documento = td.id_tipo_documento)
+                                         ON ptd.id_persona = p.id_persona AND td.jerarquia = (SELECT MIN(X1.jerarquia)
+                                                                                              FROM tipo_documento X1
+                                                                                                 , persona_tipo_documento X2
+                                                                                              WHERE X1.id_tipo_documento = X2.id_tipo_documento
+                                                                                                AND X2.id_persona = p.id_persona)
+                         LEFT OUTER JOIN (SELECT acc.id_alumno
+                                               ,p.id_persona
+                                               ,COALESCE(SUM(tcc.importe), 0) as saldo
+                                          FROM transaccion_cuenta_corriente tcc
+                                                   INNER JOIN alumno_cuenta_corriente acc on tcc.id_alumno_cc = acc.id_alumno_cc
+                                                   INNER JOIN alumno a on a.id_alumno = acc.id_alumno
+                                                   INNER JOIN persona p on p.id_persona = a.id_persona
+                                          WHERE 1=1
+                                          GROUP BY acc.id_alumno
+                                                 ,p.id_persona
+                                          ORDER BY acc.id_alumno) AS subconsulta_saldo ON subconsulta_saldo.id_alumno = a.id_alumno and subconsulta_saldo.id_persona = p.id_persona
+                WHERE a.id_persona = {$this->persona};
+               ";
+
+        toba::logger()->debug(__METHOD__." : ".$sql);
+        $this->saldo_deuda_corriente = consultar_fuente($sql);
 
         // Obtiene los datos actuales de cursada de la persona ---------------------------------
         $sql = "SELECT adc.id_alumno_dato_cursada
