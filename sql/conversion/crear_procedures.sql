@@ -866,3 +866,17 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/actualizar-en-perfil-tutor-valor-cuota-adeudada 27/07/2023
+CREATE OR REPLACE FUNCTION actualizar_en_perfil_tutor_valor_cuota_adeudada() RETURNS VOID AS
+$$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM parametros_sistema WHERE parametro = 'actualiza_deuda_a_valor_cuota_actual') THEN
+
+        INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
+        VALUES (NEXTVAL('sq_id_parametro'), 'actualiza_deuda_a_valor_cuota_actual', 'Actualiza el valor de la cuota adeudada', 'Actualiza valor cuota adeudada', 'SI', '1.0.0');
+
+END IF;
+END;
+$$ LANGUAGE 'plpgsql';

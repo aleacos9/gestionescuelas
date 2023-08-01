@@ -57,3 +57,6 @@ DROP FUNCTION IF EXISTS alta_columna_estado_tabla_anio();
 
 --Alejandro feature/alta-manual-pagos 20/03/2023
 DROP FUNCTION IF EXISTS alta_parametros_fijos_para_comprobante_electronico();
+
+--Alejandro feature/actualizar-en-perfil-tutor-valor-cuota-adeudada 27/07/2023
+DROP FUNCTION IF EXISTS actualizar_en_perfil_tutor_valor_cuota_adeudada();
