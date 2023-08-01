@@ -1,5 +1,5 @@
 <?php
-class ci_cuenta_corriente extends gestionescuelas_ext_ci //ci_alta_manual_pagos
+class ci_cuenta_corriente extends gestionescuelas_ext_ci
 {
     protected $s__datos_cuenta_corriente = array();
 
@@ -16,6 +16,9 @@ class ci_cuenta_corriente extends gestionescuelas_ext_ci //ci_alta_manual_pagos
 
     function conf__cuadro($cuadro)
     {
+        if ($this->controlador()->get_id()[1] == '82000055') {
+            $cuadro->eliminar_columnas(array('saldo_actualizado'));
+        }
         if (isset($this->s__perfil_funcional)) {
             if ((in_array('tutor', $this->s__perfil_funcional))) {
                 if (isset($this->s__id_persona)) {
@@ -26,9 +29,7 @@ class ci_cuenta_corriente extends gestionescuelas_ext_ci //ci_alta_manual_pagos
                         foreach (array_keys($alumnos_vinculados) as $alumno) {
                             $obj_alumno = new persona($alumnos_vinculados[$alumno]['id_persona_alumno']);
                             $saldo_deuda_corriente = $obj_alumno->get_saldo_deuda_corriente();
-                            if (isset($saldo_deuda_corriente)) {
-                                $alumnos_vinculados[$alumno]['saldo'] = $saldo_deuda_corriente['saldo'];
-                            }
+                            $alumnos_vinculados[$alumno]['saldo'] = $saldo_deuda_corriente['saldo'];
                         }
                     }
                     $cuadro->set_datos($alumnos_vinculados);
