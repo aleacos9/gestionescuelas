@@ -79,10 +79,12 @@ class persona
     protected $numero_lote;
     protected $numero_autorizacion;
     protected $importe_pago;
+    protected $numero_cuota_materiales;
     protected $mostrar_mensaje_individual;
     protected $modo;
     protected $saldo_deuda_corriente;
     protected $total_cuotas_adeudadas;
+    protected $total_cuotas_adeudadas_x_tipo_cargo;
 
     protected $datos = array();
     protected $datos_alumno = array();
@@ -221,18 +223,32 @@ class persona
         $this->set_cuota($datos_generacion_cargos['cuota']);
         $this->set_anio_cuota($datos_generacion_cargos['anio']);
 
-        if ($datos_generacion_cargos['cargo_a_generar'] == 1) { //inscripcion anual
-            $descripcion = 'Inscrpción anual del Año ' .$datos_generacion_cargos['anio'];
-            $this->set_descripcion_cuota($descripcion);
-        } elseif($datos_generacion_cargos['cargo_a_generar'] == 2) { //cuota mensual
-            $descripcion = 'Cuota mensual '.$datos_generacion_cargos['cuota'].' del Año ' .$datos_generacion_cargos['anio'];
-            $this->set_descripcion_cuota($descripcion);
-            if ($datos_generacion_cargos['cuota'] < 10) {
-                $datos_generacion_cargos['cuota'] = '0'.$datos_generacion_cargos['cuota'];
+        $tipos_cargos = [
+            constantes::get_valor_constante('INSCRIPCION_ANUAL') => 'Inscripción anual del Año ',
+            constantes::get_valor_constante('CUOTA_MENSUAL') => 'Cuota mensual ',
+            constantes::get_valor_constante('MATERIALES') => 'Materiales del Año '
+        ];
+        $descripcion = '';
+        $cargo = $datos_generacion_cargos['cargo_a_generar'];
+        if (array_key_exists($cargo, $tipos_cargos)) {
+            if ($cargo == constantes::get_valor_constante('INSCRIPCION_ANUAL')) {
+                $descripcion = 'Inscripción anual del Año ' . $datos_generacion_cargos['anio'];
+            } elseif ($cargo == constantes::get_valor_constante('CUOTA_MENSUAL')) {
+                $descripcion = 'Cuota mensual ' . $datos_generacion_cargos['cuota'] . ' del Año ' . $datos_generacion_cargos['anio'];
+                $cuota = $datos_generacion_cargos['cuota'];
+                if ($cuota < 10) {
+                    $cuota = '0' . $cuota;
+                }
+                $cuota .= $datos_generacion_cargos['anio'];
+                $this->set_cuota_completa($cuota);
+            } elseif ($cargo == constantes::get_valor_constante('MATERIALES')) {
+                $total_cuotas = dao_consultas::catalogo_de_parametros("cantidad_cuotas_materiales");
+                $descripcion = 'Materiales del Año ' . $datos_generacion_cargos['anio'] . ' Cuota ' . $datos_generacion_cargos['numero_cuota'] . '/' . $total_cuotas;
+                $this->set_numero_cuota_materiales($datos_generacion_cargos['numero_cuota']);
             }
-            $cuota = $datos_generacion_cargos['cuota'].$datos_generacion_cargos['anio'];
-            $this->set_cuota_completa($cuota);
+            $this->set_descripcion_cuota($descripcion);
         }
+
         $this->set_importe_cuota($datos_generacion_cargos['importe_cuota']);
         if (isset($datos_generacion_cargos['actualiza_pago_inscripcion_en_cuotas'])) {
             $this->set_actualiza_pago_inscripcion_en_cuotas($datos_generacion_cargos['actualiza_pago_inscripcion_en_cuotas']);
@@ -717,6 +733,12 @@ class persona
         $this->importe_cuota = $importe_cuota;
     }
 
+    public function set_numero_cuota_materiales($numero_cuota_materiales)
+    {
+        toba::logger()->info("set_numero_cuota_materiales = " .$numero_cuota_materiales);
+        $this->numero_cuota_materiales = $numero_cuota_materiales;
+    }
+
     public function set_modo($modo)
     {
         toba::logger()->info("set_modo = " .$modo);
@@ -957,6 +979,38 @@ class persona
     {
         toba::logger()->info("get_total_cuotas_adeudadas");
         return $this->total_cuotas_adeudadas[0]['total_cuotas_adeudadas'];
+    }
+
+    public function get_total_cuotas_adeudadas_x_tipo_cargo($tipo_cargo = null)
+    {
+        toba::logger()->info("get_total_cuotas_adeudadas_x_tipo_cargo");
+        // Obtiene la cantidad de cuotas adeudadas x tipo de cargo de la persona
+        $where = '';
+        if (isset($tipo_cargo)) {
+            $where .= " AND id_cargo_cuenta_corriente = $tipo_cargo";
+        }
+
+        $sql = "SELECT acc.id_alumno
+                      ,p.id_persona
+                      ,COUNT(*) OVER () as total_cuotas_adeudadas
+                FROM transaccion_cuenta_corriente tcc
+                    INNER JOIN alumno_cuenta_corriente acc on tcc.id_alumno_cc = acc.id_alumno_cc
+                    INNER JOIN alumno a on a.id_alumno = acc.id_alumno
+                    INNER JOIN persona p on p.id_persona = a.id_persona
+                WHERE p.id_persona = {$this->persona}
+                    $where
+                GROUP BY acc.id_alumno
+                        ,p.id_persona
+                        ,acc.cuota
+                HAVING SUM(tcc.importe) > 0
+                ORDER BY acc.id_alumno
+               ";
+
+        toba::logger()->debug(__METHOD__." : ".$sql);
+        $this->total_cuotas_adeudadas_x_tipo_cargo = consultar_fuente($sql);
+        if ($this->total_cuotas_adeudadas_x_tipo_cargo) {
+            return $this->total_cuotas_adeudadas_x_tipo_cargo[0]['total_cuotas_adeudadas'];
+        }
     }
 
     public function get_fecha_transaccion()
@@ -1317,6 +1371,7 @@ class persona
                       ,acc.cuota
                       ,(CASE WHEN (subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL AND acc.id_cargo_cuenta_corriente = 1) THEN 'Pago de Inscripción Anual ' --|| acc.cuota
                              WHEN (subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL AND acc.id_cargo_cuenta_corriente = 2) THEN 'Pago de cuota ' || acc.cuota
+                             WHEN (subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL AND acc.id_cargo_cuenta_corriente = 3) THEN 'Pago de materiales cuota ' || acc.numero_cuota
                              ELSE acc.descripcion
                         END) AS concepto
                       ,(CASE WHEN subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL THEN subconsulta_cuenta_corriente.fecha_pago
@@ -1372,11 +1427,12 @@ class persona
                       ,acc.id_alumno
                       ,acc.usuario_alta
                       ,acc.cuota
-                      ,(CASE WHEN (subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL AND acc.id_cargo_cuenta_corriente = 1) THEN 'Pago de Inscripción Anual ' --|| acc.cuota
-                             WHEN (subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL AND acc.id_cargo_cuenta_corriente = 2) THEN 'Pago de cuota ' || acc.cuota
+                      ,(CASE WHEN (subconsulta_cuenta_corriente.id_estado_cuota IN (3,4) AND acc.id_cargo_cuenta_corriente = 1) THEN 'Pago de Inscripción Anual ' --|| acc.cuota
+                             WHEN (subconsulta_cuenta_corriente.id_estado_cuota IN (3,4) AND acc.id_cargo_cuenta_corriente = 2) THEN 'Pago de cuota ' || acc.cuota
+                             WHEN (subconsulta_cuenta_corriente.id_estado_cuota IN (3,4) AND acc.id_cargo_cuenta_corriente = 3) THEN 'Pago de materiales cuota ' || acc.numero_cuota
                              ELSE acc.descripcion
                         END) AS concepto
-                      ,(CASE WHEN subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL THEN subconsulta_cuenta_corriente.fecha_pago
+                      ,(CASE WHEN subconsulta_cuenta_corriente.id_estado_cuota IN (3,4) THEN subconsulta_cuenta_corriente.fecha_pago
                              ELSE acc.fecha_generacion_cc
                         END) AS fecha
                       ,acc.id_cargo_cuenta_corriente
@@ -1391,6 +1447,8 @@ class persona
                       ,subconsulta_cuenta_corriente.id_estado_cuota
                       ,ec.nombre as estado_cuota
                       ,subconsulta_cuenta_corriente.importe
+                      ,LAG(ABS(subconsulta_cuenta_corriente.importe)) OVER (PARTITION BY acc.id_alumno_cc ORDER BY subconsulta_cuenta_corriente.id_transaccion_cc) AS importe_anterior
+                      ,ABS(subconsulta_cuenta_corriente.importe) - LAG(ABS(subconsulta_cuenta_corriente.importe)) OVER (PARTITION BY acc.id_alumno_cc ORDER BY subconsulta_cuenta_corriente.id_transaccion_cc) AS diferencia_importe_misma_cuota
                       ,subconsulta_cuenta_corriente.id_motivo_rechazo1
                       ,mr.nombre AS motivo_rechazo1
                       ,subconsulta_cuenta_corriente.id_motivo_rechazo2
@@ -1417,23 +1475,25 @@ class persona
                     LEFT OUTER JOIN medio_pago mp on mp.id_medio_pago = subconsulta_cuenta_corriente.id_medio_pago
                     LEFT OUTER JOIN marca_tarjeta mt on mt.id_marca_tarjeta = subconsulta_cuenta_corriente.id_marca_tarjeta
                 WHERE p.id_persona = {$this->persona}
-                    AND acc.cuota IN (SELECT acc.cuota
+                    AND EXISTS (SELECT 1
+                                FROM (SELECT acc.id_alumno_cc
                                       FROM alumno_cuenta_corriente acc
-                                        INNER JOIN alumno a on acc.id_alumno = a.id_alumno
-                                        INNER JOIN persona p on p.id_persona = a.id_persona
-                                        INNER JOIN (select id_alumno_cc, id_transaccion_cc, fecha_transaccion, id_estado_cuota, importe, fecha_pago
-                                                          ,fecha_respuesta_prisma, numero_comprobante, numero_autorizacion, numero_lote
-                                                          ,id_medio_pago, id_marca_tarjeta, id_motivo_rechazo1, id_motivo_rechazo2, codigo_error_debito, descripcion_error_debito
-                                                    from transaccion_cuenta_corriente) as subconsulta_cuenta_corriente ON subconsulta_cuenta_corriente.id_alumno_cc = acc.id_alumno_cc
-                                        INNER JOIN estado_cuota ec on ec.id_estado_cuota = subconsulta_cuenta_corriente.id_estado_cuota
-                                        LEFT OUTER JOIN motivo_rechazo mr on mr.id_motivo_rechazo = subconsulta_cuenta_corriente.id_motivo_rechazo1
-                                        LEFT OUTER JOIN motivo_rechazo mr2 on mr2.id_motivo_rechazo = subconsulta_cuenta_corriente.id_motivo_rechazo2
-                                        LEFT OUTER JOIN medio_pago mp on mp.id_medio_pago = subconsulta_cuenta_corriente.id_medio_pago
-                                        LEFT OUTER JOIN marca_tarjeta mt on mt.id_marca_tarjeta = subconsulta_cuenta_corriente.id_marca_tarjeta
+                                            INNER JOIN alumno a on acc.id_alumno = a.id_alumno
+                                            INNER JOIN persona p on p.id_persona = a.id_persona
+                                            INNER JOIN (select id_alumno_cc, id_transaccion_cc, fecha_transaccion, id_estado_cuota, importe, fecha_pago
+                                                              ,fecha_respuesta_prisma, numero_comprobante, numero_autorizacion, numero_lote
+                                                              ,id_medio_pago, id_marca_tarjeta, id_motivo_rechazo1, id_motivo_rechazo2, codigo_error_debito, descripcion_error_debito
+                                                        from transaccion_cuenta_corriente) as subconsulta_cuenta_corriente ON subconsulta_cuenta_corriente.id_alumno_cc = acc.id_alumno_cc
+                                            INNER JOIN estado_cuota ec on ec.id_estado_cuota = subconsulta_cuenta_corriente.id_estado_cuota
+                                            LEFT OUTER JOIN motivo_rechazo mr on mr.id_motivo_rechazo = subconsulta_cuenta_corriente.id_motivo_rechazo1
+                                            LEFT OUTER JOIN motivo_rechazo mr2 on mr2.id_motivo_rechazo = subconsulta_cuenta_corriente.id_motivo_rechazo2
+                                            LEFT OUTER JOIN medio_pago mp on mp.id_medio_pago = subconsulta_cuenta_corriente.id_medio_pago
+                                            LEFT OUTER JOIN marca_tarjeta mt on mt.id_marca_tarjeta = subconsulta_cuenta_corriente.id_marca_tarjeta
                                       WHERE p.id_persona = {$this->persona}
-                                      GROUP BY acc.cuota
+                                      GROUP BY acc.cuota, acc.id_cargo_cuenta_corriente,acc.id_alumno_cc
                                       HAVING SUM(subconsulta_cuenta_corriente.importe) <> 0
-                                     )
+                                     ) subconsulta_where
+                                WHERE subconsulta_where.id_alumno_cc = acc.id_alumno_cc)
                 ORDER BY acc.id_alumno_cc, subconsulta_cuenta_corriente.id_transaccion_cc;
                ";
 
@@ -1470,7 +1530,7 @@ class persona
         $this->saldo_deuda_corriente = consultar_fuente($sql);
 
         // Obtiene la cantidad de cuotas adeudada por la persona
-        $sql = "SELECT acc.id_alumno
+        /*$sql = "SELECT acc.id_alumno
                       ,p.id_persona
                       ,COUNT(*) OVER () as total_cuotas_adeudadas
                 FROM transaccion_cuenta_corriente tcc
@@ -1486,7 +1546,7 @@ class persona
                ";
 
         toba::logger()->debug(__METHOD__." : ".$sql);
-        $this->total_cuotas_adeudadas = consultar_fuente($sql);
+        $this->total_cuotas_adeudadas = consultar_fuente($sql);*/
 
         // Obtiene los datos actuales de cursada de la persona ---------------------------------
         $sql = "SELECT adc.id_alumno_dato_cursada
@@ -1825,42 +1885,6 @@ class persona
                 ejecutar_fuente($sql);
             }
         }
-
-        /*foreach ($this->datos_formas_cobro as $alumno_dato_forma_cobro) {
-            if (isset($alumno_dato_forma_cobro['apex_ei_analisis_fila'])) {
-                if ($alumno_dato_forma_cobro['apex_ei_analisis_fila'] == 'B') {
-                    toba::logger()->error('por lo pronto no hago, pero debo borrar el registro');
-                    toba::logger()->error($alumno_dato_forma_cobro);
-                    $sql = "DELETE FROM alumno_tarjeta
-                            WHERE id_alumno = {$this->persona}
-                                AND id_alumno_tarjeta = {$alumno_dato_forma_cobro['id_alumno_tarjeta']}
-                           ";
-                } elseif ($alumno_dato_forma_cobro['id_alumno_tarjeta'] == null) {
-                    $sql = "INSERT INTO alumno_tarjeta (id_alumno, id_medio_pago, id_marca_tarjeta, id_entidad_bancaria, numero_tarjeta, nombre_titular, activo) 
-					        VALUES ({$this->persona},'{$alumno_dato_forma_cobro['id_medio_pago']}', '{$alumno_dato_forma_cobro['id_marca_tarjeta']}', '{$alumno_dato_forma_cobro['id_entidad_bancaria']}'
-					            ,'{$alumno_dato_forma_cobro['numero_tarjeta']}','{$alumno_dato_forma_cobro['nombre_titular']}', '{$alumno_dato_forma_cobro['activo']}')
-				           ";
-                    //}
-
-
-                    //if ($alumno_dato_forma_cobro['id_alumno_tarjeta'] == null) {
-
-                } else {
-                    $sql = "UPDATE alumno_tarjeta 
-                            SET id_medio_pago = '{$alumno_dato_forma_cobro['id_medio_pago']}'
-                               ,id_marca_tarjeta = '{$alumno_dato_forma_cobro['id_marca_tarjeta']}'
-                               ,id_entidad_bancaria = '{$alumno_dato_forma_cobro['id_entidad_bancaria']}'
-                               ,numero_tarjeta = '{$alumno_dato_forma_cobro['numero_tarjeta']}'
-                               ,nombre_titular = '{$alumno_dato_forma_cobro['nombre_titular']}'
-                               ,activo = '{$alumno_dato_forma_cobro['activo']}'
-                            WHERE id_alumno = {$this->persona}
-                                AND id_alumno_tarjeta = {$alumno_dato_forma_cobro['id_alumno_tarjeta']}
-                           ";
-                }
-                toba::logger()->debug(__METHOD__ . " : " . $sql);
-                ejecutar_fuente($sql);
-            }
-        }*/
     }
 
     public function generar_cargos_persona()
@@ -1874,9 +1898,10 @@ class persona
 
         //Valido por cada persona que ya no tenga ese cargo generado para ese mes/año
         if ($this->validar_generacion_cargo()) {
+            $numero_cuota_materiales = conversion_tipo_datos::convertir_null_a_cadena($this->numero_cuota_materiales, constantes::get_valor_constante('TIPO_DATO_INT'));
             //Primero, inserto en la tabla alumno_cuenta_corriente
-            $sql = "INSERT INTO alumno_cuenta_corriente (id_alumno, usuario_alta, fecha_generacion_cc, cuota, descripcion, id_cargo_cuenta_corriente) 
-				    VALUES ({$this->id_alumno},'{$usuario}', '{$hoy}', '{$this->cuota_completa}', '{$this->descripcion_cuota}', '{$this->cargo_a_generar}')
+            $sql = "INSERT INTO alumno_cuenta_corriente (id_alumno, usuario_alta, fecha_generacion_cc, cuota, descripcion, id_cargo_cuenta_corriente, numero_cuota) 
+				    VALUES ({$this->id_alumno},'{$usuario}', '{$hoy}', '{$this->cuota_completa}', '{$this->descripcion_cuota}', '{$this->cargo_a_generar}', {$numero_cuota_materiales})
 			   ";
 
             toba::logger()->debug(__METHOD__ . " : " . $sql);
@@ -1925,10 +1950,14 @@ class persona
         $where = 'WHERE 1 = 1';
         $salida = true;
 
-        if ($this->cargo_a_generar == 1) {
-            $where .= " AND cuota = ''";
-        } elseif ($this->cargo_a_generar == 2) {
-            $where .= " AND cuota = '{$this->cuota_completa}'";
+        $condicion_x_cargo = [
+            constantes::get_valor_constante('INSCRIPCION_ANUAL') => " AND cuota = ''",
+            constantes::get_valor_constante('CUOTA_MENSUAL') => " AND cuota = '{$this->cuota_completa}'",
+            constantes::get_valor_constante('MATERIALES') => " AND cuota = '' AND numero_cuota = '{$this->numero_cuota_materiales}'"
+        ];
+
+        if (array_key_exists($this->cargo_a_generar, $condicion_x_cargo)) {
+            $where .= $condicion_x_cargo[$this->cargo_a_generar];
         }
 
         $sql = "SELECT ''
@@ -2004,16 +2033,6 @@ class persona
                        ,'{$this->usuario_ultima_modificacion}', now() $valores_inserts
                         )
                ";
-
-        /*$sql = "INSERT INTO transaccion_cuenta_corriente (id_alumno_cc, fecha_transaccion, id_estado_cuota, importe, fecha_pago, fecha_respuesta_prisma
-                                                         ,usuario_ultima_modificacion, fecha_ultima_modificacion
-                                                         ,numero_comprobante, numero_lote, numero_autorizacion, id_medio_pago
-                                                         ,id_marca_tarjeta, id_motivo_rechazo1, id_motivo_rechazo2, codigo_error_debito, descripcion_error_debito) 
-				VALUES ({$this->id_alumno_cc}, now(),'{$this->id_estado_cuota}', '{$this->importe_pago}', '{$this->fecha_pago}', '{$this->fecha_respuesta_prisma}'
-				       ,'{$this->usuario_ultima_modificacion}', now()
-				       ,{$this->numero_comprobante}, {$this->numero_lote}, {$this->numero_autorizacion}, '{$this->id_medio_pago}'
-				       ,{$this->id_marca_tarjeta}, '{$this->id_motivo_rechazo1}', '{$this->id_motivo_rechazo2}', '{$this->codigo_error_debito}', '{$this->descripcion_error_debito}')
-			   ";*/
 
         toba::logger()->debug(__METHOD__ . " : " . $sql);
         ejecutar_fuente($sql);

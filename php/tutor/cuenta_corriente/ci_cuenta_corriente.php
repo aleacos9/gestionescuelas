@@ -12,6 +12,40 @@ class ci_cuenta_corriente extends gestionescuelas_ext_ci
         }
     }
 
+    //---- filtro -----------------------------------------------------------------------
+
+    public function conf__filtro($form)
+    {
+        if (!isset($this->s__datos_filtro)) {
+            $fecha = new fecha();
+            $fecha->set_timestamp($fecha->get_fecha_desplazada("+1"));
+
+            $this->s__datos_filtro = array('fecha_desde' => date("Y-01-01"), 'fecha_hasta' => $fecha->get_fecha_db());
+        }
+        $form->set_datos($this->s__datos_filtro);
+    }
+
+    public function evt__filtro__filtrar($datos)
+    {
+        $fecha = new fecha();
+
+        if (empty($datos['fecha_desde'])) {
+            $datos['fecha_desde'] = $fecha->get_fecha_db();
+        }
+
+        //Valida las fechas desde y hasta
+        $fecha->set_fecha($datos['fecha_hasta']);
+        if ($fecha->es_menor_que($datos['fecha_desde'])) {
+            throw new excepcion_pilaga("La 'fecha desde' debe ser menor o igual a la 'fecha hasta'");
+        }
+        $this->s__datos_filtro = $datos;
+    }
+
+    public function evt__filtro__cancelar()
+    {
+        unset($this->s__datos_filtro);
+    }
+
     //---- cuadro -----------------------------------------------------------------------
 
     function conf__cuadro($cuadro)
@@ -43,38 +77,6 @@ class ci_cuenta_corriente extends gestionescuelas_ext_ci
         $this->s__alumno_editar = $seleccion['id_persona_alumno'];
         $this->set_pantalla('edicion');
         $this->cargar_datos();
-    }
-
-    //---- filtro -----------------------------------------------------------------------
-
-    public function conf__filtro($form)
-    {
-        if (!isset($this->s__datos_filtro)) {
-            $fecha = new fecha();
-            $this->s__datos_filtro = array('fecha_desde' => date("Y-01-01"), 'fecha_hasta' => $fecha->get_fecha_db());
-        }
-        $form->set_datos($this->s__datos_filtro);
-    }
-
-    public function evt__filtro__filtrar($datos)
-    {
-        $fecha = new fecha();
-
-        if (empty($datos['fecha_desde'])) {
-            $datos['fecha_desde'] = $fecha->get_fecha_db();
-        }
-
-        //Valida las fechas desde y hasta
-        $fecha->set_fecha($datos['fecha_hasta']);
-        if ($fecha->es_menor_que($datos['fecha_desde'])) {
-            throw new excepcion_pilaga("La 'fecha desde' debe ser menor o igual a la 'fecha hasta'");
-        }
-        $this->s__datos_filtro = $datos;
-    }
-
-    public function evt__filtro__cancelar()
-    {
-        unset($this->s__datos_filtro);
     }
 
     //---- cuadro_cuenta_corriente ------------------------------------------------------

@@ -25,6 +25,22 @@ class ci_generar_cargos_alumnos extends gestionescuelas_ext_ci
         return dao_consultas::get_nombres_persona($filtro);
     }
 
+    /*
+     * Retorna un array con el detalle de las cuotas para el pago de materiales,
+     * definidas a través de un parámetro general del sistema
+     */
+    public function get_cantidad_cuotas_materiales_ci()
+    {
+        $numero_cuota = dao_consultas::catalogo_de_parametros("cantidad_cuotas_materiales");
+        if ($numero_cuota > 0) {
+            $valores = [];
+            for ($i = 1; $i <= $numero_cuota; $i++) {
+                $valores[] = ['numero_cuota' => $i];
+            }
+            return $valores;
+        }
+    }
+
     //---- formulario ----------------------------------------------------------------------
 
     public function evt__formulario__modificacion($datos)
@@ -34,8 +50,10 @@ class ci_generar_cargos_alumnos extends gestionescuelas_ext_ci
 
         if (dao_consultas::catalogo_de_parametros("importe_mensual_cuota_x_grado") == 'NO') {
             if (dao_consultas::catalogo_de_parametros("ingresa_importe_en_generacion_cargos") == 'NO') {
-                if ($this->s__datos_formulario['cargo_a_generar'] == 2) {
+                if ($this->s__datos_formulario['cargo_a_generar'] == constantes::get_valor_constante('CUOTA_MENSUAL')) {
                     $this->s__datos_formulario['importe_cuota'] = dao_consultas::catalogo_de_parametros("importe_mensual_cuota");
+                } elseif ($this->s__datos_formulario['cargo_a_generar'] == constantes::get_valor_constante('MATERIALES')) {
+                    $this->s__datos_formulario['importe_cuota'] = dao_consultas::catalogo_de_parametros("importe_materiales");
                 }
             }
 

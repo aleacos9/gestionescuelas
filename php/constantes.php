@@ -11,7 +11,12 @@ class constantes
         'TIPO_DATO_INT' => array('valor' => 'INT'),
         'TIPO_DATO_STR' => array('valor' => 'STR'),
         'TIPO_DATO_FLOAT' => array('valor' => 'FLT'),
-
+        'INSCRIPCION_ANUAL' => array('valor' => 1, 'tabla' => 'cargo_cuenta_corriente'),
+        'CUOTA_MENSUAL' => array('valor' => 2, 'tabla' => 'cargo_cuenta_corriente'),
+        'MATERIALES' => array('valor' => 3, 'tabla' => 'cargo_cuenta_corriente'),
+        'NIVEL_INICIAL' => array('valor' => 1, 'tabla' => 'nivel'),
+        'NIVEL_PRIMARIO' => array('valor' => 2, 'tabla' => 'nivel'),
+        'NIVEL_SECUNDARIO' => array('valor' => 3, 'tabla' => 'nivel'),
     );
 
     //Devuelve el valor de la constante indicada como parametro, si no se encuentra devuelve null

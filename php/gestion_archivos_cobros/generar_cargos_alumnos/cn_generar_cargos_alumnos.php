@@ -30,7 +30,7 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
 
         //Me fijo si el nivel al cual concurre actualmente el alumno, permite el pago de la inscripción en cuotas
         $this->datos_formulario['actualiza_pago_inscripcion_en_cuotas'] = false;
-        if ($this->datos_formulario['cargo_a_generar'] == 1) {
+        if ($this->datos_formulario['cargo_a_generar'] == constantes::get_valor_constante('INSCRIPCION_ANUAL')) {
             if ($persona->get_nivel_actual_cursada() == 1) {
                 if ((dao_consultas::catalogo_de_parametros("cobra_inscripcion_en_cuotas_inicial")) == 'SI') {
                     $persona->get_datos_tutor();
@@ -64,7 +64,7 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
                 $this->datos_formulario['importe_cuota'] = dao_consultas::catalogo_de_parametros("importe_inscripcion_primario");
             }
         }
-        if ($this->datos_formulario['cargo_a_generar'] == 1) {
+        if ($this->datos_formulario['cargo_a_generar'] == constantes::get_valor_constante('INSCRIPCION_ANUAL')) {
             if (($persona->get_grado_actual_cursada() == 8) && ($persona->get_anio_actual_cursada() == 2)) {
                 toba::logger()->error('Para el alumno: ' . $persona->get_id_alumno() . ' no se le genera el costo de la inscripción ya que está cursando 6to grado, por lo tanto es un egresado.');
             } else {
@@ -93,15 +93,21 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
 
             if (isset($this->datos_formulario['cargo_a_generar'])) {
                 //Valido que si se selecciona en el cargo a generar Inscripción Anual => tenga datos en el año
-                if ($this->datos_formulario['cargo_a_generar'] == 1) { //inscripción anual
+                if ($this->datos_formulario['cargo_a_generar'] == constantes::get_valor_constante('INSCRIPCION_ANUAL')) {
                     if (empty($this->datos_formulario['anio'])) {
                         throw new toba_error("Debe seleccionar un año antes de procesar.");
                     }
                 }
                 //Valido que si se selecciona en el cargo a generar Cuota mensual => tenga datos en cuota y año
-                if ($this->datos_formulario['cargo_a_generar'] == 2) { //cuota mensual
+                if ($this->datos_formulario['cargo_a_generar'] == constantes::get_valor_constante('CUOTA_MENSUAL')) {
                     if (empty($this->datos_formulario['cuota']) OR empty($this->datos_formulario['anio']))  {
                         throw new toba_error("Debe seleccionar una cuota y un año antes de procesar.");
+                    }
+                }
+                //Valido que si se selecciona en el cargo a generar Materiales => tenga datos en cantidad de cuota y año
+                if ($this->datos_formulario['cargo_a_generar'] == constantes::get_valor_constante('MATERIALES')) {
+                    if (empty($this->datos_formulario['numero_cuota']) OR empty($this->datos_formulario['anio']))  {
+                        throw new toba_error("Debe seleccionar número de cuota y un año antes de procesar.");
                     }
                 }
             }

@@ -289,6 +289,7 @@ class dao_personas
                       ,acc.cuota
                       ,(CASE WHEN (subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL AND acc.id_cargo_cuenta_corriente = 1) THEN 'Pago de Inscripción Anual ' --|| acc.cuota
                              WHEN (subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL AND acc.id_cargo_cuenta_corriente = 2) THEN 'Pago de cuota ' || acc.cuota
+                             WHEN (subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL AND acc.id_cargo_cuenta_corriente = 3) THEN 'Pago de materiales cuota ' || acc.numero_cuota
                              ELSE acc.descripcion
                        END) AS concepto
                       ,(CASE WHEN subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL THEN subconsulta_cuenta_corriente.fecha_pago
@@ -332,7 +333,7 @@ class dao_personas
                          LEFT OUTER JOIN medio_pago mp on mp.id_medio_pago = subconsulta_cuenta_corriente.id_medio_pago
                          LEFT OUTER JOIN marca_tarjeta mt on mt.id_marca_tarjeta = subconsulta_cuenta_corriente.id_marca_tarjeta
                 $where
-                ORDER BY acc.cuota
+                ORDER BY CASE WHEN acc.cuota IS NULL THEN subconsulta_cuenta_corriente.fecha_pago ELSE NULL END 
                         ,acc.id_alumno_cc
                         ,subconsulta_cuenta_corriente.id_transaccion_cc
                ";

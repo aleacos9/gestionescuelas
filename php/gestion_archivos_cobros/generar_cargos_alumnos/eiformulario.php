@@ -27,6 +27,7 @@ class eiformulario extends gestionescuelas_ei_formulario
 			
 			this.ef('id_persona').ocultar();
 			this.ef('cuota').ocultar();
+			this.ef('numero_cuota').ocultar();
 			this.ef('cargo_a_generar').set_obligatorio(1);
 		}
 		
@@ -57,12 +58,23 @@ class eiformulario extends gestionescuelas_ei_formulario
 				    this.ef('cuota').set_obligatorio(0);
 				    this.ef('cuota').resetear_estado();
 			        this.ef('cuota').ocultar();
+			        this.ef('numero_cuota').resetear_estado();
+			        this.ef('numero_cuota').ocultar();
 				    break;
 				case '2': //cuota mensual
 				    this.ef('cuota').mostrar();
 			        this.ef('cuota').set_obligatorio(1);
 			        this.ef('anio').set_obligatorio(1);
+			        this.ef('numero_cuota').resetear_estado();
+			        this.ef('numero_cuota').ocultar();
 			        break;
+			    case '3': //materiales
+			        this.ef('cuota').resetear_estado();
+			        this.ef('cuota').ocultar();
+			        this.ef('numero_cuota').mostrar();
+			        this.ef('numero_cuota').set_obligatorio(1);
+			        this.ef('anio').set_obligatorio(1);
+			        break;    
 			}
 		}
 		";
