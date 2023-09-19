@@ -27,6 +27,7 @@ class eiformulario extends gestionescuelas_ei_formulario
 			
 			this.ef('id_persona').ocultar();
 			this.ef('cuota').ocultar();
+			this.ef('numero_cuota').ocultar();
 			this.ef('cargo_a_generar').set_obligatorio(1);
 		}
 		
@@ -57,12 +58,28 @@ class eiformulario extends gestionescuelas_ei_formulario
 				    this.ef('cuota').set_obligatorio(0);
 				    this.ef('cuota').resetear_estado();
 			        this.ef('cuota').ocultar();
+			        this.ef('numero_cuota').set_obligatorio(0);
+			        this.ef('numero_cuota').resetear_estado();
+			        this.ef('numero_cuota').ocultar();
 				    break;
 				case '2': //cuota mensual
 				    this.ef('cuota').mostrar();
 			        this.ef('cuota').set_obligatorio(1);
 			        this.ef('anio').set_obligatorio(1);
+			        this.ef('numero_cuota').set_obligatorio(0);
+			        this.ef('numero_cuota').resetear_estado();
+			        this.ef('numero_cuota').ocultar();
 			        break;
+			    case '3': //materiales
+			        this.ef('cuota').resetear_estado();
+			        this.ef('cuota').ocultar();
+			        this.ef('numero_cuota').mostrar();
+			        this.ef('numero_cuota').set_obligatorio(1);
+			        this.ef('anio').set_obligatorio(1);
+			        if (this.ef('forma_generacion').get_estado() == 'G') {
+			            alert('Tenga en cuenta que los cargos de los materiales solo se les generará a los alumnos del nivel inicial (Sala de 4 y sala de 5).');    
+			        }
+			        break;    
 			}
 		}
 		";

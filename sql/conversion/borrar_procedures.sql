@@ -60,3 +60,6 @@ DROP FUNCTION IF EXISTS alta_parametros_fijos_para_comprobante_electronico();
 
 --Alejandro feature/actualizar-en-perfil-tutor-valor-cuota-adeudada 27/07/2023
 DROP FUNCTION IF EXISTS actualizar_en_perfil_tutor_valor_cuota_adeudada();
+
+--Alejandro feature/agregar-concepto-para-generar-cargos 22/08/2023
+DROP FUNCTION IF EXISTS agregar_concepto_para_generar_cargos();

@@ -130,6 +130,23 @@ class dao_personas
                 }
             }
 
+            if (isset($filtro['solo_nivel_inicial'])) {
+                if ($filtro['solo_nivel_inicial'] == 'S') {
+                    $sala4 = constantes::get_valor_constante('SALA4');
+                    $sala5 = constantes::get_valor_constante('SALA5');
+
+                    $from .= " INNER JOIN (SELECT distinct (dc.id_alumno) as id_alumno
+                                           FROM alumno_datos_cursada dc
+                                             INNER JOIN grado g on g.id_grado = dc.id_grado
+                                             INNER JOIN anio a on a.id_anio = dc.anio_cursada
+                                           WHERE dc.id_grado IN ($sala4,$sala5)
+                                             AND id_anio IN (SELECT id_anio
+                                                             FROM anio
+                                                             WHERE estado = 'A')) AS subconsulta_solo_nivel_inicial ON subconsulta_solo_nivel_inicial.id_alumno = a.id_alumno
+                             ";
+                }
+            }
+
             /*if (isset($filtro['administrar_forma_cobro'])) {
                 if ($filtro['administrar_forma_cobro'] == 'S') {
                     $select_inicial .= "distinct a.id_alumno
@@ -210,7 +227,6 @@ class dao_personas
                                                                              ,persona_tipo_documento X2
                                                                          WHERE X1.id_tipo_documento = X2.id_tipo_documento
                                                                             AND X2.id_persona = p.id_persona)
-                                                     --AND ptd.activo = 'S'
                 INNER JOIN localidad ln on p.id_localidad_nacimiento = ln.id_localidad
                 JOIN provincia pro_ln on ln.id_provincia = pro_ln.id_provincia
                 INNER JOIN localidad lr on lr.id_localidad = p.id_localidad_residencia
@@ -237,7 +253,7 @@ class dao_personas
 
         if (isset($datos)) {
             if (isset($filtro['solo_ids'])) {
-                if ($filtro['solo_ids'] == true) {
+                if ($filtro['solo_ids']) {
                     return dao_personas::retornar_solo_ids($datos);
                 } else {
                     return $datos;
@@ -289,6 +305,7 @@ class dao_personas
                       ,acc.cuota
                       ,(CASE WHEN (subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL AND acc.id_cargo_cuenta_corriente = 1) THEN 'Pago de Inscripción Anual ' --|| acc.cuota
                              WHEN (subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL AND acc.id_cargo_cuenta_corriente = 2) THEN 'Pago de cuota ' || acc.cuota
+                             WHEN (subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL AND acc.id_cargo_cuenta_corriente = 3) THEN 'Pago de materiales cuota ' || acc.numero_cuota
                              ELSE acc.descripcion
                        END) AS concepto
                       ,(CASE WHEN subconsulta_cuenta_corriente.numero_comprobante IS NOT NULL THEN subconsulta_cuenta_corriente.fecha_pago
@@ -332,7 +349,7 @@ class dao_personas
                          LEFT OUTER JOIN medio_pago mp on mp.id_medio_pago = subconsulta_cuenta_corriente.id_medio_pago
                          LEFT OUTER JOIN marca_tarjeta mt on mt.id_marca_tarjeta = subconsulta_cuenta_corriente.id_marca_tarjeta
                 $where
-                ORDER BY acc.cuota
+                ORDER BY CASE WHEN acc.cuota IS NULL THEN subconsulta_cuenta_corriente.fecha_pago ELSE NULL END 
                         ,acc.id_alumno_cc
                         ,subconsulta_cuenta_corriente.id_transaccion_cc
                ";

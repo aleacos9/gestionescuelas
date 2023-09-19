@@ -11,7 +11,20 @@ class constantes
         'TIPO_DATO_INT' => array('valor' => 'INT'),
         'TIPO_DATO_STR' => array('valor' => 'STR'),
         'TIPO_DATO_FLOAT' => array('valor' => 'FLT'),
-
+        'INSCRIPCION_ANUAL' => array('valor' => 1, 'tabla' => 'cargo_cuenta_corriente'),
+        'CUOTA_MENSUAL' => array('valor' => 2, 'tabla' => 'cargo_cuenta_corriente'),
+        'MATERIALES' => array('valor' => 3, 'tabla' => 'cargo_cuenta_corriente'),
+        'NIVEL_INICIAL' => array('valor' => 1, 'tabla' => 'nivel'),
+        'NIVEL_PRIMARIO' => array('valor' => 2, 'tabla' => 'nivel'),
+        'NIVEL_SECUNDARIO' => array('valor' => 3, 'tabla' => 'nivel'),
+        'SALA4' => array('valor' => 1, 'tabla' => 'grado'),
+        'SALA5' => array('valor' => 2, 'tabla' => 'grado'),
+        'PRIMER_GRADO' => array('valor' => 3, 'tabla' => 'grado'),
+        'SEGUNDO_GRADO' => array('valor' => 4, 'tabla' => 'grado'),
+        'TERCER_GRADO' => array('valor' => 5, 'tabla' => 'grado'),
+        'CUARTO_GRADO' => array('valor' => 6, 'tabla' => 'grado'),
+        'QUINTO_GRADO' => array('valor' => 7, 'tabla' => 'grado'),
+        'SEXTO_GRADO' => array('valor' => 8, 'tabla' => 'grado'),
     );
 
     //Devuelve el valor de la constante indicada como parametro, si no se encuentra devuelve null
