@@ -893,6 +893,9 @@ BEGIN
         INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
         VALUES (NEXTVAL('sq_id_parametro'), 'cantidad_cuotas_materiales', 'Cantidad de cuotas en los que se pagarán los materiales', 'Cantidad cuotas materiales', '2', '1.0.0');
 
+        INSERT INTO cargo_cuenta_corriente (id_cargo_cuenta_corriente, nombre, nombre_corto, observaciones)
+        VALUES (NEXTVAL('sq_id_cargo_cuenta_corriente'), 'Materiales', 'Materiales', 'Materiales');
+
         --Le agrego a la tabla alumno_cuenta_corriente el numero de cuota de los materiales
         ALTER TABLE alumno_cuenta_corriente
             ADD COLUMN numero_cuota INTEGER;

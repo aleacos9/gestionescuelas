@@ -1462,6 +1462,7 @@ class persona
                       ,subconsulta_cuenta_corriente.numero_comprobante
                       ,subconsulta_cuenta_corriente.numero_autorizacion
                       ,subconsulta_cuenta_corriente.numero_lote
+                      ,0 AS importe_actualizado
                 FROM alumno_cuenta_corriente acc
                     INNER JOIN alumno a on acc.id_alumno = a.id_alumno
                     INNER JOIN persona p on p.id_persona = a.id_persona

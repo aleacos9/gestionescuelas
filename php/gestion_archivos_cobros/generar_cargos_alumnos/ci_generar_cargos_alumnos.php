@@ -58,6 +58,9 @@ class ci_generar_cargos_alumnos extends gestionescuelas_ext_ci
             }
 
             if ($this->s__datos_formulario['forma_generacion'] == 'G') {
+                if ($this->s__datos_formulario['cargo_a_generar'] == constantes::get_valor_constante('MATERIALES')) {
+                    $filtro_int['solo_nivel_inicial'] = true;
+                }
                 //Obtengo solo los alumnos y que además estén activos
                 $filtro_int['activo'] = 'S';
                 $filtro_int['solo_ids'] = true;
