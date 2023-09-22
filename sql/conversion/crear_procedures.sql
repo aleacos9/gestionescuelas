@@ -914,6 +914,7 @@ BEGIN
         INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
         VALUES (NEXTVAL('sq_id_parametro'), 'valida_cuotas_impagas_pago_inscripcion', 'Valido si adeuda cuotas antes de cargar un pago de inscripción', 'Valido si tiene deuda pago inscr.', 'SI', '1.0.0');
 
+        ALTER SEQUENCE sq_id_anio RESTART WITH 4;
         INSERT INTO anio (id_anio, anio, estado)
         VALUES (NEXTVAL('sq_id_anio'), '2024', 'I');
 
