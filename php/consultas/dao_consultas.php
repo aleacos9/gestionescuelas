@@ -309,6 +309,34 @@ class dao_consultas
     }
 
     /*
+     * Retorna la lista de niveles dados de alta
+     */
+    public static function get_niveles($filtro=null)
+    {
+        $where = 'WHERE 1=1';
+
+        if (isset($filtro)) {
+            if (isset($filtro['id_nivel'])) {
+                $where .= " AND id_nivel = '{$filtro['id_nivel']}'";
+            }
+            if (isset($filtro['excluir'])) {
+                $where .= " AND id_nivel NOT IN ('{$filtro['excluir']}')";
+            }
+        }
+
+        $sql = "SELECT id_nivel
+                      ,nombre
+                      ,nombre_corto
+                      ,observaciones
+                FROM nivel
+                $where
+               ";
+
+        toba::logger()->debug(__METHOD__." : ".$sql);
+        return toba::db()->consultar($sql);
+    }
+
+    /*
      * Retorna la lista de grados dados de alta
      */
     public static function get_grados($filtro=null)
@@ -318,6 +346,9 @@ class dao_consultas
         if (isset($filtro)) {
             if (isset($filtro['id_grado'])) {
                 $where .= " AND id_grado = '{$filtro['id_grado']}'";
+            }
+            if (isset($filtro['nivel'])) {
+                $where .= " AND g.id_nivel = '{$filtro['nivel']}'";
             }
         }
 
@@ -334,7 +365,33 @@ class dao_consultas
 			   ";
 
         toba::logger()->debug(__METHOD__." : ".$sql);
-        return toba::db()->consultar($sql);
+        $datos = toba::db()->consultar($sql);
+
+        if (isset($datos)) {
+            if (isset($filtro['solo_ids_grado'])) {
+                if ($filtro['solo_ids_grado']) {
+                    return dao_consultas::retornar_solo_ids_grado($datos);
+                } else {
+                    return $datos;
+                }
+            }
+            return $datos;
+        }
+    }
+
+    /*
+     * Retorna los id_grado en un arreglo posicional
+     */
+    public static function retornar_solo_ids_grado($datos)
+    {
+        if (isset($datos)) {
+            $grados = array();
+            $cant = count($datos);
+            for ($i = 0; $i < $cant; $i++) {			//Recorro los valores formando un arreglo posicional.
+                $grados[] = $datos[$i]['id_grado'];
+            }
+            return $grados;
+        }
     }
 
     /*

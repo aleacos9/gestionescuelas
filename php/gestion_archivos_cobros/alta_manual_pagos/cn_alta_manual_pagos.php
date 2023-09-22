@@ -64,6 +64,20 @@ class cn_alta_manual_pagos extends gestionescuelas_cn
                 }
             }
         }
+
+        /*
+         * Si el parámetro valida_cuotas_impagas_pago_inscripcion está encendido y si se está por pagar una inscripción
+         * => si tiene cuotas anteriores impagas NO permito cargar el pago de la inscripción hasta que no salde las cuotas vencidas
+         */
+        if (dao_consultas::catalogo_de_parametros("valida_cuotas_impagas_pago_inscripcion") == 'SI') {
+            if ($this->datos_pago['id_cargo_cuenta_corriente'] == constantes::get_valor_constante('INSCRIPCION_ANUAL')) {
+                $persona = new persona($this->datos_pago['id_alumno']);
+                if ($persona->get_total_cuotas_adeudadas_x_tipo_cargo(null, $this->datos_pago['id_alumno_cc']) > 1) {
+                    throw new toba_error("El pago de la inscripción no se puede procesar ya que el alumno tiene cuotas vencidas impagas.");
+                }
+            }
+        }
+
         return 'ok';
     }
 

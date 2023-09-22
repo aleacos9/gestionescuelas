@@ -60,3 +60,6 @@ SELECT actualizar_en_perfil_tutor_valor_cuota_adeudada();
 
 --Alejandro feature/agregar-concepto-para-generar-cargos 22/08/2023
 SELECT agregar_concepto_para_generar_cargos();
+
+--Alejandro feature/no-permitir-cargar-pago-reinscripcion-si-adeuda-cuotas 20/09/2023
+SELECT impedir_pago_reinscripcion_si_adeuda_cuotas();
