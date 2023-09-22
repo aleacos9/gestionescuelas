@@ -36,6 +36,27 @@ class ci_vincular_allegados extends ci_abm_personas
         return dao_consultas::get_nombres_persona($filtro);
     }
 
+    /*
+     * Retorna los niveles dados de alta
+     */
+    public function get_nivel_ci()
+    {
+        $filtro['excluir'] = constantes::get_valor_constante('NIVEL_SECUNDARIO');
+        return dao_consultas::get_niveles($filtro);
+    }
+
+    /*
+     * Retorna los grados dados de alta
+     */
+    public function get_grado_actual_ci($nivel)
+    {
+        $filtro = array();
+        if (isset($nivel)) {
+            $filtro['nivel'] = $nivel;
+        }
+        return dao_consultas::get_grados($filtro);
+    }
+
     public function cargar_datos()
     {
         if (!empty($this->s__persona_editar)) {
@@ -57,6 +78,11 @@ class ci_vincular_allegados extends ci_abm_personas
         if (isset($this->s__datos_filtro)) {
             $this->s__datos_filtro['solo_alumnos'] = true;
             $this->s__datos_filtro['vincular_allegados'] = true;
+        }
+        if (isset($this->s__datos_filtro)) {
+            if (!$this->s__datos_filtro['nivel']) {
+                $cuadro->eliminar_columnas(array('grado'));
+            }
         }
         parent::conf__cuadro($cuadro);
     }

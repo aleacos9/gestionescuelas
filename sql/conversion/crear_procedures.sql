@@ -900,6 +900,28 @@ BEGIN
         ALTER TABLE alumno_cuenta_corriente
             ADD COLUMN numero_cuota INTEGER;
 
-END IF;
+    END IF;
+END;
+$$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/no-permitir-cargar-pago-reinscripcion-si-adeuda-cuotas 20/09/2023
+CREATE OR REPLACE FUNCTION impedir_pago_reinscripcion_si_adeuda_cuotas() RETURNS VOID AS
+$$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM parametros_sistema WHERE parametro = 'valida_cuotas_impagas_pago_inscripcion') THEN
+
+        INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
+        VALUES (NEXTVAL('sq_id_parametro'), 'valida_cuotas_impagas_pago_inscripcion', 'Valido si adeuda cuotas antes de cargar un pago de inscripción', 'Valido si tiene deuda pago inscr.', 'SI', '1.0.0');
+
+        INSERT INTO anio (id_anio, anio, estado)
+        VALUES (NEXTVAL('sq_id_anio'), '2024', 'I');
+
+        --Le asigno a todas las inscripciones el año 2023 en el campo cuota de la tabla alumno_cuenta_corriente
+        UPDATE alumno_cuenta_corriente
+        SET cuota = '2023'
+        WHERE id_cargo_cuenta_corriente = 1;
+
+    END IF;
 END;
 $$ LANGUAGE 'plpgsql';

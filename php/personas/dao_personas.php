@@ -147,15 +147,40 @@ class dao_personas
                 }
             }
 
-            /*if (isset($filtro['administrar_forma_cobro'])) {
-                if ($filtro['administrar_forma_cobro'] == 'S') {
-                    $select_inicial .= "distinct a.id_alumno
-                                       ,p.id_persona";
+            if (isset($filtro['nivel'])) {
+                $where_grado = '';
+                if (isset($filtro['grado_actual'])) {
+                    $where_grado .= " AND dc.id_grado IN ('{$filtro['grado_actual']}')";
+                } else {
+                    $filtro['solo_ids_grado'] = true;
+                    $grados_x_nivel = dao_consultas::get_grados($filtro);
+                    if ($grados_x_nivel) {
+                        if (!is_array($grados_x_nivel)) {
+                            $where_grado .= " AND dc.id_grado IN ('{$grados_x_nivel}')";
+                        } else {
+                            $subgrados = implode(',', $grados_x_nivel);
+                            $where_grado .= " AND dc.id_grado IN ($subgrados)";
+                        }
+                    }
                 }
-            } else {
-                $select_inicial .= "distinct p.id_persona
-                                   ,a.id_alumno";
-            }*/
+
+                $select .= ",subconsulta_grado_actual.id_grado
+                            ,subconsulta_grado_actual.nombre_corto as grado
+                           ";
+
+                $from .= " INNER JOIN (SELECT distinct (dc.id_alumno) as id_alumno
+                                             ,g.id_grado
+                                             ,g.nombre_corto 
+                                       FROM alumno_datos_cursada dc
+                                           INNER JOIN grado g on g.id_grado = dc.id_grado
+                                           INNER JOIN anio a on a.id_anio = dc.anio_cursada
+                                       WHERE 1=1
+                                          $where_grado
+                                          AND id_anio IN (SELECT id_anio
+                                                          FROM anio
+                                                          WHERE estado = 'A')) AS subconsulta_grado_actual ON subconsulta_grado_actual.id_alumno = a.id_alumno
+                         ";
+            }
         }
 
         $sql = "SELECT $select_inicial
@@ -364,7 +389,6 @@ class dao_personas
     public static function get_deuda_actual_por_alumno($filtro = null)
     {
         $where = 'WHERE 1 = 1';
-        ei_arbol($filtro);
         if (isset($filtro)) {
             if (isset($filtro['id_persona'])) {
                 $where .= " AND p.id_persona = '{$filtro['id_persona']}'";

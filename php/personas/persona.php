@@ -981,13 +981,17 @@ class persona
         return $this->total_cuotas_adeudadas[0]['total_cuotas_adeudadas'];
     }
 
-    public function get_total_cuotas_adeudadas_x_tipo_cargo($tipo_cargo = null)
+    public function get_total_cuotas_adeudadas_x_tipo_cargo($tipo_cargo = null, $id_excluir = null)
     {
+        toba::logger()->info($id_excluir);
         toba::logger()->info("get_total_cuotas_adeudadas_x_tipo_cargo");
         // Obtiene la cantidad de cuotas adeudadas x tipo de cargo de la persona
         $where = '';
         if (isset($tipo_cargo)) {
             $where .= " AND id_cargo_cuenta_corriente = $tipo_cargo";
+        }
+        if (isset($id_excluir)) {
+            $where .= " AND acc.id_alumno_cc != $id_excluir";
         }
 
         $sql = "SELECT acc.id_alumno
@@ -997,7 +1001,7 @@ class persona
                     INNER JOIN alumno_cuenta_corriente acc on tcc.id_alumno_cc = acc.id_alumno_cc
                     INNER JOIN alumno a on a.id_alumno = acc.id_alumno
                     INNER JOIN persona p on p.id_persona = a.id_persona
-                WHERE p.id_persona = {$this->persona}
+                WHERE a.id_alumno = {$this->persona} --p.id_persona = {$this->persona}
                     $where
                 GROUP BY acc.id_alumno
                         ,p.id_persona
@@ -1952,7 +1956,7 @@ class persona
         $salida = true;
 
         $condicion_x_cargo = [
-            constantes::get_valor_constante('INSCRIPCION_ANUAL') => " AND cuota = ''",
+            constantes::get_valor_constante('INSCRIPCION_ANUAL') => " AND cuota = '{$this->anio_cuota}'",
             constantes::get_valor_constante('CUOTA_MENSUAL') => " AND cuota = '{$this->cuota_completa}'",
             constantes::get_valor_constante('MATERIALES') => " AND cuota = '' AND numero_cuota = '{$this->numero_cuota_materiales}'"
         ];
