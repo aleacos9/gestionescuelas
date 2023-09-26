@@ -10,7 +10,18 @@ class ci_alta_usuarios extends gestionescuelas_ext_ci
 
     function conf__cuadro($cuadro)
     {
-        $cuadro->set_datos(dao_consultas::get_tutores_con_allegados());
+        $datos = dao_consultas::get_tutores_con_allegados();
+        if ($datos) {
+            if (dao_consultas::catalogo_de_parametros("lista_solo_allegados_sin_usuarios") == 'SI') {
+                //Recorro los usuarios que obtuve y solo dejo aquellos que aún NO tengan usuario creado
+                foreach (array_keys($datos) as $usuario) {
+                    if (toba::usuario()->existe_usuario($datos[$usuario]['identificacion'])) {
+                        unset($datos[$usuario]);
+                    }
+                }
+            }
+        }
+        $cuadro->set_datos($datos);
     }
 
     public function evt__cuadro__seleccion($datos)
@@ -25,10 +36,10 @@ class ci_alta_usuarios extends gestionescuelas_ext_ci
         $this->s__array_datos_invalidos = array();
         if (!empty($this->s__datos_seleccion)) {
             foreach ($this->s__datos_seleccion as $clave => $fila) {
-                if ($this->validar_si_existe_usuario($fila) == false) {
+                if (!$this->validar_si_existe_usuario($fila)) {
                     unset($fila[$clave]);
                 } else {
-                    if ($this->validar_datos_cargados($fila) == false) {
+                    if (!$this->validar_datos_cargados($fila)) {
                         unset($fila[$clave]);
                     } else {
                         $this->crear_usuario($fila);
@@ -36,6 +47,7 @@ class ci_alta_usuarios extends gestionescuelas_ext_ci
                 }
             }
             $this->mostrar_mensajes();
+            unset($this->s__datos_seleccion);
         }
     }
 

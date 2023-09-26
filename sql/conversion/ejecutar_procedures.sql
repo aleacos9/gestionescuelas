@@ -63,3 +63,6 @@ SELECT agregar_concepto_para_generar_cargos();
 
 --Alejandro feature/no-permitir-cargar-pago-reinscripcion-si-adeuda-cuotas 20/09/2023
 SELECT impedir_pago_reinscripcion_si_adeuda_cuotas();
+
+--Alejandro feature/listar-solo-allegados-sin-usuarios-desde-alta-de-usuarios 26/09/2023
+SELECT listar_solo_allegados_sin_usuarios();

@@ -926,3 +926,17 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/listar-solo-allegados-sin-usuarios-desde-alta-de-usuarios 26/09/2023
+CREATE OR REPLACE FUNCTION listar_solo_allegados_sin_usuarios() RETURNS VOID AS
+$$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM parametros_sistema WHERE parametro = 'lista_solo_allegados_sin_usuarios') THEN
+
+        INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
+        VALUES (NEXTVAL('sq_id_parametro'), 'lista_solo_allegados_sin_usuarios', 'Listo solo los usuarios sin allegados desde el alta de cuenta', 'Listo solo los sin usuario.', 'SI', '1.0.0');
+
+    END IF;
+END;
+$$ LANGUAGE 'plpgsql';
