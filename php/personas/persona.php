@@ -89,6 +89,7 @@ class persona
     protected $datos = array();
     protected $datos_alumno = array();
     protected $datos_alumnos_vinculados = array();
+    protected $estados_notificaciones_tutor = array();
     protected $persona_documentos = array();
     protected $persona_sexos = array();
     protected $persona_allegados = array();
@@ -1110,6 +1111,43 @@ class persona
         return $this->datos_tutor[0]['nombre_tutor'];
     }
 
+    public function get_estados_notificaciones_tutor()
+    {
+        toba::logger()->info("get_estados_notificaciones_tutor");
+        return $this->estados_notificaciones_tutor;
+    }
+
+    //Obtengo el estado de una notificación en particular
+    public function get_estado_notificacion_x_tipo_notificacion($filtro)
+    {
+        toba::logger()->info("get_estado_notificacion_en_particular");
+        $where = '';
+
+        if (isset($filtro['id_notificacion'])) {
+            $where .= " AND id_notificacion = '{$filtro['id_notificacion']}'";
+        }
+
+        $sql = "SELECT id_persona_notificacion
+                      ,id_persona
+                      ,id_notificacion
+                      ,notificado
+                      ,fecha_notificacion
+                FROM persona_notificacion
+                WHERE id_persona = {$this->persona}
+                    $where
+               ";
+
+        toba::logger()->debug(__METHOD__." : ".$sql);
+        $datos = consultar_fuente($sql);
+        $estado = false;
+        if (isset($datos[0])) {
+            if ($datos[0]['notificado'] == 's') {
+                $estado = true;
+            }
+        }
+        return $estado;
+    }
+
     //---------------------------------------------------------------------
     //                     MÉTODOS
     //---------------------------------------------------------------------
@@ -1235,6 +1273,19 @@ class persona
 
             toba::logger()->debug(__METHOD__." : ".$sql);
             $this->datos_alumnos_vinculados = consultar_fuente($sql);
+
+            //Obtengo el estado de las notificaciones del tutor
+            $sql = "SELECT id_persona_notificacion
+                          ,id_persona
+                          ,id_notificacion
+                          ,notificado
+                          ,fecha_notificacion
+                    FROM persona_notificacion
+                    WHERE id_persona = {$this->persona}    
+                   ";
+
+            toba::logger()->debug(__METHOD__." : ".$sql);
+            $this->estados_notificaciones_tutor = consultar_fuente($sql);
         }
 
         // Obtiene los documentos asociados a la persona -----------------------------

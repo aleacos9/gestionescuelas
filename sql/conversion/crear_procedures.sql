@@ -940,3 +940,77 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/agregar-mensaje-popup-usuario-perfil-tutor 03/10/2023
+CREATE OR REPLACE FUNCTION agregar_mensaje_popup_usuario_perfil_tutor() RETURNS VOID AS
+$$
+BEGIN
+    IF NOT EXISTS ( SELECT '' FROM information_schema.columns WHERE table_name = 'notificacion' and column_name = 'descripcion') THEN
+
+        CREATE SEQUENCE id_notificacion_seq
+            INCREMENT 1
+            MINVALUE 1
+            MAXVALUE 9223372036854775807
+            START 1
+            CACHE 1;
+        ALTER TABLE id_notificacion_seq
+            OWNER TO postgres;
+        GRANT ALL ON SEQUENCE id_notificacion_seq TO postgres;
+
+        CREATE TABLE notificacion
+        (
+            id_notificacion integer NOT NULL DEFAULT nextval('id_notificacion_seq'::regclass),
+            nombre character varying (120),
+            descripcion character varying,
+            fecha_alta timestamp with time zone,
+            activa character(1) DEFAULT 'n'::bpchar,
+            CONSTRAINT notificacion_pkey PRIMARY KEY (id_notificacion)
+        )
+            WITH (
+                OIDS=FALSE
+            );
+        ALTER TABLE notificacion
+            OWNER TO postgres;
+            COMMENT ON TABLE notificacion IS 'Tabla que contendra las distintas notificaciones del sistema.';
+
+
+        CREATE SEQUENCE id_persona_notificacion_seq
+            INCREMENT 1
+            MINVALUE 1
+            MAXVALUE 9223372036854775807
+            START 1
+            CACHE 1;
+        ALTER TABLE id_persona_notificacion_seq
+            OWNER TO postgres;
+        GRANT ALL ON SEQUENCE id_persona_notificacion_seq TO postgres;
+
+        CREATE TABLE persona_notificacion
+        (
+            id_persona_notificacion integer NOT NULL DEFAULT nextval('id_persona_notificacion_seq'::regclass),
+            id_persona integer,
+            id_notificacion integer,
+            notificado character(1) DEFAULT 'n'::bpchar,
+            fecha_notificacion timestamp with time zone,
+            CONSTRAINT persona_notificacion_pkey PRIMARY KEY (id_persona_notificacion),
+            CONSTRAINT id_persona FOREIGN KEY (id_persona)
+                REFERENCES persona (id_persona) MATCH FULL
+                ON UPDATE NO ACTION ON DELETE NO ACTION,
+            CONSTRAINT id_notificacion FOREIGN KEY (id_notificacion)
+                REFERENCES notificacion (id_notificacion) MATCH FULL
+                ON UPDATE NO ACTION ON DELETE NO ACTION
+        )
+            WITH (
+                OIDS=FALSE
+            );
+        ALTER TABLE persona_notificacion
+            OWNER TO postgres;
+        COMMENT ON TABLE persona_notificacion IS 'Tabla que contendra las relaciones entre las personas y las notificaciones.';
+
+
+        INSERT INTO notificacion(id_notificacion, nombre, descripcion, fecha_alta, activa)
+        VALUES(NEXTVAL('id_persona_notificacion_seq'),'No incripcion, deuda en cuotas','No se permite la inscripción anual si adeuda cuotas', '2023-10-03', 'S');
+
+    END IF;
+END;
+$$ LANGUAGE 'plpgsql';
