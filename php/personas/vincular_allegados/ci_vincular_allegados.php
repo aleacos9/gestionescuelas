@@ -80,8 +80,10 @@ class ci_vincular_allegados extends ci_abm_personas
             $this->s__datos_filtro['vincular_allegados'] = true;
         }
         if (isset($this->s__datos_filtro)) {
-            if (!$this->s__datos_filtro['nivel']) {
-                $cuadro->eliminar_columnas(array('grado'));
+            if ($cuadro->existe_columna('grado')) {
+                if (!$this->s__datos_filtro['nivel']) {
+                    $cuadro->eliminar_columnas(array('grado'));
+                }
             }
         }
         parent::conf__cuadro($cuadro);

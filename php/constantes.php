@@ -25,6 +25,7 @@ class constantes
         'CUARTO_GRADO' => array('valor' => 6, 'tabla' => 'grado'),
         'QUINTO_GRADO' => array('valor' => 7, 'tabla' => 'grado'),
         'SEXTO_GRADO' => array('valor' => 8, 'tabla' => 'grado'),
+        'NO_INSCRIPCION' => array('valor' => 1, 'tabla' => 'notificacion'),
     );
 
     //Devuelve el valor de la constante indicada como parametro, si no se encuentra devuelve null

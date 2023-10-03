@@ -69,3 +69,6 @@ DROP FUNCTION IF EXISTS impedir_pago_reinscripcion_si_adeuda_cuotas();
 
 --Alejandro feature/listar-solo-allegados-sin-usuarios-desde-alta-de-usuarios 26/09/2023
 DROP FUNCTION IF EXISTS listar_solo_allegados_sin_usuarios();
+
+--Alejandro feature/agregar-mensaje-popup-usuario-perfil-tutor 03/10/2023
+DROP FUNCTION IF EXISTS agregar_mensaje_popup_usuario_perfil_tutor();
