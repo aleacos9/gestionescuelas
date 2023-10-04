@@ -1014,3 +1014,17 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/listar-solo-allegados-sin-usuarios-desde-alta-de-usuarios 04/10/2023
+CREATE OR REPLACE FUNCTION alta_parametro_definir_fecha_desde_listado_cuenta_corriente() RETURNS VOID AS
+$$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM parametros_sistema WHERE parametro = 'fecha_desde_listado_cuenta_corriente') THEN
+
+        INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
+        VALUES (NEXTVAL('sq_id_parametro'), 'fecha_desde_listado_cuenta_corriente', 'Año a partir del cual se muestran los datos en la cuenta corriente', 'Año desde que se muestra la cta cte.', '2022', '1.0.0');
+
+END IF;
+END;
+$$ LANGUAGE 'plpgsql';

@@ -20,7 +20,13 @@ class ci_cuenta_corriente extends gestionescuelas_ext_ci
             $fecha = new fecha();
             $fecha->set_timestamp($fecha->get_fecha_desplazada("+1"));
 
-            $this->s__datos_filtro = array('fecha_desde' => date("Y-01-01"), 'fecha_hasta' => $fecha->get_fecha_db());
+            if (dao_consultas::catalogo_de_parametros("fecha_desde_listado_cuenta_corriente")) {
+                $anio = dao_consultas::catalogo_de_parametros("fecha_desde_listado_cuenta_corriente");
+                $fecha_desde = date($anio.'-01-01');
+            } else {
+                $fecha_desde = date("Y-01-01");
+            }
+            $this->s__datos_filtro = array('fecha_desde' => $fecha_desde, 'fecha_hasta' => $fecha->get_fecha_db());
         }
         $form->set_datos($this->s__datos_filtro);
     }

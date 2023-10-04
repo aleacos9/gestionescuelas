@@ -72,3 +72,6 @@ DROP FUNCTION IF EXISTS listar_solo_allegados_sin_usuarios();
 
 --Alejandro feature/agregar-mensaje-popup-usuario-perfil-tutor 03/10/2023
 DROP FUNCTION IF EXISTS agregar_mensaje_popup_usuario_perfil_tutor();
+
+--Alejandro feature/listar-solo-allegados-sin-usuarios-desde-alta-de-usuarios 04/10/2023
+DROP FUNCTION IF EXISTS alta_parametro_definir_fecha_desde_listado_cuenta_corriente();
