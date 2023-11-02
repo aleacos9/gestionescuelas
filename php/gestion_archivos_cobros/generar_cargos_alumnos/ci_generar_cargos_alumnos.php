@@ -41,6 +41,22 @@ class ci_generar_cargos_alumnos extends gestionescuelas_ext_ci
         }
     }
 
+    /*
+     * Retorna un array con el detalle de las cuotas para el pago de la inscripcion anual,
+     * definidas a través de un parámetro general del sistema
+     */
+    public function get_cantidad_cuotas_inscripcion_ci()
+    {
+        $numero_cuota = dao_consultas::catalogo_de_parametros("cant_cuotas_cobro_inscripcion");
+        if ($numero_cuota > 0) {
+            $valores = [];
+            for ($i = 1; $i <= $numero_cuota; $i++) {
+                $valores[] = ['numero_cuota' => $i];
+            }
+            return $valores;
+        }
+    }
+
     //---- formulario ----------------------------------------------------------------------
 
     public function evt__formulario__modificacion($datos)
