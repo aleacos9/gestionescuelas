@@ -1028,3 +1028,23 @@ BEGIN
 END IF;
 END;
 $$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/permitir-pago-inscripcion-en-cuotas 02/11/2023
+CREATE OR REPLACE FUNCTION permitir_pago_inscripcion_en_cuotas() RETURNS VOID AS
+$$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM parametros_sistema WHERE parametro = 'importe_cuota_uno_nivel_inicial') THEN
+
+        INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
+        VALUES (NEXTVAL('sq_id_parametro'), 'importe_cuota_uno_nivel_inicial', 'Importe cuota UNO - Niv. Inicial', 'Importe cuota 1 NI', 40000, '1.0.0');
+        INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
+        VALUES (NEXTVAL('sq_id_parametro'), 'importe_cuota_dos_nivel_inicial', 'Importe cuota DOS - Niv. Inicial', 'Importe cuota 2 NI', 31000, '1.0.0');
+        INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
+        VALUES (NEXTVAL('sq_id_parametro'), 'importe_cuota_uno_nivel_primario', 'Importe cuota UNO - Niv. Primario', 'Importe cuota 1 NP', 30000, '1.0.0');
+        INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
+        VALUES (NEXTVAL('sq_id_parametro'), 'importe_cuota_dos_nivel_primario', 'Importe cuota DOS - Niv. Primario', 'Importe cuota 2 NP', 26000, '1.0.0');
+
+    END IF;
+END;
+$$ LANGUAGE 'plpgsql';

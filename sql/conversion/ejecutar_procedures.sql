@@ -72,3 +72,6 @@ SELECT agregar_mensaje_popup_usuario_perfil_tutor();
 
 --Alejandro feature/listar-solo-allegados-sin-usuarios-desde-alta-de-usuarios 04/10/2023
 SELECT alta_parametro_definir_fecha_desde_listado_cuenta_corriente();
+
+--Alejandro feature/permitir-pago-inscripcion-en-cuotas 02/11/2023
+SELECT permitir_pago_inscripcion_en_cuotas();

@@ -80,6 +80,7 @@ class persona
     protected $numero_autorizacion;
     protected $importe_pago;
     protected $numero_cuota_materiales;
+    protected $numero_cuota_inscripcion;
     protected $mostrar_mensaje_individual;
     protected $modo;
     protected $saldo_deuda_corriente;
@@ -233,7 +234,10 @@ class persona
         $cargo = $datos_generacion_cargos['cargo_a_generar'];
         if (array_key_exists($cargo, $tipos_cargos)) {
             if ($cargo == constantes::get_valor_constante('INSCRIPCION_ANUAL')) {
-                $descripcion = 'Inscripción anual del Año ' . $datos_generacion_cargos['anio'];
+                $total_cuotas_inscripcion = dao_consultas::catalogo_de_parametros("cant_cuotas_cobro_inscripcion");
+                $descripcion = 'Inscripción anual del Año ' . $datos_generacion_cargos['anio'] . ' Cuota ' . $datos_generacion_cargos['numero_cuota_inscripcion'] . '/' . $total_cuotas_inscripcion;
+                $this->set_numero_cuota_inscripcion($datos_generacion_cargos['numero_cuota_inscripcion']);
+                $this->set_cuota_completa($datos_generacion_cargos['anio']);
             } elseif ($cargo == constantes::get_valor_constante('CUOTA_MENSUAL')) {
                 $descripcion = 'Cuota mensual ' . $datos_generacion_cargos['cuota'] . ' del Año ' . $datos_generacion_cargos['anio'];
                 $cuota = $datos_generacion_cargos['cuota'];
@@ -738,6 +742,12 @@ class persona
     {
         toba::logger()->info("set_numero_cuota_materiales = " .$numero_cuota_materiales);
         $this->numero_cuota_materiales = $numero_cuota_materiales;
+    }
+
+    public function set_numero_cuota_inscripcion($numero_cuota_inscripcion)
+    {
+        toba::logger()->info("set_numero_cuota_inscripcion = " .$numero_cuota_inscripcion);
+        $this->numero_cuota_inscripcion = $numero_cuota_inscripcion;
     }
 
     public function set_modo($modo)
@@ -1954,7 +1964,13 @@ class persona
 
         //Valido por cada persona que ya no tenga ese cargo generado para ese mes/año
         if ($this->validar_generacion_cargo()) {
-            $numero_cuota_materiales = conversion_tipo_datos::convertir_null_a_cadena($this->numero_cuota_materiales, constantes::get_valor_constante('TIPO_DATO_INT'));
+            if (isset($this->numero_cuota_materiales)) {
+                $numero_cuota_materiales = conversion_tipo_datos::convertir_null_a_cadena($this->numero_cuota_materiales, constantes::get_valor_constante('TIPO_DATO_INT'));
+            } elseif (isset($this->numero_cuota_inscripcion)) {
+                $numero_cuota_materiales = conversion_tipo_datos::convertir_null_a_cadena($this->numero_cuota_inscripcion, constantes::get_valor_constante('TIPO_DATO_INT'));
+            } else {
+                $numero_cuota_materiales = 'null';
+            }
             //Primero, inserto en la tabla alumno_cuenta_corriente
             $sql = "INSERT INTO alumno_cuenta_corriente (id_alumno, usuario_alta, fecha_generacion_cc, cuota, descripcion, id_cargo_cuenta_corriente, numero_cuota) 
 				    VALUES ({$this->id_alumno},'{$usuario}', '{$hoy}', '{$this->cuota_completa}', '{$this->descripcion_cuota}', '{$this->cargo_a_generar}', {$numero_cuota_materiales})
@@ -2007,7 +2023,7 @@ class persona
         $salida = true;
 
         $condicion_x_cargo = [
-            constantes::get_valor_constante('INSCRIPCION_ANUAL') => " AND cuota = '{$this->anio_cuota}'",
+            constantes::get_valor_constante('INSCRIPCION_ANUAL') => " AND cuota = '{$this->anio_cuota}' AND numero_cuota = '{$this->numero_cuota_inscripcion}'",
             constantes::get_valor_constante('CUOTA_MENSUAL') => " AND cuota = '{$this->cuota_completa}'",
             constantes::get_valor_constante('MATERIALES') => " AND cuota = '' AND numero_cuota = '{$this->numero_cuota_materiales}'"
         ];

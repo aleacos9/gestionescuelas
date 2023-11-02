@@ -5,6 +5,7 @@ class eiformulario extends gestionescuelas_ei_formulario
 	{
 		$importe_mensual_cuota_x_grado = dao_consultas::catalogo_de_parametros("importe_mensual_cuota_x_grado");
 		$ingresa_importe_en_generacion_cargos = dao_consultas::catalogo_de_parametros("ingresa_importe_en_generacion_cargos");
+        $cant_cuotas_cobro_inscripcion = dao_consultas::catalogo_de_parametros("cant_cuotas_cobro_inscripcion");
 
 		echo "
 		{$this->objeto_js}.ini = function()
@@ -28,6 +29,7 @@ class eiformulario extends gestionescuelas_ei_formulario
 			this.ef('id_persona').ocultar();
 			this.ef('cuota').ocultar();
 			this.ef('numero_cuota').ocultar();
+			this.ef('numero_cuota_inscripcion').ocultar();
 			this.ef('cargo_a_generar').set_obligatorio(1);
 		}
 		
@@ -51,6 +53,9 @@ class eiformulario extends gestionescuelas_ei_formulario
 		{
 		    this.ef('anio').resetear_estado();
 		    
+		    var cant_cuotas_cobro_inscripcion = '{$cant_cuotas_cobro_inscripcion}';
+		    var ingresa_importe_en_generacion_cargos = '{$ingresa_importe_en_generacion_cargos}';
+		    
 		    switch(this.ef('cargo_a_generar').get_estado())
 			{
 				case '1': //inscripción anual
@@ -61,7 +66,16 @@ class eiformulario extends gestionescuelas_ei_formulario
 			        this.ef('numero_cuota').set_obligatorio(0);
 			        this.ef('numero_cuota').resetear_estado();
 			        this.ef('numero_cuota').ocultar();
-				    break;
+			        
+			        if (cant_cuotas_cobro_inscripcion > 1) {
+			            this.ef('numero_cuota_inscripcion').mostrar();
+			            this.ef('numero_cuota_inscripcion').set_obligatorio(1);
+			        }
+			        
+			        if ((cant_cuotas_cobro_inscripcion > 1) && (ingresa_importe_en_generacion_cargos == 'SI')) {
+			            alert('Tenga en cuenta que los valores de las cuotas que va a generar para las inscripciones NO saldrán del importe ingresado por pantalla, sino que se tomará de los parámetros correspondientes:".'\n'." * importe_cuota_uno_nivel_inicial ".'\n'." *importe_cuota_dos_nivel_inicial ".'\n'." *importe_cuota_uno_nivel_primario ".'\n'." *importe_cuota_dos_nivel_primario".'\n'."Se recomienda cambiar a NO el valor del parámetro ingresa_importe_en_generacion_cargos".'\n'."'); 
+			        }
+			        break;
 				case '2': //cuota mensual
 				    this.ef('cuota').mostrar();
 			        this.ef('cuota').set_obligatorio(1);
@@ -69,6 +83,9 @@ class eiformulario extends gestionescuelas_ei_formulario
 			        this.ef('numero_cuota').set_obligatorio(0);
 			        this.ef('numero_cuota').resetear_estado();
 			        this.ef('numero_cuota').ocultar();
+			        this.ef('numero_cuota_inscripcion').set_obligatorio(0);
+			        this.ef('numero_cuota_inscripcion').resetear_estado();
+			        this.ef('numero_cuota_inscripcion').ocultar();
 			        break;
 			    case '3': //materiales
 			        this.ef('cuota').resetear_estado();
