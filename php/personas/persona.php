@@ -1492,6 +1492,7 @@ class persona
                       ,acc.id_alumno
                       ,acc.usuario_alta
                       ,acc.cuota
+                      ,acc.numero_cuota
                       ,(CASE WHEN (subconsulta_cuenta_corriente.id_estado_cuota IN (3,4) AND acc.id_cargo_cuenta_corriente = 1) THEN 'Pago de Inscripción Anual ' --|| acc.cuota
                              WHEN (subconsulta_cuenta_corriente.id_estado_cuota IN (3,4) AND acc.id_cargo_cuenta_corriente = 2) THEN 'Pago de cuota ' || acc.cuota
                              WHEN (subconsulta_cuenta_corriente.id_estado_cuota IN (3,4) AND acc.id_cargo_cuenta_corriente = 3) THEN 'Pago de materiales cuota ' || acc.numero_cuota

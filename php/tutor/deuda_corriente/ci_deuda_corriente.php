@@ -3,10 +3,15 @@ class ci_deuda_corriente extends ci_cuenta_corriente
 {
     protected $s__datos_deuda_corriente = array();
     protected $s__nivel_actual_cursada;
+    protected $s__grado_actual_cursada;
     protected $s__importe_cuota_actual;
     protected $s__importe_materiales;
     protected $s__importe_inscripcion_inicial;
+    protected $s__importe_inscripcion_inicial_cuota_uno;
+    protected $s__importe_inscripcion_inicial_cuota_dos;
     protected $s__importe_inscripcion_primario;
+    protected $s__importe_inscripcion_primario_cuota_uno;
+    protected $s__importe_inscripcion_primario_cuota_dos;
     protected $s__mostrar_importe_actualizado;
 
     public function ini()
@@ -17,7 +22,11 @@ class ci_deuda_corriente extends ci_cuenta_corriente
             $this->s__importe_cuota_actual = dao_consultas::catalogo_de_parametros("importe_mensual_cuota");
             $this->s__importe_materiales = dao_consultas::catalogo_de_parametros("importe_materiales");
             $this->s__importe_inscripcion_inicial = dao_consultas::catalogo_de_parametros("importe_inscripcion_inicial");
+            $this->s__importe_inscripcion_inicial_cuota_uno = dao_consultas::catalogo_de_parametros("importe_cuota_uno_nivel_inicial");
+            $this->s__importe_inscripcion_inicial_cuota_dos = dao_consultas::catalogo_de_parametros("importe_cuota_dos_nivel_inicial");
             $this->s__importe_inscripcion_primario = dao_consultas::catalogo_de_parametros("importe_inscripcion_primario");
+            $this->s__importe_inscripcion_primario_cuota_uno = dao_consultas::catalogo_de_parametros("importe_cuota_uno_nivel_primario");
+            $this->s__importe_inscripcion_primario_cuota_dos = dao_consultas::catalogo_de_parametros("importe_cuota_dos_nivel_primario");
         }
     }
 
@@ -28,6 +37,7 @@ class ci_deuda_corriente extends ci_cuenta_corriente
             $this->s__datos_deuda_corriente = $persona->get_datos_deuda_corriente();
             $this->s__nombre_alumno = $persona->get_nombre_completo_alumno();
             $this->s__nivel_actual_cursada = $persona->get_nivel_actual_cursada();
+            $this->s__grado_actual_cursada = $persona->get_grado_actual_cursada();
         }
     }
 
@@ -72,8 +82,47 @@ class ci_deuda_corriente extends ci_cuenta_corriente
                                 if ($repeticiones_id_alumno_cc[$id_alumno_cc] <= 1) {
                                     switch ($deuda['id_cargo_cuenta_corriente']) {
                                         case constantes::get_valor_constante('INSCRIPCION_ANUAL'):
-                                            $saldo_a_sumar = ($this->s__importe_inscripcion_inicial - $deuda['importe']) + $deuda['importe'];
+
+                                            $parametro = '';
+                                            switch ($obj_alumno->get_grado_actual_cursada()) {
+                                                case constantes::get_valor_constante('SALA4'):
+                                                    $parametro = constantes::get_valor_constante('NIVEL_INICIAL');
+                                                    break;
+                                                case constantes::get_valor_constante('SALA5'):
+                                                case constantes::get_valor_constante('PRIMER_GRADO'):
+                                                case constantes::get_valor_constante('SEGUNDO_GRADO'):
+                                                case constantes::get_valor_constante('TERCER_GRADO'):
+                                                case constantes::get_valor_constante('CUARTO_GRADO'):
+                                                case constantes::get_valor_constante('QUINTO_GRADO'):
+                                                    $parametro = constantes::get_valor_constante('NIVEL_PRIMARIO');
+                                                    break;
+                                            }
+
+                                            if ($parametro == constantes::get_valor_constante('NIVEL_INICIAL')) {
+                                                switch ($deuda['numero_cuota']) {
+                                                    case 1:
+                                                        $saldo_a_sumar = ($this->s__importe_inscripcion_inicial_cuota_uno - $deuda['importe']) + $deuda['importe'];
+                                                        break;
+                                                    case 2:
+                                                        $saldo_a_sumar = ($this->s__importe_inscripcion_inicial_cuota_dos - $deuda['importe']) + $deuda['importe'];
+                                                        break;
+                                                    default:
+                                                        $saldo_a_sumar = ($this->s__importe_inscripcion_inicial - $deuda['importe']) + $deuda['importe'];
+                                                }
+                                            } elseif ($parametro == constantes::get_valor_constante('NIVEL_PRIMARIO')) {
+                                                switch ($deuda['numero_cuota']) {
+                                                    case 1:
+                                                        $saldo_a_sumar = ($this->s__importe_inscripcion_primario_cuota_uno - $deuda['importe']) + $deuda['importe'];
+                                                        break;
+                                                    case 2:
+                                                        $saldo_a_sumar = ($this->s__importe_inscripcion_primario_cuota_dos - $deuda['importe']) + $deuda['importe'];
+                                                        break;
+                                                    default:
+                                                        $saldo_a_sumar = ($this->s__importe_inscripcion_primario - $deuda['importe']) + $deuda['importe'];
+                                                }
+                                            }
                                             break;
+
                                         case constantes::get_valor_constante('CUOTA_MENSUAL'):
                                             $saldo_a_sumar = ($this->s__importe_cuota_actual - $deuda['importe']) + $deuda['importe'];
                                             break;
@@ -160,10 +209,43 @@ class ci_deuda_corriente extends ci_cuenta_corriente
             if ($repeticiones_id_alumno_cc[$id_alumno_cc] <= 1) {
                 switch ($deuda['id_cargo_cuenta_corriente']) {
                     case constantes::get_valor_constante('INSCRIPCION_ANUAL'):
-                        if ($this->s__nivel_actual_cursada == constantes::get_valor_constante('NIVEL_INICIAL')) {
-                            $importe_actualizado = ($this->s__importe_inscripcion_inicial - $importe) + $importe;
-                        } elseif ($this->s__nivel_actual_cursada == constantes::get_valor_constante('NIVEL_PRIMARIO')) {
-                            $importe_actualizado = ($this->s__importe_inscripcion_primario - $importe) + $importe;
+                        $parametro = '';
+                        switch ($this->s__grado_actual_cursada) {
+                            case constantes::get_valor_constante('SALA4'):
+                                $parametro = constantes::get_valor_constante('NIVEL_INICIAL');
+                                break;
+                            case constantes::get_valor_constante('SALA5'):
+                            case constantes::get_valor_constante('PRIMER_GRADO'):
+                            case constantes::get_valor_constante('SEGUNDO_GRADO'):
+                            case constantes::get_valor_constante('TERCER_GRADO'):
+                            case constantes::get_valor_constante('CUARTO_GRADO'):
+                            case constantes::get_valor_constante('QUINTO_GRADO'):
+                                $parametro = constantes::get_valor_constante('NIVEL_PRIMARIO');
+                                break;
+                        }
+
+                        if ($parametro == constantes::get_valor_constante('NIVEL_INICIAL')) {
+                            switch ($deuda['numero_cuota']) {
+                                case 1:
+                                    $importe_actualizado = ($this->s__importe_inscripcion_inicial_cuota_uno - $importe) + $importe;
+                                    break;
+                                case 2:
+                                    $importe_actualizado = ($this->s__importe_inscripcion_inicial_cuota_dos - $importe) + $importe;
+                                    break;
+                                default:
+                                    $importe_actualizado = ($this->s__importe_inscripcion_inicial - $importe) + $importe;
+                            }
+                        } elseif ($parametro == constantes::get_valor_constante('NIVEL_PRIMARIO')) {
+                            switch ($deuda['numero_cuota']) {
+                                case 1:
+                                    $importe_actualizado = ($this->s__importe_inscripcion_primario_cuota_uno - $importe) + $importe;
+                                    break;
+                                case 2:
+                                    $importe_actualizado = ($this->s__importe_inscripcion_primario_cuota_dos - $importe) + $importe;
+                                    break;
+                                default:
+                                    $importe_actualizado = ($this->s__importe_inscripcion_primario - $importe) + $importe;
+                            }
                         }
                         break;
                     case constantes::get_valor_constante('CUOTA_MENSUAL'):
