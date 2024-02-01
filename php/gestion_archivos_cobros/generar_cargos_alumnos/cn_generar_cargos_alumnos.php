@@ -85,13 +85,13 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
                     $parametro = '';
                     switch ($persona->get_grado_actual_cursada()) {
                         case constantes::get_valor_constante('SALA4'):
+                        case constantes::get_valor_constante('SALA5'):
                             if ($this->datos_formulario['numero_cuota_inscripcion'] == 1) {
                                 $parametro = "importe_cuota_uno_nivel_inicial";
                             } elseif ($this->datos_formulario['numero_cuota_inscripcion'] == 2) {
                                 $parametro = "importe_cuota_dos_nivel_inicial";
                             }
                             break;
-                        case constantes::get_valor_constante('SALA5'):
                         case constantes::get_valor_constante('PRIMER_GRADO'):
                         case constantes::get_valor_constante('SEGUNDO_GRADO'):
                         case constantes::get_valor_constante('TERCER_GRADO'):
