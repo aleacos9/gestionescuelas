@@ -1531,4 +1531,149 @@ class dao_consultas
         toba::logger()->debug(__METHOD__." : ".$sql);
         return toba::db()->consultar($sql);
     }
+
+    /*
+     * Retorna los datos de los alumnos con deuda
+     */
+    public static function get_listado_estado_deuda_alumnos($filtro=null)
+    {
+        $where = 'WHERE 1=1';
+        $having = '';
+
+        if (isset($filtro)) {
+            if (isset($filtro['id_persona'])) {
+                $where .= " AND p.id_persona = '{$filtro['id_persona']}'";
+            }
+
+            if (isset($filtro['id_tipo_documento'])) {
+                $where .= " AND ptd.id_tipo_documento = '{$filtro['id_tipo_documento']}'";
+            }
+
+            if (isset($filtro['numero'])) {
+                $where .= " AND ptd.numero = '{$filtro['numero']}'";
+            }
+
+            if (isset($filtro['id_sexo'])) {
+                $where .= " AND ps.id_sexo = '{$filtro['id_sexo']}'";
+            }
+
+            if (isset($filtro['apellidos'])) {
+                $where .= " AND p.apellidos ILIKE '%{$filtro['apellidos']}%'";
+            }
+
+            if (isset($filtro['activo'])) {
+                $where .= " AND p.activo = '{$filtro['activo']}'";
+            }
+
+            if (isset($filtro['estado_alumno'])) {
+                $where .= " AND a.regular = '{$filtro['estado_alumno']}'";
+            }
+
+            if (isset($filtro['cuota'])) {
+                if ($filtro['cuota'] < 10) {
+                    $filtro['cuota'] = '0'.$filtro['cuota'];
+                }
+                if ($filtro['cuota'] == 11) {
+                    $where .= " AND ((substring(acc.cuota, 1, 2) = '{$filtro['cuota']}') OR acc.cuota = '')";
+                } else {
+                    $where .= " AND substring(acc.cuota, 1, 2) = '{$filtro['cuota']}'";
+                }
+            }
+
+            if (isset($filtro['anio'])) {
+                if ($filtro['cuota'] == 11) {
+                    $where .= " AND ((substring(acc.cuota, 3, 4) = '{$filtro['anio']}') OR acc.cuota = '')";
+                } else {
+                    $where .= " AND substring(acc.cuota, 3, 4) = '{$filtro['anio']}'";
+                }
+            }
+
+            if (isset($filtro['tiene_tarjeta'])) {
+                if ($filtro['tiene_tarjeta'] == 'S') {
+                    $where .= " AND EXISTS (SELECT ''
+                                            FROM alumno_tarjeta at
+                                            WHERE a.id_alumno = at.id_alumno
+                                                 AND at.activo = 'S')";
+                }
+                if ($filtro['tiene_tarjeta'] == 'N') {
+                    $where .= " AND NOT EXISTS (SELECT ''
+                                                FROM alumno_tarjeta at
+                                                WHERE a.id_alumno = at.id_alumno
+                                                    AND at.activo = 'S')";
+                }
+            }
+
+            if (isset($filtro['saldo'])) {
+                switch ($filtro['saldo']) {
+                    case 'M':
+                        $having .= " HAVING SUM(tcc.importe) > 0";
+                        break;
+                    case 'm':
+                        $having .= " HAVING SUM(tcc.importe) < 0";
+                        break;
+                    case 'D':
+                        $having .= " HAVING SUM(tcc.importe) <> 0";
+                        break;
+                }
+            }
+        }
+
+        $sql = "SELECT a.id_alumno
+                      ,a.legajo
+                      ,acc.id_alumno_cc
+                      ,p.id_persona
+                      ,(p.apellidos || ', ' || p.nombres)     as persona
+                      ,ptd.id_tipo_documento
+                      ,td.nombre                              as tipo_documento
+                      ,td.nombre_corto                        as tipo_documento_corto
+                      ,ptd.numero                             as identificacion
+                      ,ps.id_sexo
+                      ,s.nombre                               as sexo
+                      ,(CASE
+                           WHEN p.es_alumno = 'S' AND a.regular = 'S' THEN 'Regular'
+                           WHEN p.es_alumno = 'S' AND a.regular = 'N' THEN 'No regular'
+                           WHEN p.es_alumno = 'N' THEN '-'
+                        END)  as estado_alumno
+                      ,acc.cuota
+                      ,SUM(tcc.importe) AS SaldoCuota
+                      ,SaldoTotal
+                FROM transaccion_cuenta_corriente tcc
+                    INNER JOIN alumno_cuenta_corriente acc ON acc.id_alumno_Cc = tcc.id_alumno_cc
+                    INNER JOIN alumno a ON a.id_alumno = acc.id_alumno AND a.regular = 'S'
+                    INNER JOIN persona p ON p.id_persona = a.id_persona
+                    INNER JOIN (SELECT id_alumno, sum(tc.importe) AS SaldoTotal
+                                FROM transaccion_cuenta_corriente tc
+                                    INNER JOIN alumno_cuenta_corriente acc ON acc.id_alumno_cc = tc.id_alumno_cc
+                                GROUP BY id_alumno) AS R1 ON R1.id_alumno = a.id_alumno
+                    LEFT OUTER JOIN (persona_sexo ps JOIN sexo s on ps.id_sexo = s.id_sexo)
+                                    ON ps.id_persona = p.id_persona AND ps.activo = 'S'
+                    LEFT OUTER JOIN (persona_tipo_documento ptd JOIN tipo_documento td
+                                     on ptd.id_tipo_documento = td.id_tipo_documento)
+                                    ON ptd.id_persona = p.id_persona AND td.jerarquia = (SELECT MIN(X1.jerarquia)
+                                                                                         FROM tipo_documento X1
+                                                                                            , persona_tipo_documento X2
+                                                                                         WHERE X1.id_tipo_documento = X2.id_tipo_documento
+                                                                                           AND X2.id_persona = p.id_persona)
+                    $where
+                GROUP BY a.id_alumno
+                        ,p.apellidos
+                        ,p.nombres
+                        ,p.id_persona
+                        ,a.legajo
+                        ,acc.id_alumno_cc
+                        ,acc.cuota
+                        ,SaldoTotal
+                        ,ptd.id_tipo_documento
+                        ,td.nombre
+                        ,td.nombre_corto
+                        ,ptd.numero
+                        ,ps.id_sexo
+                        ,s.nombre
+                $having
+                ORDER BY a.legajo;
+               ";
+
+        toba::logger()->debug(__METHOD__." : ".$sql);
+        return toba::db()->consultar($sql);
+    }
 }
