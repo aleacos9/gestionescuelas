@@ -1,4 +1,5 @@
 <?php
+
 class Afip
 {
     public $afip_config;
@@ -9,7 +10,7 @@ class Afip
     {
         $afip_ini = new toba_ini(toba::instalacion()->get_path_carpeta_instalacion()."/afip.ini");
         $this->afip_config = $afip_ini->get_datos_entrada('afip_config');
-
+        var_dump($afip_ini);
         $this->afip_config['cuit'] = getenv('AFIP_WS_CUIT') ?: $this->afip_config['cuit'];
         $this->afip_config['produccion'] = getenv('AFIP_WS_PRODUCCION') ?: $this->afip_config['produccion'];
         $this->afip_config['cert'] = getenv('AFIP_WS_CERT') ?: $this->afip_config['cert'];
@@ -24,9 +25,11 @@ class Afip
                 'key' => $this->afip_config['key'],
                 'token_dir' => $this->afip_config['token_dir']
             ];
+            var_dump($config);
 
             try {
-                $this->afip = new \SIU\Afip\Afip($config);
+                //$this->afip = new \SIU\Afip\Afip($config);
+                $this->afip = new \vendor\siu\api-afip\src\SIU\Afip\Afip($config);
                 $this->padron_cuatro = new \SIU\Afip\WebService\PadronAlcanceCuatro($this->afip);
             } catch (\Exception $e) {
                 toba::notificacion()->warning($e->getMessage());

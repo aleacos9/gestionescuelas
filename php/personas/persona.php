@@ -2,6 +2,7 @@
 
 use Endroid\QrCode\QrCode;
 use Dompdf\Dompdf;
+include dirname(__DIR__, 1).'/afip.php';
 
 class persona
 {
@@ -2184,12 +2185,12 @@ class persona
             //ei_arbol($voucher_info);
             if ($voucher_info === NULL) {
                 echo 'El comprobante no existe';
-            } /*else {
+            } else {
                 echo 'Esta es la información del comprobeante:';
                 echo '<pre>';
                 print_r($voucher_info);
                 echo '</pre>';
-            }*/
+            }
             $datos_a_pasar = get_object_vars($voucher_info);
             $datos_a_pasar['numero_comprobante'] = $datos['numero_comprobante'];
             $datos_a_pasar['id_alumno_cc'] = $datos['id_alumno_cc'];

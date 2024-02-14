@@ -16,6 +16,7 @@ class ci_alta_manual_pagos extends ci_administrar_formas_cobro
             toba::notificacion()->error($mensaje);
             return true;
         }
+        parent::ini();
     }
 
     /*

@@ -28,14 +28,17 @@ class gestionescuelas_ext_ci extends toba_ci
         //***FIN obtención del id_persona del usuario loggueado***//
 
 
-        /*$afip = new Afip(array('CUIT' => '27127112784'));
-        $last_voucher = $afip->ElectronicBilling->GetLastVoucher(1,11);
+        $afip = new Afip();
+        //ei_arbol($afip);
+        /*$last_voucher = $afip->ElectronicBilling->GetLastVoucher(1,11);
+        ei_arbol($last_voucher);
         $datos['numero_comprobante'] = $last_voucher;
         $datos['tipo_comprobante'] = 11; //Factura C
         $datos['punto_venta'] = 1;
         $persona = new persona($this->s__persona_editar);
         $datos_comp = $persona::obtener_datos_comprobante_afip($datos);
-        /*if (isset($datos_comp)) {
+        ei_arbol($datos_comp);
+        if (isset($datos_comp)) {
             $datos_comp['CbteNro'] = $last_voucher;
             $datos_comp['cuit'] = 27127112784;
             toba::logger()->error('datos_comp:');

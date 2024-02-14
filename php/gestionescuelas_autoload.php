@@ -20,6 +20,9 @@ class gestionescuelas_autoload
 	static protected $clases = array(
 		'ci_abm_parametros_sistema' => 'ABMs/abm_parametros_sistema/ci_abm_parametros_sistema.php',
 		'ci_alta_usuarios' => 'administracion/alta_usuarios/ci_alta_usuarios.php',
+		'ci_cambiar_clave' => 'administracion/cambiar_clave/ci_cambiar_clave.php',
+		'Afip' => 'afip.php',
+		'ci_inicio' => 'ci_inicio.php',
 		'constantes' => 'constantes.php',
 		'dao_consultas' => 'consultas/dao_consultas.php',
 		'dt_parametros_sistema' => 'datos/dt_parametros_sistema.php',
@@ -52,6 +55,7 @@ class gestionescuelas_autoload
 		'gestionescuelas_autoload' => 'gestionescuelas_autoload.php',
 		'gestionescuelas_ext_ci' => 'gestionescuelas_ext_ci.php',
 		'ci_cuadro_control' => 'listados/cuadro_control/ci_cuadro_control.php',
+		'ci_listado_estado_deuda_alumnos' => 'listados/estado_deuda_alumnos/ci_listado_estado_deuda_alumnos.php',
 		'ci_listado_deudores' => 'listados/listado_deudores/ci_listado_deudores.php',
 		'ci_login' => 'login/ci_login.php',
 		'cuadro_autologin' => 'login/cuadro_autologin.php',
