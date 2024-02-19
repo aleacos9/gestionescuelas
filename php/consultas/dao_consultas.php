@@ -1491,7 +1491,11 @@ class dao_consultas
          * Valido el estado del servidor AFIP (AppServer) para la generación de los comprobantes
          * por el momento no valido los parámetros DbServer y AuthServer
          */
+
         $afip = new Afip();
+        return $afip->conectado();
+
+        /*$afip = new Afip();
         $server_status = $afip->ElectronicBilling->GetServerStatus();
         var_dump($server_status);
         if ($server_status === NULL) {
@@ -1501,7 +1505,7 @@ class dao_consultas
                 return false;
             }
         }
-        return true;
+        return true;*/
     }
 
     /*

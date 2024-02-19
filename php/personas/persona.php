@@ -2,7 +2,7 @@
 
 use Endroid\QrCode\QrCode;
 use Dompdf\Dompdf;
-include dirname(__DIR__, 1).'/afip.php';
+use Dompdf\Options;
 
 class persona
 {
@@ -102,6 +102,8 @@ class persona
     protected $datos_deuda_corriente = array();
     protected $datos_actuales_cursada = array();
     protected $datos_tutor = array();
+
+    protected $afip;
 
     public function __construct($persona = null)
     {
@@ -2134,68 +2136,71 @@ class persona
 
     public function generar_comprobante_afip()
     {
-        $cuit_institucion = dao_consultas::catalogo_de_parametros('cuit_institucion');
-        $afip = new Afip(array('CUIT' => $cuit_institucion));
-        //$afip = new Afip(array('CUIT' => '30670917688')); //27127112784
+        $afip = new Afip();
+        $this->afip = $afip->getAfip();
+        $factura_electronica = new \SIU\Afip\WebService\FacturaElectronica($this->afip);
 
         $importe = 0;
         if (isset($this->importe_pago)) {
             $importe = $this->importe_pago * -1;
         }
+
         $data = array(
-                      'CantReg' 	=> 1,  // Cantidad de comprobantes a registrar
-                      'PtoVta' 	    => 1,  // Punto de venta
-                      'CbteTipo' 	=> 11,  // Tipo de comprobante (ver tipos disponibles)
-                      'Concepto' 	=> 2,  // Concepto del Comprobante: (1)Productos, (2)Servicios, (3)Productos y Servicios
-                      'DocTipo' 	=> 96, // Tipo de documento del comprador (99 consumidor final, ver tipos disponibles) / 96 -> DNI / 86 - CUIL
-                      'DocNro' 	    => $this->persona_documentos[0]['identificacion'], //27127112784,  // Número de documento del comprador (0 consumidor final)
-                      'FchServDesde'=> '20230101', //Debería ir el primer día del mes de pago
-                      'FchServHasta'=> '20230131', //Debería ir el último día del mes de pago
-                      'FchVtoPago'  => intval(date('Ymd')),
-                      'CbteFch' 	=> intval(date('Ymd')), // (Opcional) Fecha del comprobante (yyyymmdd) o fecha actual si es nulo
-                      'ImpTotal' 	=> $importe, // Importe total del comprobante
-                      'ImpTotConc' 	=> 0,   // Importe neto no gravado
-                      'ImpNeto' 	=> $importe, // Importe neto gravado
-                      'ImpOpEx' 	=> 0,   // Importe exento de IVA
-                      'ImpIVA' 	    => 0,  //Importe total de IVA
-                      'ImpTrib' 	=> 0,   //Importe total de tributos
-                      'MonId' 	    => 'PES', //Tipo de moneda usada en el comprobante (ver tipos disponibles)('PES' para pesos argentinos)
-                      'MonCotiz' 	=> 1,     // Cotización de la moneda usada (1 para pesos argentinos
-                     );
+            'CantReg' 	=> 1,  // Cantidad de comprobantes a registrar
+            'PtoVta' 	=> 1,  // Punto de venta
+            'CbteTipo' 	=> 11,  // Tipo de comprobante (ver tipos disponibles)
+            'Concepto' 	=> 2,  // Concepto del Comprobante: (1)Productos, (2)Servicios, (3)Productos y Servicios
+            'DocTipo' 	=> 96, // Tipo de documento del comprador (99 consumidor final, 86 CUIL / 96 DNI)
+            'DocNro' 	=> $this->persona_documentos[0]['identificacion'],  // Número de documento del comprador (0 consumidor final)
+            'FchServDesde'=> '20240101', //Debería ir el primer día del mes de pago
+            'FchServHasta'=> '20240131', //Debería ir el último día del mes de pago
+            'FchVtoPago'  => intval(date('Ymd')),
+            'CbteDesde' 	=> 1,  // Número de comprobante o numero del primer comprobante en caso de ser mas de uno
+            'CbteHasta' 	=> 1,  // Número de comprobante o numero del último comprobante en caso de ser mas de uno
+            'CbteFch' 	=> intval(date('Ymd')), // (Opcional) Fecha del comprobante (yyyymmdd) o fecha actual si es nulo
+            'ImpTotal' 	=> $importe, // Importe total del comprobante
+            'ImpTotConc' 	=> 0,   // Importe neto no gravado
+            'ImpNeto' 	=> $importe, // Importe neto gravado
+            'ImpOpEx' 	=> 0,   // Importe exento de IVA
+            'ImpIVA' 	=> 0,  //Importe total de IVA
+            'ImpTrib' 	=> 0,   //Importe total de tributos
+            'MonId' 	=> 'PES', //Tipo de moneda usada en el comprobante (ver tipos disponibles)('PES' para pesos argentinos)
+            'MonCotiz' 	=> 1,     // Cotización de la moneda usada (1 para pesos argentinos)
+        );
+        toba::logger()->error($data);
+        $nuevo_comprobante = $factura_electronica->crearProximoComprobante($data);
+        $nuevo_comprobante['CAE']; //CAE asignado el comprobante
+        $nuevo_comprobante['CAEFchVto']; //Fecha de vencimiento del CAE (yyyy-mm-dd)
+        $nuevo_comprobante['voucher_number']; //Número asignado al comprobante
 
-        $res = $afip->ElectronicBilling->CreateNextVoucher($data);
-
-        /*echo $res['CAE']; //CAE asignado el comprobante
-        echo $res['CAEFchVto']; //Fecha de vencimiento del CAE (yyyy-mm-dd)
-        echo $res['voucher_number']; //Número asignado al comprobante*/
-
-        $datos['numero_comprobante'] = $res['voucher_number'];
-        $datos['id_alumno_cc'] = $this->id_alumno_cc;
-        $datos['tipo_comprobante'] = 11; //Factura C
-        $datos['punto_venta'] = 1;
-        $this->obtener_datos_comprobante_afip($datos);
+        if (isset($nuevo_comprobante['voucher_number'])) {
+            $this->obtener_datos_comprobante_afip();
+        }
     }
 
-    public function obtener_datos_comprobante_afip($datos = null)
+    public function obtener_datos_comprobante_afip()
     {
-        if (isset($datos['numero_comprobante'])) {
-            $cuit_institucion = dao_consultas::catalogo_de_parametros('cuit_institucion');
-            $afip = new Afip(array('CUIT' => $cuit_institucion));
-            $voucher_info = $afip->ElectronicBilling->GetVoucherInfo($datos['numero_comprobante'],$datos['punto_venta'],$datos['tipo_comprobante']); //Devuelve la información del comprobante 1 para el punto de venta 1 y el tipo de comprobante 11 (Factura C)
-            //ei_arbol($voucher_info);
-            if ($voucher_info === NULL) {
-                echo 'El comprobante no existe';
-            } else {
-                echo 'Esta es la información del comprobeante:';
-                echo '<pre>';
-                print_r($voucher_info);
-                echo '</pre>';
-            }
-            $datos_a_pasar = get_object_vars($voucher_info);
-            $datos_a_pasar['numero_comprobante'] = $datos['numero_comprobante'];
-            $datos_a_pasar['id_alumno_cc'] = $datos['id_alumno_cc'];
+        $afip = new Afip();
+        $this->afip = $afip->getAfip();
+        $factura_electronica = new \SIU\Afip\WebService\FacturaElectronica($this->afip);
+
+        $punto_venta = 1;
+        $tipo_comprobante = 11;
+        $nro_ultimo_comprobante = $factura_electronica->getUltimoComprobante($punto_venta, $tipo_comprobante);
+        $datos_comprobante = $factura_electronica->getComprobanteInfo($nro_ultimo_comprobante, $punto_venta, $tipo_comprobante);
+        if (!$datos_comprobante) {
+            throw new error('No se puede recuperar información desde AFIP');
+        } else {
+            /*$jsonFormatted = json_encode($datos_comprobante, JSON_PRETTY_PRINT);
+            echo '<pre>';
+                var_dump($jsonFormatted);
+            echo '</pre>';*/
+
+            $datos_a_pasar = get_object_vars($datos_comprobante);
+            $datos_a_pasar['numero_comprobante'] = $nro_ultimo_comprobante;
+            $datos_a_pasar['id_alumno_cc'] = $this->id_alumno_cc;
             toba::logger()->error($datos_a_pasar);
-            self::mostrar_comprobante_afip($datos_a_pasar);
+            $this->mostrar_comprobante_afip($datos_a_pasar);
         }
     }
 
@@ -2211,7 +2216,7 @@ class persona
         $condicion_frente_iva_cliente = dao_consultas::catalogo_de_parametros('condicion_frente_iva_cliente');
 
         //Definimos los datos variables de la factura
-        $fecha = fecha::formatear_para_pantalla($datos['CbteFch']);
+        /*$fecha = fecha::formatear_para_pantalla($datos['CbteFch']);
         $punto_venta = str_pad($datos['PtoVta'], 5, '0', STR_PAD_LEFT);
         $numero = str_pad($datos['numero_comprobante'], 8, '0', STR_PAD_LEFT);
         $subtotal = $datos['ImpNeto'];
@@ -2228,31 +2233,59 @@ class persona
             if (isset($datos_cargo[0]['persona'])) {
                 $apellido_nombre_cliente = $datos_cargo[0]['persona'];
             }
-        }
+        }*/
+        echo utf8_decode($razon_social_institucion);
+        var_dump($cuit_institucion, $iibb_institucion, $fecha_inicio_actividades_institucion, $razon_social_institucion, $domicilio_comercial_institucion, $condicion_frente_iva_institucion, $condicion_frente_iva_cliente);
 
-        //Cargamos la plantilla HTML con los valores
-        ob_start();
+        //Cargamos la plantilla HTML
         $dir = dirname(__DIR__, 1);
-        include $dir.'/comprobantes/factura_c/factura2.html';
-        $html = ob_get_clean();
+        $html = file_get_contents($dir.'/comprobantes/factura_c/factura2.html');
+        $html_file = $dir . '/comprobantes/factura_c/factura2.html';
 
-        $dompdf = new Dompdf();
-        $dompdf->set_option('default_charset', 'UTF-8');
-        $options = $dompdf->getOptions();
-        $options->setIsRemoteEnabled(true);
+        if (!file_exists($html_file)) {
+            die("El archivo HTML no existe: $html_file");
+        }
+        //Reemplazamos las variables en la plantilla
+        $html = str_replace(
+            array(
+                '{$cuit_institucion}',
+                /*'{$iibb_institucion}',
+                '{$fecha_inicio_actividades_institucion}',
+                '{$razon_social_institucion}',
+                '{$domicilio_comercial_institucion}',
+                '{$condicion_frente_iva_institucion}',
+                '{$condicion_frente_iva_cliente}',*/
+            ),
+            array(
+                $cuit_institucion,
+                /*utf8_decode($iibb_institucion),
+                utf8_decode($fecha_inicio_actividades_institucion),
+                utf8_decode($razon_social_institucion),
+                utf8_decode($domicilio_comercial_institucion),
+                utf8_decode($condicion_frente_iva_institucion),
+                utf8_decode($condicion_frente_iva_cliente),*/
+            ),
+            $html
+        );
+        echo($html);
+        //Creamos instancia de Dompdf
+        $options = new Options();
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isPhpEnabled', true);
+        $dompdf = new Dompdf($options);
 
         //Cargamos el contenido HTML en Dompdf
+        //$dompdf->loadHtml(mb_convert_encoding($html, 'HTML-ENTITIES', 'ISO-8859-1'));
         $dompdf->loadHtml($html);
 
-        //Definimos el tamaño y la orientación de la página
+        //Configuramos las opciones de papel y renderizamos el PDF
         $dompdf->setPaper('A4', 'portrait');
-
-        //Renderizamos el contenido HTML como PDF
         $dompdf->render();
 
-        //Generar el PDF
-        $dir_home = '/data/local/sistema/';
+        //Guardamos el PDF en el servidor
+        $dir_home = '/data/local/sistema/proyectos/gestionescuelas/www/comprobantes_afip/';
         file_put_contents($dir_home.'factura'.$datos['numero_comprobante'].'.pdf', $dompdf->output());
+        toba::notificacion()->agregar('El comprobante fue generado y almacenado con éxito.', 'info');
     }
 
     public function generar_qr_comprobante_afip($datos = null)

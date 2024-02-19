@@ -1,5 +1,8 @@
 <?php
-ini_set('display_errors', '1');
+ini_set('display_error', '1');
+error_reporting(E_ALL);
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
 class gestionescuelas_ext_ci extends toba_ci
 {
@@ -12,6 +15,8 @@ class gestionescuelas_ext_ci extends toba_ci
     protected $s__alumno_editar;
     protected $s__nombre_alumno;
     protected $s__datos_allegados = array();
+
+    protected $afip;
 
     public function ini()
     {
@@ -27,29 +32,15 @@ class gestionescuelas_ext_ci extends toba_ci
         }
         //***FIN obtención del id_persona del usuario loggueado***//
 
-
         $afip = new Afip();
-        //ei_arbol($afip);
-        /*$last_voucher = $afip->ElectronicBilling->GetLastVoucher(1,11);
-        ei_arbol($last_voucher);
-        $datos['numero_comprobante'] = $last_voucher;
-        $datos['tipo_comprobante'] = 11; //Factura C
-        $datos['punto_venta'] = 1;
-        $persona = new persona($this->s__persona_editar);
-        $datos_comp = $persona::obtener_datos_comprobante_afip($datos);
-        ei_arbol($datos_comp);
-        if (isset($datos_comp)) {
-            $datos_comp['CbteNro'] = $last_voucher;
-            $datos_comp['cuit'] = 27127112784;
-            toba::logger()->error('datos_comp:');
-            toba::logger()->error($datos_comp);
-            //$persona->generar_qr_comprobante_afip($datos_comp);
-        }*/
+        $this->afip = $afip->getAfip();
+        $factura_electronica = new \SIU\Afip\WebService\FacturaElectronica($this->afip);
+        $punto_venta = 1;
+        $tipo_comprobante = 11;
+        $nro_ultimo_comprobante = $factura_electronica->getUltimoComprobante($punto_venta, $tipo_comprobante);
 
-        /*$dompdf = new Dompdf\Dompdf();
-        $dompdf->loadHtml('<h1>Hola mundo</h1><br><a href="https://parzibyte.me/blog">By Parzibyte</a>');
-        $dompdf->render();
-        $dompdf->stream();*/
+        $persona = new persona();
+        $persona->obtener_datos_comprobante_afip();
     }
 
     public function estado_servidor_afip()
