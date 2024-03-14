@@ -4,18 +4,20 @@ class ci_alta_manual_pagos extends ci_administrar_formas_cobro
     protected $s__datos_alta_manual_pago;
     protected $s__datos_alta_manual_pago_alta;
     protected $s__id_alumno_cc_seleccionado;
+    protected $afip;
 
     //---- Funciones ---------------------------------------------------------------------
 
     public function ini()
     {
-        if (!$this->estado_servidor_afip()) {
+        if ($this->estado_servidor_afip() == false) {
             $mensaje = "El servidor de AFIP no está operando";
             $mensaje .= "<br/>";
             $mensaje .= "Tenga en cuenta que si va a procesar pagos, NO se generarán de forma automática las facturas correspondientes.";
             toba::notificacion()->error($mensaje);
             return true;
         }
+        parent::ini();
     }
 
     /*

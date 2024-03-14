@@ -1,7 +1,10 @@
+<?php
+header('Content-Type: text/html; charset=iso-8859-1');
+?>
 <!DOCTYPE html>
 <html>
 <head>
-	<meta charset="UTF-8">
+	<meta charset="iso-8859-1">
 	<title>Factura C</title>
 	<style>
 		@page {
@@ -120,7 +123,7 @@
 
 		.header-info {
 			margin-top: 50px;
-		}*/
+		}
 
 		.comprobante,
 		.fecha {
@@ -213,25 +216,25 @@
 			margin-top: 10px;
 		}
 	</style>
+	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
 	<!--link rel="stylesheet" type="text/css" href="css/factura2.css"-->
 </head>
 
 <body>
 	<div class="header">
 		<div class="header-left">
-			<img src="logo.png" alt="Logo" class="logo">
-			<!--div class="header-info"-->
+			<!--<img src="logo.png" alt="Logo" class="logo">-->
 				<p class="comprobante"><?php echo $razon_social_institucion; ?></p>
 				<p class="comprobante">Domicilio Comercial: <?php echo $domicilio_comercial_institucion; ?></p>
-				<p class="comprobante">Condición frente al IVA: <?php echo $condicion_frente_iva_institucion; ?></p>
+				<p class="comprobante">Condicion frente al IVA: <?php echo $condicion_frente_iva_institucion; ?></p>
 			<!--/div-->
 		</div>
 
 		<div class="header-right">
 			<p class="comprobante">FACTURA C</p>
 			<p class="comprobante">Punto de Venta: <?php echo $punto_venta; ?></p>
-			<p class="comprobante">Comp. N°: <?php echo $numero; ?></p>
-			<p class="comprobante">Fecha de Emisión: <?php echo $fecha; ?></p>
+			<p class="comprobante">Comp. N: <?php echo $numero; ?></p>
+			<p class="comprobante">Fecha de Emision: <?php echo $fecha; ?></p>
 			<p class="comprobante">CUIT: <?php echo $cuit_institucion; ?></p>
 			<p class="comprobante">Ingresos Brutos: <?php echo $iibb_institucion; ?></p>
 			<p class="comprobante">Fecha de inicio de actividades: <?php echo $fecha_inicio_actividades_institucion; ?></p>
@@ -241,14 +244,14 @@
 	<div class="datos-cliente">
 		<p>CUIT: <?php echo $cuit_cliente; ?></p>
 		<p>Apellido y Nombres: <?php echo $apellido_nombre_cliente; ?></p>
-		<p>Condición ante el IVA: <?php echo $condicion_frente_iva_cliente; ?></p>
+		<p>Condicion ante el IVA: <?php echo $condicion_frente_iva_cliente; ?></p>
 	</div>
 	<hr>
 	<table class="detalle-factura">
 		<thead>
 		<tr>
 			<th>Cantidad</th>
-			<th>Descripción</th>
+			<th>Descripcion</th>
 			<th>Precio unitario</th>
 			<th>Importe</th>
 		</tr>
@@ -263,7 +266,7 @@
 		</tbody>
 	</table>
 
-	<!-- Pie de página -->
+	<!-- Pie de pagina -->
 	<div class="footer">
 		<table>
 			<tr>
@@ -281,10 +284,10 @@
 		</table>
 		<!-- Datos adicionales footer -->
 		<div class="datos-adicionales-footer">
-			<p class="comprobante">CAE N°: <?php echo $cae; ?></p>
+			<p class="comprobante">CAE N: <?php echo $cae; ?></p>
 			<p class="comprobante">Fecha de Vto. de CAE: <?php echo $fecha_vto_cae; ?></p>
 		</div>
-		<!-- Número de página -->
+		<!-- Numero de pagina -->
 		<div class="page-number"></div>
 	</div>
 </body>
