@@ -4,13 +4,14 @@ class ci_alta_manual_pagos extends ci_administrar_formas_cobro
     protected $s__datos_alta_manual_pago;
     protected $s__datos_alta_manual_pago_alta;
     protected $s__id_alumno_cc_seleccionado;
+    protected $s__identificador_tutor;
     protected $afip;
 
     //---- Funciones ---------------------------------------------------------------------
 
     public function ini()
     {
-        if ($this->estado_servidor_afip() == false) {
+        if (!$this->estado_servidor_afip()) {
             $mensaje = "El servidor de AFIP no está operando";
             $mensaje .= "<br/>";
             $mensaje .= "Tenga en cuenta que si va a procesar pagos, NO se generarán de forma automática las facturas correspondientes.";
@@ -35,6 +36,7 @@ class ci_alta_manual_pagos extends ci_administrar_formas_cobro
             $persona = new persona($this->s__persona_editar);
             $this->s__datos_alta_manual_pago = $persona->get_datos_cuenta_corriente();
             $this->s__nombre_alumno = $persona->get_nombre_completo_alumno();
+            $this->s__identificador_tutor = $persona->get_documento_tutor();
         }
     }
 
@@ -94,7 +96,14 @@ class ci_alta_manual_pagos extends ci_administrar_formas_cobro
             $datos['mostrar_mensaje_individual'] = true;
             $datos['estado'] = 'nuevo';
             $datos['modo'] = "alta_individual";
-
+            //Obtengo el primer y el último dia del mes que está pagando la cuota para agregarlo en el comprobante AFIP
+            if (isset($datos['cuota'])) {
+                $mes = substr($datos['cuota'], 0, 2); // Obtener los dos primeros dígitos
+                $anio = substr($datos['cuota'], 2, 4); // Obtener los cuatro últimos dígitos
+                $datos['fecha_primer_dia_mes_pago'] = fecha::primer_dia_mes($mes, $anio);
+                $datos['fecha_ultimo_dia_mes_pago'] = fecha::ultimo_dia_mes($mes, $anio);
+            }
+            $datos['identificador_tutor'] = $this->s__identificador_tutor;
             $this->s__datos_alta_manual_pago_alta = $datos;
         }
 	}
@@ -128,5 +137,10 @@ class ci_alta_manual_pagos extends ci_administrar_formas_cobro
         } else {
             $evento->activar();
         }
+    }
+
+    function conf_evt__cuadro_cuenta_corriente__descargar_comprobante($evento, $fila)
+    {
+        parent::conf_evt__cuadro_cuenta_corriente__descargar_comprobante($evento, $fila);
     }
 }

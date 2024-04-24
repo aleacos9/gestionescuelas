@@ -78,3 +78,6 @@ DROP FUNCTION IF EXISTS alta_parametro_definir_fecha_desde_listado_cuenta_corrie
 
 --Alejandro feature/permitir-pago-inscripcion-en-cuotas 02/11/2023
 DROP FUNCTION IF EXISTS permitir_pago_inscripcion_en_cuotas();
+
+--Alejandro feature/generacion-de-comprobantes-afip-desde-el-alta-de-pagos 23/02/2024
+DROP FUNCTION IF EXISTS generacion_de_comprobantes_afip_desde_alta_pagos();

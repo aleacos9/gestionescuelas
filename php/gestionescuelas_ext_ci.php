@@ -31,16 +31,6 @@ class gestionescuelas_ext_ci extends toba_ci
             $this->s__id_persona = $this->s__id_persona[0]['id_persona'];
         }
         //***FIN obtención del id_persona del usuario loggueado***//
-
-        $afip = new Afip();
-        $this->afip = $afip->getAfip();
-        $factura_electronica = new \SIU\Afip\WebService\FacturaElectronica($this->afip);
-        $punto_venta = 1;
-        $tipo_comprobante = 11;
-        $nro_ultimo_comprobante = $factura_electronica->getUltimoComprobante($punto_venta, $tipo_comprobante);
-
-        $persona = new persona();
-        $persona->obtener_datos_comprobante_afip();
     }
 
     public function estado_servidor_afip()
@@ -80,6 +70,35 @@ class gestionescuelas_ext_ci extends toba_ci
     {
         $this->dep('datos')->cargar($datos);
         $this->set_pantalla('edicion');
+    }
+
+    //---- cuadro_cuenta_corriente ------------------------------------------------------
+
+    function conf_evt__cuadro_cuenta_corriente__descargar_comprobante($evento, $fila)
+    {
+        // Determinar la variable a utilizar
+        $datos = isset($this->s__datos_cuadro_cuenta_corriente) ? $this->s__datos_cuadro_cuenta_corriente : $this->s__datos_alta_manual_pago;
+
+        if (!isset($datos[$fila]['id_medio_pago'])) {
+            $evento->anular();
+        }
+
+        if (isset($datos[$fila]['punto_venta']) &&
+            isset($datos[$fila]['comprobante_tipo']) &&
+            isset($datos[$fila]['comprobante_numero'])
+        ) {
+            $evento->activar();
+            $evento->set_imagen('extension_pdf.png');
+            // Agregar los parámetros necesarios
+            $evento->vinculo()->agregar_parametro(utf8_encode('punto_venta'), $datos[$fila]['punto_venta']);
+            $evento->vinculo()->agregar_parametro(utf8_encode('comprobante_tipo'), $datos[$fila]['comprobante_tipo']);
+            $evento->vinculo()->agregar_parametro(utf8_encode('comprobante_numero'), $datos[$fila]['comprobante_numero']);
+            $evento->vinculo()->agregar_parametro(utf8_encode('id_persona'), $datos[$fila]['id_persona']);
+            $evento->vinculo()->agregar_parametro(utf8_encode('id_alumno_cc'), $datos[$fila]['id_alumno_cc']);
+        } else {
+            $evento->desactivar();
+            $evento->set_imagen('error.png');
+        }
     }
 
     //---- formulario -------------------------------------------------------------------

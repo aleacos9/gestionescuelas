@@ -1048,3 +1048,24 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/generacion-de-comprobantes-afip-desde-el-alta-de-pagos 23/02/2024
+CREATE OR REPLACE FUNCTION generacion_de_comprobantes_afip_desde_alta_pagos() RETURNS VOID AS
+$$
+BEGIN
+    IF NOT EXISTS ( SELECT '' FROM information_schema.columns WHERE table_name = 'transaccion_cuenta_corriente' and column_name = 'punto_venta') THEN
+
+        --Le agrego a la tabla transaccion_cuenta_corriente los nuevos campos
+        ALTER TABLE transaccion_cuenta_corriente
+            ADD COLUMN punto_venta INTEGER;
+
+        ALTER TABLE transaccion_cuenta_corriente
+            ADD COLUMN comprobante_tipo INTEGER;
+
+        ALTER TABLE transaccion_cuenta_corriente
+            ADD COLUMN comprobante_numero INTEGER;
+
+    END IF;
+END;
+$$ LANGUAGE 'plpgsql';
