@@ -2316,7 +2316,9 @@ class persona
             $nro_comprobante = $factura_electronica->getUltimoComprobante($punto_venta, $tipo_comprobante);
         }
         $datos_comprobante = $factura_electronica->getComprobanteInfo($nro_comprobante, $punto_venta, $tipo_comprobante);
-toba::logger()->error($datos_comprobante);
+        toba::logger()->info('Datos del comprobante que se va a mostrar:');
+        toba::logger()->info($datos_comprobante);
+
         if (!$datos_comprobante) {
             throw new error('No se puede recuperar información desde AFIP');
         } else {
@@ -2337,7 +2339,7 @@ toba::logger()->error($datos_comprobante);
     public function mostrar_comprobante_afip($datos_comprobante)
     {
         //Defino los datos fijos de la factura
-        $cuit_institucion = dao_consultas::catalogo_de_parametros('cuit_institucion');
+        /*$cuit_institucion = dao_consultas::catalogo_de_parametros('cuit_institucion');
         $iibb_institucion = dao_consultas::catalogo_de_parametros('iibb_institucion');
         $fecha_inicio_actividades_institucion = dao_consultas::catalogo_de_parametros('fecha_inicio_actividades_institucion');
         $razon_social_institucion = utf8_encode(dao_consultas::catalogo_de_parametros('razon_social_institucion'));
@@ -2507,7 +2509,7 @@ toba::logger()->error($datos_comprobante);
                               
                     .datos-factura {
                         font-size: 12px;
-                        border-top: 1px solid black; /* Agregamos un borde superior */
+                        border-top: 1px solid black;
                         margin-top: 10px;
                     }
                     
@@ -2518,7 +2520,7 @@ toba::logger()->error($datos_comprobante);
                     
                     .datos-cliente {
                         font-size: 12px;
-                        border-top: 1px solid black; /* Agregamos un borde superior */
+                        border-top: 1px solid black;
                         margin-top: 10px;
                     }
         
@@ -2570,7 +2572,7 @@ toba::logger()->error($datos_comprobante);
                         left: 0;
                         right: 0;
                         height: 4cm;
-                        /*background-color: #f7f7f7;*/
+                        background-color: #f7f7f7;
                         font-size: 12px;
                         color: #555;
                         padding: 30px;
@@ -2589,8 +2591,7 @@ toba::logger()->error($datos_comprobante);
                         text-align: right;
                         width: 50%;
                     }
-        
-                    /* Estilo para los datos adicionales */
+
                     .datos-adicionales-footer {
                         font-size: 10px;
                         text-align: right;

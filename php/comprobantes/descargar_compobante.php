@@ -112,13 +112,13 @@ use Dompdf\Dompdf;
 
             // Generar la etiqueta <img> con el código QR codificado en Base64
             $qr_image_src = 'data:image/png;base64,' . base64_encode($datos_qr);
-            toba::logger()->error($qr_image_src);
+            //toba::logger()->error($qr_image_src);
             // Obtener el tamaño de la imagen
             $size_info = getimagesize($qr_image_src);
-            toba::logger()->error($size_info);
+            //toba::logger()->error($size_info);
 
             $img_path = realpath('/home/ale/proyectos_propios/toba3_escuela/toba/proyectos/gestionescuelas/php/comprobantes/factura_c/logo.png');
-            toba::logger()->error($img_path);
+            //toba::logger()->error($img_path);
 
             // Generar el HTML del comprobante
             $html_comprobante = <<<HTML
@@ -407,7 +407,7 @@ use Dompdf\Dompdf;
                 <!-- Incrustar el código QR en el PDF -->
                 <!--img src="' . $qr_image_src . '" alt=""-->
                 <!--img src="proyectos/gestionescuelas/php/comprobantes/factura_c/logo.png"-->
-                <img src="' . $img_path . '" alt="Logo">
+                <!--<img src="' . $img_path . '" alt="Logo">-->
             </body>
         </html>
         HTML;
