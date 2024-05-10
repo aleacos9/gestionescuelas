@@ -2,6 +2,7 @@
 class ci_cuenta_corriente extends gestionescuelas_ext_ci
 {
     protected $s__datos_cuenta_corriente = array();
+    protected $s__datos_cuadro_cuenta_corriente = array();
 
     public function cargar_datos()
     {
@@ -94,8 +95,13 @@ class ci_cuenta_corriente extends gestionescuelas_ext_ci
         }
         if (isset($this->s__datos_filtro)) {
             $this->s__datos_filtro['id_persona'] = $this->s__alumno_editar;
-            $cuadro->set_datos(dao_personas::get_deuda_por_alumno($this->s__datos_filtro));
+            $this->s__datos_cuadro_cuenta_corriente = dao_personas::get_deuda_por_alumno($this->s__datos_filtro);
+            $cuadro->set_datos($this->s__datos_cuadro_cuenta_corriente);
         }
     }
 
+    function conf_evt__cuadro_cuenta_corriente__descargar_comprobante($evento, $fila)
+    {
+        parent::conf_evt__cuadro_cuenta_corriente__descargar_comprobante($evento, $fila);
+    }
 }

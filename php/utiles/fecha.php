@@ -98,7 +98,7 @@ class fecha
         $aux = date("d/m/Y", $this->timestamp);
         return $aux;
     }
-    
+
     //Metodos estaticos para convertir fechas
     public function convertir_fecha_a_timestamp($fecha)
     {
@@ -262,12 +262,16 @@ class fecha
      * @param <type> $anio entra el anio ej:2005
      * @return <type> retorna el ultimo dia del mes en formato fecha, de la forma Y-M-D. ej: 2009-09-30.
      */
-    public function ultimo_dia_mes($mes, $anio)
+    public static function ultimo_dia_mes($mes, $anio)
     {
         $mes_nuevo = mktime(0, 0, 0, $mes, 1, $anio);
-        $cant =date("t", $mes_nuevo);
-        $ultimo_dia=date("Y-m-d", mktime(0, 0, 0, $mes, $cant, $anio));
-        return $ultimo_dia;
+        $cant = date("t", $mes_nuevo);
+        return date("Ymd", mktime(0, 0, 0, $mes, $cant, $anio));
+    }
+
+    public static function primer_dia_mes($mes, $anio)
+    {
+        return date("Ym01", mktime(0, 0, 0, $mes, 1, $anio));
     }
 
     // Metodo para convertir de esto 06/10/2010 a 06-10-2010

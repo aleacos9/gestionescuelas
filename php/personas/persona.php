@@ -2,6 +2,7 @@
 
 use Endroid\QrCode\QrCode;
 use Dompdf\Dompdf;
+use Dompdf\Options;
 
 class persona
 {
@@ -60,6 +61,8 @@ class persona
     protected $descripcion_cuota;
     protected $cuota;
     protected $anio_cuota;
+    protected $primer_dia_mes_cuota;
+    protected $ultimo_dia_mes_cuota;
     protected $cuota_completa;
     protected $actualiza_pago_inscripcion_en_cuotas;
 
@@ -101,6 +104,11 @@ class persona
     protected $datos_deuda_corriente = array();
     protected $datos_actuales_cursada = array();
     protected $datos_tutor = array();
+
+    protected $afip;
+    protected $ultimo_id_transaccion_cc = null;
+    protected $ultimo_comprobante_generado = null;
+    protected $identificador_tutor;
 
     public function __construct($persona = null)
     {
@@ -315,7 +323,6 @@ class persona
 
             //Si el debito Ó el movimiento tuvo error  => seteo el importe en 0 y el estado en rechazada -- Solo para el alta_masiva
             if (($estado_movimiento == 1) or ($datos_cuenta_corriente['codigo_error_debito'] != 'NUL')) {
-                toba::logger()->error('entra a poner el importe en 0');
                 $datos_cuenta_corriente['importe'] = 0;
                 $this->set_id_estado_cuota(4);
             }
@@ -351,6 +358,16 @@ class persona
             $this->set_mostrar_mensaje_individual($datos_cuenta_corriente['mostrar_mensaje_individual']);
         }
         $this->set_importe_pago($datos_cuenta_corriente['importe']);
+
+        if (isset($datos_cuenta_corriente['fecha_primer_dia_mes_pago'])) {
+            $this->set_primer_dia_mes_cuota($datos_cuenta_corriente['fecha_primer_dia_mes_pago']);
+        }
+        if (isset($datos_cuenta_corriente['fecha_ultimo_dia_mes_pago'])) {
+            $this->set_ultimo_dia_mes_cuota($datos_cuenta_corriente['fecha_ultimo_dia_mes_pago']);
+        }
+        if (isset($datos_cuenta_corriente['identificador_tutor'])) {
+            $this->set_documento_tutor($datos_cuenta_corriente['identificador_tutor']);
+        }
         $this->datos_cuenta_corriente = $datos_cuenta_corriente;
     }
 
@@ -732,6 +749,24 @@ class persona
         $this->cuota_completa = $cuota_completa;
     }
 
+    public function set_primer_dia_mes_cuota($dia)
+    {
+        toba::logger()->info("set_primer_dia_mes_cuota = " .$dia);
+        $this->primer_dia_mes_cuota = $dia;
+    }
+
+    public function set_ultimo_dia_mes_cuota($dia)
+    {
+        toba::logger()->info("set_ultimo_dia_mes_cuota = " .$dia);
+        $this->ultimo_dia_mes_cuota = $dia;
+    }
+
+    public function set_documento_tutor($identificacion)
+    {
+        toba::logger()->info("set_documento_tutor = " .$identificacion);
+        $this->identificador_tutor = $identificacion;
+    }
+
     public function set_importe_cuota($importe_cuota)
     {
         toba::logger()->info("set_importe_cuota = " .$importe_cuota);
@@ -766,6 +801,12 @@ class persona
     {
         toba::logger()->info("set_actualiza_pago_inscripcion_en_cuotas = " .$actualiza_pago_inscripcion_en_cuotas);
         $this->actualiza_pago_inscripcion_en_cuotas = $actualiza_pago_inscripcion_en_cuotas;
+    }
+
+    public function set_ultimo_comprobante_generado($comprobante)
+    {
+        toba::logger()->info("set_ultimo_comprobante_generado = " .$comprobante);
+        $this->ultimo_comprobante_generado = $comprobante;
     }
 
 
@@ -1068,6 +1109,7 @@ class persona
         $sql = "SELECT pa.id_persona_allegado
                       ,pa.id_persona
                       ,p.nombres
+                      ,p.apellidos
                       ,pa.id_alumno
                       ,pa.id_tipo_allegado
                       ,ta.nombre as allegado
@@ -1084,6 +1126,7 @@ class persona
                       ,per.nombres
                       ,per.apellidos
                       ,(per.apellidos || ', ' || per.nombres) as nombre_tutor
+                      ,ptd.numero as identificacion  
                       ,pa.fecha_alta
                       ,pa.usuario_alta
                       ,pa.fecha_ultima_modificacion
@@ -1091,7 +1134,13 @@ class persona
                 FROM persona_allegado pa
                     INNER JOIN alumno a on pa.id_alumno = a.id_alumno
                     INNER JOIN persona p on p.id_persona = a.id_persona
-                    INNER JOIN persona per on per.id_persona = pa.id_persona
+                    INNER JOIN persona per on per.id_persona = pa.id_persona    
+                    LEFT OUTER JOIN (persona_tipo_documento ptd JOIN tipo_documento td ON ptd.id_tipo_documento = td.id_tipo_documento)
+                         ON ptd.id_persona = per.id_persona AND td.jerarquia = (SELECT MIN(X1.jerarquia)
+                                                                              FROM tipo_documento X1
+                                                                                 ,persona_tipo_documento X2
+                                                                              WHERE X1.id_tipo_documento = X2.id_tipo_documento
+                                                                                AND X2.id_persona = p.id_persona)
                     INNER JOIN tipo_allegado ta on pa.id_tipo_allegado = ta.id_tipo_allegado
                     INNER JOIN estudio_alcanzado ea on pa.id_estudio_alcanzado = ea.id_estudio_alcanzado
                     INNER JOIN ocupacion o on pa.id_ocupacion = o.id_ocupacion
@@ -1113,6 +1162,48 @@ class persona
         } else {
             toba::logger()->error('El alumno '.$this->id_alumno. ' no tiene tutor asignado. Revise los datos.');
         }
+    }
+
+    public function get_documento_tutor()
+    {
+        //Obtengo el dni del tutor (lo voy a necesitar para el comprobante AFIP)
+        $sql = "SELECT pa.id_persona_allegado
+                      ,pa.id_persona
+                      ,(p.apellidos || ', ' || p.nombres) as nombre_alumno
+                      ,pa.id_alumno
+                      ,pa.id_tipo_allegado
+                      ,ta.nombre as allegado
+                      ,per.id_persona as id_persona_tutor
+                      ,per.nombres
+                      ,per.apellidos
+                      ,(per.apellidos || ', ' || per.nombres) as nombre_tutor
+                      ,ptd.numero as identificacion_tutor
+                FROM persona_allegado pa
+                    INNER JOIN alumno a on pa.id_alumno = a.id_alumno
+                    INNER JOIN persona p on p.id_persona = a.id_persona
+                    INNER JOIN persona per on per.id_persona = pa.id_persona
+                    LEFT OUTER JOIN (persona_tipo_documento ptd JOIN tipo_documento td on ptd.id_tipo_documento = td.id_tipo_documento)
+                                     ON ptd.id_persona = per.id_persona AND td.jerarquia = (SELECT MIN(X1.jerarquia)
+                                                                                            FROM tipo_documento X1
+                                                                                                ,persona_tipo_documento X2
+                                                                                            WHERE X1.id_tipo_documento = X2.id_tipo_documento
+                                                                                               AND X2.id_persona = p.id_persona)
+                    INNER JOIN tipo_allegado ta on pa.id_tipo_allegado = ta.id_tipo_allegado
+                WHERE p.id_persona = {$this->persona}
+                  AND pa.tutor = 'S' AND pa.activo = 'S'
+                ORDER BY ta.jerarquia
+                        ,pa.id_tipo_allegado
+               ";
+
+        toba::logger()->debug(__METHOD__." : ".$sql);
+        $resultado_datos_tutor = consultar_fuente($sql);
+
+        if ($resultado_datos_tutor) {
+            $this->identificador_tutor = $resultado_datos_tutor[0]['identificacion_tutor'];
+        } else {
+            toba::logger()->error('El alumno '.$this->persona. ' no tiene tutor asignado. Revise los datos.');
+        }
+        return $this->identificador_tutor;
     }
 
     public function get_nombre_tutor()
@@ -1156,6 +1247,30 @@ class persona
             }
         }
         return $estado;
+    }
+
+    public function get_ultimo_id_transaccion_cc()
+    {
+        toba::logger()->info("get_ultimo_id_transaccion_cc");
+        return $this->ultimo_id_transaccion_cc;
+    }
+
+    public function get_ultimo_comprobante_generado()
+    {
+        toba::logger()->info("get_ultimo_comprobante_generado");
+        return $this->ultimo_comprobante_generado;
+    }
+
+    public function get_primer_dia_mes_cuota()
+    {
+        toba::logger()->info("get_primer_dia_mes_cuota");
+        return $this->primer_dia_mes_cuota;
+    }
+
+    public function get_ultimo_dia_mes_cuota()
+    {
+        toba::logger()->info("get_ultimo_dia_mes_cuota");
+        return $this->ultimo_dia_mes_cuota;
     }
 
     //---------------------------------------------------------------------
@@ -1251,6 +1366,7 @@ class persona
             } else {
                 $this->nombre_completo_alumno = $resultado_alumno[0]['apellidos']. ', '. $resultado_alumno[0]['nombres'] .' - Legajo: '. $resultado_alumno[0]['legajo'] ;
             }
+
         } else {
             //Obtengo los datos de los allegados asociados a esa persona que NO es alumno
             $sql = "SELECT pa.id_persona_allegado
@@ -1467,12 +1583,18 @@ class persona
                       ,subconsulta_cuenta_corriente.numero_comprobante
                       ,subconsulta_cuenta_corriente.numero_autorizacion
                       ,subconsulta_cuenta_corriente.numero_lote
+                      ,subconsulta_cuenta_corriente.punto_venta
+                      ,subconsulta_cuenta_corriente.comprobante_tipo
+                      ,subconsulta_cuenta_corriente.comprobante_numero
+                      ,(subconsulta_cuenta_corriente.punto_venta ||'-'|| subconsulta_cuenta_corriente.comprobante_numero) as comprobante_generado
+                      ,p.id_persona 
                 FROM alumno_cuenta_corriente acc
                     INNER JOIN alumno a on acc.id_alumno = a.id_alumno  
                     INNER JOIN persona p on p.id_persona = a.id_persona
                     INNER JOIN (select id_alumno_cc, id_transaccion_cc, fecha_transaccion, id_estado_cuota, importe, fecha_pago
                                       ,fecha_respuesta_prisma, numero_comprobante, numero_autorizacion, numero_lote
-                                      ,id_medio_pago, id_marca_tarjeta, id_motivo_rechazo1, id_motivo_rechazo2, codigo_error_debito, descripcion_error_debito
+                                      ,id_medio_pago, id_marca_tarjeta, id_motivo_rechazo1, id_motivo_rechazo2, codigo_error_debito, descripcion_error_debito 
+                                      ,punto_venta, comprobante_tipo, comprobante_numero
                                 from transaccion_cuenta_corriente) as subconsulta_cuenta_corriente ON subconsulta_cuenta_corriente.id_alumno_cc = acc.id_alumno_cc
                     INNER JOIN estado_cuota ec on ec.id_estado_cuota = subconsulta_cuenta_corriente.id_estado_cuota
                     LEFT OUTER JOIN motivo_rechazo mr on mr.id_motivo_rechazo = subconsulta_cuenta_corriente.id_motivo_rechazo1
@@ -2072,6 +2194,7 @@ class persona
             foreach ($array_datos_invalidos as $clave => $id_persona) {
                 $filtro['id_persona'] = $id_persona;
                 $filtro['solo_alumnos'] = true;
+                $filtro['con_dni'] = true;
                 $persona = dao_consultas::get_nombres_persona($filtro);
                 if ($persona) {
                     $nombre_persona = $persona[0]['nombre_completo'];
@@ -2110,6 +2233,11 @@ class persona
         toba::logger()->debug(__METHOD__ . " : " . $sql);
         ejecutar_fuente($sql);
 
+        //Obtengo el último id_transaccion_cc del pago generado
+        $sql = "SELECT currval('sq_id_transaccion_cc') as seq";
+        $datos = consultar_fuente($sql);
+        $this->ultimo_id_transaccion_cc = $datos[0]['seq'];
+
         //Actualizo el campo procesado de la tabla archivo_respuesta_detalle solo si viene del alta masiva
         if ($this->modo == 'alta_masiva') {
             $sql = "UPDATE archivo_respuesta_detalle 
@@ -2133,125 +2261,457 @@ class persona
 
     public function generar_comprobante_afip()
     {
-        $cuit_institucion = dao_consultas::catalogo_de_parametros('cuit_institucion');
-        $afip = new Afip(array('CUIT' => $cuit_institucion));
-        //$afip = new Afip(array('CUIT' => '30670917688')); //27127112784
+        $afip = new Afip();
+        $this->afip = $afip->getAfip();
+        $factura_electronica = new \SIU\Afip\WebService\FacturaElectronica($this->afip);
 
         $importe = 0;
         if (isset($this->importe_pago)) {
-            $importe = $this->importe_pago * -1;
+            $importe_pago_sin_coma = str_replace(',', '', $this->importe_pago);
+            $importe = (float)$importe_pago_sin_coma * -1;
         }
+
         $data = array(
-                      'CantReg' 	=> 1,  // Cantidad de comprobantes a registrar
-                      'PtoVta' 	    => 1,  // Punto de venta
-                      'CbteTipo' 	=> 11,  // Tipo de comprobante (ver tipos disponibles)
-                      'Concepto' 	=> 2,  // Concepto del Comprobante: (1)Productos, (2)Servicios, (3)Productos y Servicios
-                      'DocTipo' 	=> 96, // Tipo de documento del comprador (99 consumidor final, ver tipos disponibles) / 96 -> DNI / 86 - CUIL
-                      'DocNro' 	    => $this->persona_documentos[0]['identificacion'], //27127112784,  // Número de documento del comprador (0 consumidor final)
-                      'FchServDesde'=> '20230101', //Debería ir el primer día del mes de pago
-                      'FchServHasta'=> '20230131', //Debería ir el último día del mes de pago
-                      'FchVtoPago'  => intval(date('Ymd')),
-                      'CbteFch' 	=> intval(date('Ymd')), // (Opcional) Fecha del comprobante (yyyymmdd) o fecha actual si es nulo
-                      'ImpTotal' 	=> $importe, // Importe total del comprobante
-                      'ImpTotConc' 	=> 0,   // Importe neto no gravado
-                      'ImpNeto' 	=> $importe, // Importe neto gravado
-                      'ImpOpEx' 	=> 0,   // Importe exento de IVA
-                      'ImpIVA' 	    => 0,  //Importe total de IVA
-                      'ImpTrib' 	=> 0,   //Importe total de tributos
-                      'MonId' 	    => 'PES', //Tipo de moneda usada en el comprobante (ver tipos disponibles)('PES' para pesos argentinos)
-                      'MonCotiz' 	=> 1,     // Cotización de la moneda usada (1 para pesos argentinos
-                     );
+            'CantReg' 	=> 1,  // Cantidad de comprobantes a registrar
+            'PtoVta' 	=> 1,  // Punto de venta
+            'CbteTipo' 	=> 11,  // Tipo de comprobante (ver tipos disponibles)
+            'Concepto' 	=> 2,  // Concepto del Comprobante: (1)Productos, (2)Servicios, (3)Productos y Servicios
+            'DocTipo' 	=> 96, // Tipo de documento del comprador (99 consumidor final, 86 CUIL / 96 DNI)
+            'DocNro' 	=> $this->identificador_tutor,  // Número de documento del comprador (0 consumidor final)
+            'FchServDesde'=> $this->get_primer_dia_mes_cuota(),
+            'FchServHasta'=> $this->get_ultimo_dia_mes_cuota(),
+            'FchVtoPago'  => intval(date('Ymd')),
+            'CbteDesde' 	=> 1,  // Número de comprobante o numero del primer comprobante en caso de ser mas de uno
+            'CbteHasta' 	=> 1,  // Número de comprobante o numero del último comprobante en caso de ser mas de uno
+            'CbteFch' 	=> intval(date('Ymd')), // (Opcional) Fecha del comprobante (yyyymmdd) o fecha actual si es nulo
+            'ImpTotal' 	=> $importe, // Importe total del comprobante
+            'ImpTotConc' 	=> 0,   // Importe neto no gravado
+            'ImpNeto' 	=> $importe, // Importe neto gravado
+            'ImpOpEx' 	=> 0,   // Importe exento de IVA
+            'ImpIVA' 	=> 0,  //Importe total de IVA
+            'ImpTrib' 	=> 0,   //Importe total de tributos
+            'MonId' 	=> 'PES', //Tipo de moneda usada en el comprobante (ver tipos disponibles)('PES' para pesos argentinos)
+            'MonCotiz' 	=> 1,     // Cotización de la moneda usada (1 para pesos argentinos)
+        );
 
-        $res = $afip->ElectronicBilling->CreateNextVoucher($data);
+        $nuevo_comprobante = $factura_electronica->crearProximoComprobante($data);
+        $nuevo_comprobante['CAE']; //CAE asignado el comprobante
+        $nuevo_comprobante['CAEFchVto']; //Fecha de vencimiento del CAE (yyyy-mm-dd)
+        $nuevo_comprobante['voucher_number']; //Número asignado al comprobante
 
-        /*echo $res['CAE']; //CAE asignado el comprobante
-        echo $res['CAEFchVto']; //Fecha de vencimiento del CAE (yyyy-mm-dd)
-        echo $res['voucher_number']; //Número asignado al comprobante*/
-
-        $datos['numero_comprobante'] = $res['voucher_number'];
-        $datos['id_alumno_cc'] = $this->id_alumno_cc;
-        $datos['tipo_comprobante'] = 11; //Factura C
-        $datos['punto_venta'] = 1;
-        $this->obtener_datos_comprobante_afip($datos);
-    }
-
-    public function obtener_datos_comprobante_afip($datos = null)
-    {
-        if (isset($datos['numero_comprobante'])) {
-            $cuit_institucion = dao_consultas::catalogo_de_parametros('cuit_institucion');
-            $afip = new Afip(array('CUIT' => $cuit_institucion));
-            $voucher_info = $afip->ElectronicBilling->GetVoucherInfo($datos['numero_comprobante'],$datos['punto_venta'],$datos['tipo_comprobante']); //Devuelve la información del comprobante 1 para el punto de venta 1 y el tipo de comprobante 11 (Factura C)
-            //ei_arbol($voucher_info);
-            if ($voucher_info === NULL) {
-                echo 'El comprobante no existe';
-            } /*else {
-                echo 'Esta es la información del comprobeante:';
-                echo '<pre>';
-                print_r($voucher_info);
-                echo '</pre>';
-            }*/
-            $datos_a_pasar = get_object_vars($voucher_info);
-            $datos_a_pasar['numero_comprobante'] = $datos['numero_comprobante'];
-            $datos_a_pasar['id_alumno_cc'] = $datos['id_alumno_cc'];
-            toba::logger()->error($datos_a_pasar);
-            self::mostrar_comprobante_afip($datos_a_pasar);
+        if (isset($nuevo_comprobante['voucher_number'])) {
+            $this->set_ultimo_comprobante_generado($nuevo_comprobante['voucher_number']);
         }
     }
 
-    public function mostrar_comprobante_afip($datos = null)
+    public function obtener_datos_comprobante_afip($nro_comprobante = null, $id_alumno_cc = null)
+    {
+        $afip = new Afip();
+        $this->afip = $afip->getAfip();
+        $factura_electronica = new \SIU\Afip\WebService\FacturaElectronica($this->afip);
+
+        $punto_venta = 1;
+        $tipo_comprobante = 11;
+        if (!isset($nro_comprobante)) {
+            $nro_comprobante = $factura_electronica->getUltimoComprobante($punto_venta, $tipo_comprobante);
+        }
+        $datos_comprobante = $factura_electronica->getComprobanteInfo($nro_comprobante, $punto_venta, $tipo_comprobante);
+        toba::logger()->info('Datos del comprobante que se va a mostrar:');
+        toba::logger()->info($datos_comprobante);
+
+        if (!$datos_comprobante) {
+            throw new error('No se puede recuperar información desde AFIP');
+        } else {
+            $datos_a_pasar = get_object_vars($datos_comprobante);
+            $datos_a_pasar['numero_comprobante'] = $nro_comprobante;
+            if (!isset($id_alumno_cc)) {
+                if (isset($this->id_alumno_cc)) {
+                    $datos_a_pasar['id_alumno_cc'] = $this->id_alumno_cc;
+                }
+            } else {
+                $datos_a_pasar['id_alumno_cc'] = $id_alumno_cc;
+            }
+            return $datos_a_pasar;
+            //$this->mostrar_comprobante_afip($datos_a_pasar);
+        }
+    }
+
+    public function mostrar_comprobante_afip($datos_comprobante)
     {
         //Defino los datos fijos de la factura
-        $cuit_institucion = dao_consultas::catalogo_de_parametros('cuit_institucion');
+        /*$cuit_institucion = dao_consultas::catalogo_de_parametros('cuit_institucion');
         $iibb_institucion = dao_consultas::catalogo_de_parametros('iibb_institucion');
         $fecha_inicio_actividades_institucion = dao_consultas::catalogo_de_parametros('fecha_inicio_actividades_institucion');
-        $razon_social_institucion = dao_consultas::catalogo_de_parametros('razon_social_institucion');
-        $domicilio_comercial_institucion = dao_consultas::catalogo_de_parametros('domicilio_comercial_institucion');
+        $razon_social_institucion = utf8_encode(dao_consultas::catalogo_de_parametros('razon_social_institucion'));
+        $domicilio_comercial_institucion = utf8_encode(dao_consultas::catalogo_de_parametros('domicilio_comercial_institucion'));
         $condicion_frente_iva_institucion = dao_consultas::catalogo_de_parametros('condicion_frente_iva_institucion');
-        $condicion_frente_iva_cliente = dao_consultas::catalogo_de_parametros('condicion_frente_iva_cliente');
 
-        //Definimos los datos variables de la factura
-        $fecha = fecha::formatear_para_pantalla($datos['CbteFch']);
-        $punto_venta = str_pad($datos['PtoVta'], 5, '0', STR_PAD_LEFT);
-        $numero = str_pad($datos['numero_comprobante'], 8, '0', STR_PAD_LEFT);
-        $subtotal = $datos['ImpNeto'];
-        $otros_tributos = $datos['ImpTrib'];
-        $importe_total = $datos['ImpTotal'];
-        $cae = $datos['CodAutorizacion'];
-        $fecha_vto_cae = fecha::formatear_para_pantalla($datos['FchVto']);
-        $cuit_cliente = $datos['DocNro'];
-        $datos_cargo = dao_consultas::get_datos_alumno_cuenta_corriente($datos);
+        // Obtener los datos del comprobante
+        $punto_venta = str_pad($datos_comprobante['PtoVta'], 5, '0', STR_PAD_LEFT);
+        $numero = str_pad($datos_comprobante['numero_comprobante'], 8, '0', STR_PAD_LEFT);
+        $fecha = fecha::formatear_para_pantalla($datos_comprobante['CbteFch']);
+
+        //estas 3 fechas hay q obtenerlas
+        $periodo_factura_desde = fecha::formatear_para_pantalla($datos_comprobante['FchServDesde']);
+        $periodo_factura_hasta = fecha::formatear_para_pantalla($datos_comprobante['FchServHasta']);
+        $fecha_vto_pago = fecha::formatear_para_pantalla($datos_comprobante['FchVtoPago']);
+
+        $subtotal = '$'.$datos_comprobante['ImpNeto'];
+        $otros_tributos = '$'.$datos_comprobante['ImpTrib'];
+        $importe_total = '$'.$datos_comprobante['ImpTotal'];
+        $cae = $datos_comprobante['CodAutorizacion'];
+        $fecha_vto_cae = fecha::formatear_para_pantalla($datos_comprobante['FchVto']);
+        $cuit_cliente = $datos_comprobante['DocNro'];
+        $datos_cargo = dao_consultas::get_datos_alumno_cuenta_corriente($datos_comprobante);
         if (isset($datos_cargo)) {
             if (isset($datos_cargo[0]['descripcion'])) {
-                $descripcion = $datos_cargo[0]['descripcion'];
+                $descripcion = utf8_encode($datos_cargo[0]['descripcion']);
             }
             if (isset($datos_cargo[0]['persona'])) {
-                $apellido_nombre_cliente = $datos_cargo[0]['persona'];
+                $apellido_nombre_cliente = utf8_encode($datos_cargo[0]['persona']);
+            }
+            if (isset($datos_cargo[0]['direccion_calle'])) {
+                $dir_calle = isset($datos_cargo[0]['direccion_calle']) ? utf8_encode($datos_cargo[0]['direccion_calle']) : '';
+                $dir_numero = isset($datos_cargo[0]['direccion_numero']) ? utf8_encode($datos_cargo[0]['direccion_numero']) : '';
+                $domicilio_cliente = $dir_calle . ' ' . $dir_numero;
+            } else {
+                $domicilio_cliente = '';
             }
         }
+        $condicion_frente_iva_cliente = dao_consultas::catalogo_de_parametros('condicion_frente_iva_cliente');
+        $condicion_venta = 'Contado';
 
-        //Cargamos la plantilla HTML con los valores
-        ob_start();
-        $dir = dirname(__DIR__, 1);
-        include $dir.'/comprobantes/factura_c/factura2.html';
-        $html = ob_get_clean();
+        //if (isset($datos_comprobante['CAE'])) {
+            //$datos_qr = $this->get_datos_afip_qr($datos_comprobante);
+        //}
 
+        // Generar el HTML del comprobante
+        $html_comprobante = <<<HTML
+        <!DOCTYPE html>
+        <html>
+            <head>
+                <meta charset="iso-8859-1">
+                <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+                <title>Factura C</title>
+                <style>
+                    @page {
+                        size: A4;
+                        margin: 2cm;
+                    }
+        
+                    body {
+                        font-family: Arial, sans-serif;
+                        font-size: 12px;
+                        color: #000;
+                        margin: 0;
+                        padding: 0;
+                        border: 1px solid black;
+                    }
+        
+                    h1 {
+                        font-size: 16px;
+                        text-align: center;
+                        margin-bottom: 20px;
+                    }
+        
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin-bottom: 20px;
+                    }
+        
+                    table th, table td {
+                        padding: 5px;
+                        border: 1px solid #000;
+                    }
+        
+                    table th {
+                        background-color: #ccc;
+                        font-weight: bold;
+                        text-align: center;
+                    }
+        
+                    table td {
+                        text-align: center;
+                    }
+        
+                    hr {
+                        border: none;
+                        border-top: 1px solid black;
+                        margin: 0;
+                    }
+        
+                    .logo {
+                        position: absolute;
+                        top: 10px;
+                        left: 10px;
+                        width: 150px;
+                        height: 150px;
+                    }
+        
+                    .header {
+                        position: relative;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        height: 80px;
+                        margin: 1cm;
+                    }
+        
+                    .header-left {
+                        position: absolute;
+                        left: 0;
+                        right: 50%;
+                        top: -30px;
+                        width: auto;
+                        height: 100%;
+                        font-size: 12px;
+                        color: #555;
+                    }
+        
+                    .header-right {
+                        position: absolute;
+                        right: 0;
+                        left: 50%;
+                        top: -30px;
+                        width: auto;
+                        height: 100%;
+                        font-size: 12px;
+                        color: #555;
+                    }
+        
+                    .header-info {
+                        margin-top: 50px;
+                    }
+        
+                    .comprobante,
+                    .fecha {
+                        margin: 0 20px;
+                    }
+        
+                    .comprobante {
+                        margin-left: 0;
+                    }
+                    
+                    .comprobante strong {
+                        font-weight: bold;
+                    }
+                    
+                    .comprobante.razon-social {
+                        font-size: 22px;
+                        text-align: center;
+                    }
+                    
+                    .comprobante.factura {
+                        font-size: 22px;
+                        text-align: left;
+                    }
+                              
+                    .datos-factura {
+                        font-size: 12px;
+                        border-top: 1px solid black;
+                        margin-top: 10px;
+                    }
+                    
+                    .datos-factura p {
+                        display: inline-block;
+                        margin: 5px 0;
+                    }
+                    
+                    .datos-cliente {
+                        font-size: 12px;
+                        border-top: 1px solid black;
+                        margin-top: 10px;
+                    }
+        
+                    .datos-cliente p {
+                        margin: 5px 0;
+                        margin-left: 5px;
+                    }
+        
+                    .detalle-factura {
+                        border-collapse: collapse;
+                        width: 100%;
+                        margin-top: 20px;
+                        font-size: 12px;
+                        color: #555;
+                    }
+        
+                    .detalle-factura th {
+                        padding: 10px;
+                        border: 1px solid black;
+                        text-align: center;
+                    }
+        
+                    .detalle-factura td {
+                        font-size: 12px;
+                        color: #000;
+                        text-align: left;
+                    }
+        
+                    .detalle-factura td:nth-child(1) {
+                        text-align: center;
+                    }
+        
+                    .detalle-factura td:nth-child(3),
+                    .detalle-factura td:nth-child(4) {
+                        text-align: right;
+                    }
+        
+                    .detalle-factura th:nth-child(1),
+                    .detalle-factura th:nth-child(4),
+                    .detalle-factura td:nth-child(1),
+                    .detalle-factura td:nth-child(4) {
+                        border-left: none;
+                        border-right: none;
+                    }
+        
+                    .footer {
+                        position: fixed;
+                        bottom: 0;
+                        left: 0;
+                        right: 0;
+                        height: 4cm;
+                        background-color: #f7f7f7;
+                        font-size: 12px;
+                        color: #555;
+                        padding: 30px;
+                    }
+        
+                    .footer table {
+                        width: 100%;
+                    }
+        
+                    .footer th {
+                        text-align: left;
+                        width: 50%;
+                    }
+        
+                    .footer td {
+                        text-align: right;
+                        width: 50%;
+                    }
+
+                    .datos-adicionales-footer {
+                        font-size: 10px;
+                        text-align: right;
+                        margin-top: 10px;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div class="header-left">
+                        <p class="comprobante razon-social">$razon_social_institucion</p>
+                        <p class="comprobante"><strong>Domicilio Comercial:</strong> $domicilio_comercial_institucion</p>
+                        <p class="comprobante"><strong>Condicion frente al IVA:</strong> $condicion_frente_iva_institucion</p>
+                    </div>
+                    <div class="header-right">
+                        <p class="comprobante factura">FACTURA C</p>
+                        <p class="comprobante"><strong>Punto de Venta: $punto_venta</strong></p>
+                        <p class="comprobante"><strong>Comp. Nro: $numero</strong></p>
+                        <p class="comprobante"><strong>Fecha de Emision: $fecha</strong></p>
+                        <p class="comprobante"><strong>CUIT:</strong> $cuit_institucion</p>
+                        <p class="comprobante"><strong>Ingresos Brutos:</strong> $iibb_institucion</p>
+                        <p class="comprobante"><strong>Fecha de inicio de actividades:</strong> $fecha_inicio_actividades_institucion</p>
+                    </div>
+                </div>
+                <div class="datos-factura">
+                    <p><strong>Periodo facturado desde:</strong> $periodo_factura_desde</p>
+                    <p><strong>Hasta:</strong> $periodo_factura_hasta</p>
+                    <p><strong>Fecha de vto. para el pago:</strong> $fecha_vto_pago</p>
+                </div>
+                <div class="datos-cliente">
+                    <p><strong>CUIL:</strong> $cuit_cliente</p>
+                    <p><strong>Apellido y Nombres:</strong> $apellido_nombre_cliente</p>
+                    <p><strong>Condicion frente al IVA:</strong> $condicion_frente_iva_cliente</p>
+                    <p><strong>Domicilio:</strong> $domicilio_cliente</p>
+                    <p><strong>Condicion de venta:</strong> $condicion_venta</p>
+                </div>
+                <hr>
+                <table class="detalle-factura">
+                    <thead>
+                    <tr>
+                        <th>Cantidad</th>
+                        <th>Descripcion</th>
+                        <th>Precio unitario</th>
+                        <th>Importe</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>$descripcion</td>
+                        <td>$subtotal</td>
+                        <td>$subtotal</td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div class="footer">
+                    <table>
+                        <tr>
+                            <th>Subtotal:</th>
+                            <td>$subtotal</td>
+                        </tr>
+                        <tr>
+                            <th>Importe Otros Tributos:</th>
+                            <td>$otros_tributos</td>
+                        </tr>
+                        <tr>
+                            <th>Importe Total:</th>
+                            <td>$importe_total</td>
+                        </tr>
+                    </table>
+                    <div class="datos-adicionales-footer">
+                        <p class="comprobante">CAE N: $cae</p>
+                        <p class="comprobante">Fecha de Vto. de CAE: $fecha_vto_cae</p>
+                    </div>
+                    <div class="page-number"></div>
+                </div>
+                <!-- Incrustar el código QR en el PDF -->
+                <img src="data:image/png;base64,' . base64_encode($datos_qr) . '" alt="Codigo QR">
+                <!--div style="width:25%; text-align:center; display:block; float:left;"> {!! QrCode::size(200)->generate($to_qr); !!} </div -->
+            </body>
+        </html>
+        HTML;
+
+        // Crear una instancia de Dompdf
         $dompdf = new Dompdf();
-        $dompdf->set_option('default_charset', 'UTF-8');
-        $options = $dompdf->getOptions();
-        $options->setIsRemoteEnabled(true);
 
-        //Cargamos el contenido HTML en Dompdf
-        $dompdf->loadHtml($html);
+        // Cargar el HTML en Dompdf
+        $dompdf->loadHtml(mb_convert_encoding($html_comprobante, 'HTML-ENTITIES', 'ISO-8859-1'));
+        $dompdf->loadHtml($html_comprobante);
 
-        //Definimos el tamaño y la orientación de la página
         $dompdf->setPaper('A4', 'portrait');
 
-        //Renderizamos el contenido HTML como PDF
+        // Renderizar el PDF
         $dompdf->render();
 
-        //Generar el PDF
-        $dir_home = '/data/local/sistema/';
-        file_put_contents($dir_home.'factura'.$datos['numero_comprobante'].'.pdf', $dompdf->output());
+        // Generar el PDF con dompdf
+        $dompdf->stream("comprobante_".$numero.".pdf");
+
+        // Obtener el contenido del PDF generado
+        $pdf_content = $dompdf->output();
+
+        // Limpiar el búfer de salida
+        ob_end_clean();
+
+        // Configurar los encabezados para la descarga del archivo
+        header('Content-Description: File Transfer');
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="comprobante_'.$numero.'.pdf"');
+        header('Content-Length: ' . strlen($pdf_content));
+        header('Cache-Control: private, no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        // Enviar el contenido del PDF como un archivo descargable
+        echo $pdf_content;
+
+        //Guardamos el PDF en el servidor
+        /*$dir_home = '/data/local/sistema/proyectos/gestionescuelas/www/comprobantes_afip/';
+        file_put_contents($dir_home.'factura'.$datos_comprobante['numero_comprobante'].'.pdf', $dompdf->output());
+        toba::notificacion()->agregar('El comprobante fue generado y almacenado con éxito.', 'info');*/
     }
 
     public function generar_qr_comprobante_afip($datos = null)
@@ -2259,27 +2719,81 @@ class persona
         if (isset($datos)) {
             $url = 'https://www.afip.gob.ar/fe/qr/'; // URL que pide AFIP que se ponga en el QR.
             $datos_cmp_base_64 = json_encode([
-                //"ver" => 1,                         // Numérico 1 digito -  OBLIGATORIO ? versión del formato de los datos del comprobante	1
-                //"fecha" => $datos['CbteFch'],       // full-date (RFC3339) - OBLIGATORIO ? Fecha de emisión del comprobante
-                //"cuit" => $datos['cuit'],        // Numérico 11 dígitos -  OBLIGATORIO ? Cuit del Emisor del comprobante
-                //"ptoVta" => $datos['PtoVta'],                // Numérico hasta 5 digitos - OBLIGATORIO ? Punto de venta utilizado para emitir el comprobante
-                //"tipoCmp" => $datos['CbteTipo'], // Numérico hasta 3 dígitos - OBLIGATORIO ? tipo de comprobante (según Tablas del sistema. Ver abajo )
-                //"nroCmp" => $datos['numero_comprobante'],               // Numérico hasta 8 dígitos - OBLIGATORIO ? Número del comprobante
-                //"importe" => $datos['ImpTotal'],         // Decimal hasta 13 enteros y 2 decimales - OBLIGATORIO ? Importe Total del comprobante (en la moneda en la que fue emitido)
-                //"moneda" => "PES",                  // 3 caracteres - OBLIGATORIO ? Moneda del comprobante (según Tablas del sistema. Ver Abajo )
-                //"ctz" => 1,                 // Decimal hasta 13 enteros y 6 decimales - OBLIGATORIO ? Cotización en pesos argentinos de la moneda utilizada (1 cuando la moneda sea pesos)
-                //"tipoDocRec" => $datos['DocTipo'],               // Numérico hasta 2 dígitos - DE CORRESPONDER ? Código del Tipo de documento del receptor (según Tablas del sistema )
-                //"nroDocRec" => $datos['DocNro'],        // Numérico hasta 20 dígitos - DE CORRESPONDER ? Número de documento del receptor correspondiente al tipo de documento indicado
-                //"tipoCodAut" => "E",                // string - OBLIGATORIO ? ?A? para comprobante autorizado por CAEA, ?E? para comprobante autorizado por CAE
-                //"codAut" => $datos['CodAutorizacion']    // Numérico 14 dígitos -  OBLIGATORIO ? Código de autorización otorgado por AFIP para el comprobante
+                "ver" => 1,                         // Numérico 1 digito -  OBLIGATORIO ? versión del formato de los datos del comprobante	1
+                "fecha" => $datos['CbteFch'],       // full-date (RFC3339) - OBLIGATORIO ? Fecha de emisión del comprobante
+                "cuit" => $datos['cuit'],        // Numérico 11 dígitos -  OBLIGATORIO ? Cuit del Emisor del comprobante
+                "ptoVta" => $datos['PtoVta'],                // Numérico hasta 5 digitos - OBLIGATORIO ? Punto de venta utilizado para emitir el comprobante
+                "tipoCmp" => $datos['CbteTipo'], // Numérico hasta 3 dígitos - OBLIGATORIO ? tipo de comprobante (según Tablas del sistema. Ver abajo )
+                "nroCmp" => $datos['numero_comprobante'],               // Numérico hasta 8 dígitos - OBLIGATORIO ? Número del comprobante
+                "importe" => $datos['ImpTotal'],         // Decimal hasta 13 enteros y 2 decimales - OBLIGATORIO ? Importe Total del comprobante (en la moneda en la que fue emitido)
+                "moneda" => "PES",                  // 3 caracteres - OBLIGATORIO ? Moneda del comprobante (según Tablas del sistema. Ver Abajo )
+                "ctz" => 1,                 // Decimal hasta 13 enteros y 6 decimales - OBLIGATORIO ? Cotización en pesos argentinos de la moneda utilizada (1 cuando la moneda sea pesos)
+                "tipoDocRec" => $datos['DocTipo'],               // Numérico hasta 2 dígitos - DE CORRESPONDER ? Código del Tipo de documento del receptor (según Tablas del sistema )
+                "nroDocRec" => $datos['DocNro'],        // Numérico hasta 20 dígitos - DE CORRESPONDER ? Número de documento del receptor correspondiente al tipo de documento indicado
+                "tipoCodAut" => "E",                // string - OBLIGATORIO ? ?A? para comprobante autorizado por CAEA, ?E? para comprobante autorizado por CAE
+                "codAut" => $datos['CodAutorizacion']    // Numérico 14 dígitos -  OBLIGATORIO ? Código de autorización otorgado por AFIP para el comprobante
             ]);
-            toba::logger()->error($datos_cmp_base_64);
+
             $datos_cmp_base_64 = base64_encode($datos_cmp_base_64);
-            toba::logger()->error($datos_cmp_base_64);
             $to_qr = $url.'?p='.$datos_cmp_base_64;
-            echo ('hasta aca llega');
             $qrcode = new QrCode($to_qr);
-            echo $qrcode->writeString();
+            var_dump($qrcode);
+            //echo $qrcode->writeString();
+            //die();
         }
+    }
+
+    /**
+     * Genera los datos de AFIP para generar el QR del comprobante
+     * @param $datos_comprobante
+     * @return string
+     */
+    private function get_datos_afip_qr($datos_comprobante)
+    {
+        $val = str_replace(",", ".", $datos_comprobante['ImpTotal']);
+        $importe = preg_replace("/[\,\.](\d{3})/", "$1", $val);
+        $url = 'https://www.afip.gob.ar/fe/qr/';
+        $json_qr = '{
+                       "ver":1,
+                       "fecha":"'.$datos_comprobante['CbteFch'].'",
+                       "cuit":'.$datos_comprobante['cuit'].',
+                       "ptoVta":'.intval($datos_comprobante['PtoVta']).',
+                       "tipoCmp":'.$datos_comprobante['CbteTipo'].',
+                       "nroCmp":'.intval($datos_comprobante['numero_comprobante']).',
+                       "importe":'.$importe.',
+                       "moneda":"PES",
+                       "ctz":1,
+                       "tipoDocRec":'.$datos_comprobante['DocTipo'].',
+                       "nroDocRec":'.$datos_comprobante['DocNro'].',
+                       "tipoCodAut":"E",
+                       "codAut":'.$datos_comprobante['CodAutorizacion'].'
+                    }';
+
+        $qr_url = $url.'?p='.base64_encode($json_qr);
+        // Imprime la URL generada para el código QR
+        echo "URL generada para el código QR: " . $qr_url;
+        return $qr_url;
+    }
+
+    public function actualizar_datos_comprobante_generado()
+    {
+        $comprobante_numero = $this->get_ultimo_comprobante_generado();
+        $ultimo_id_transaccion_cc = $this->get_ultimo_id_transaccion_cc();
+
+        if (isset($comprobante_numero) AND isset($ultimo_id_transaccion_cc)) {
+            //se actualizan los datos del comprobante generado (punto_venta, comprobante_tipo y comprobante_numero)
+            $sql = "UPDATE transaccion_cuenta_corriente 
+                    SET punto_venta = 1
+                       ,comprobante_tipo = 11
+                       ,comprobante_numero = $comprobante_numero
+                    WHERE id_transaccion_cc = $ultimo_id_transaccion_cc
+                   ";
+
+            toba::logger()->debug(__METHOD__ . " : " . $sql);
+            ejecutar_fuente($sql);
+        } else {
+            toba::notificacion()->agregar('No se puedieron actualizar los datos del comprobante generado.', 'error');
+        }
+
     }
 }

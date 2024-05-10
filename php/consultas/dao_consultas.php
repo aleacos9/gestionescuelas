@@ -419,8 +419,27 @@ class dao_consultas
                     $select .= ",a.id_alumno";
                     $from .= "LEFT OUTER JOIN alumno a on a.id_persona = p.id_persona";
                     $where .= " AND p.es_alumno = 'S' 
-                                AND p.activo != 'B'
+                                AND p.activo NOT IN ('N', 'B')
                               ";
+                }
+            }
+
+            if (isset($filtro['nro_documento'])) {
+                /*$from .= "LEFT OUTER JOIN (persona_tipo_documento ptd JOIN tipo_documento td on ptd.id_tipo_documento = td.id_tipo_documento)
+                            ON ptd.id_persona = p.id_persona AND td.jerarquia = (SELECT MIN(X1.jerarquia)
+                                                                                   FROM tipo_documento X1
+                                                                                       ,persona_tipo_documento X2
+                                                                                   WHERE X1.id_tipo_documento = X2.id_tipo_documento
+                                                                                     AND X2.id_persona = p.id_persona)
+                         ";*/
+                $where .= " AND ptd.numero = '{$filtro['nro_documento']}'";
+            }
+
+            if (isset($filtro['con_dni'])) {
+                if ($filtro['con_dni'] == 1) {
+                    $select .= ",(p.apellidos || ', ' || p.nombres || ' - ' || ptd.numero) as nombre_completo";
+                } else {
+                    $select .= ",(p.apellidos || ', ' || p.nombres) as nombre_completo";
                 }
             }
         }
@@ -428,10 +447,16 @@ class dao_consultas
         $sql = "SELECT p.id_persona
                       ,p.nombres
                       ,p.apellidos
-                      ,(p.apellidos || ', ' || p.nombres) as nombre_completo
+                      --,(p.apellidos || ', ' || p.nombres || ' - ' || ptd.numero) as nombre_completo
                       $select  
 				FROM persona p
 				    $from
+				    LEFT OUTER JOIN (persona_tipo_documento ptd JOIN tipo_documento td on ptd.id_tipo_documento = td.id_tipo_documento)
+                            ON ptd.id_persona = p.id_persona AND td.jerarquia = (SELECT MIN(X1.jerarquia)
+                                                                                   FROM tipo_documento X1
+                                                                                       ,persona_tipo_documento X2
+                                                                                   WHERE X1.id_tipo_documento = X2.id_tipo_documento
+                                                                                        AND X2.id_persona = p.id_persona)
                 $where
                 ORDER BY p.apellidos, p.nombres
 			   ";
@@ -488,13 +513,14 @@ class dao_consultas
                       ,estado 
 				FROM anio
                 $where
+                ORDER BY anio
 			   ";
 
         toba::logger()->debug(__METHOD__." : ".$sql);
         return toba::db()->consultar($sql);
     }
 
-    public function get_meses_del_anio()
+    public static function get_meses_del_anio()
     {
         $meses[0]['id'] = 1;
         $meses[0]['mes'] = "Enero";
@@ -604,6 +630,7 @@ class dao_consultas
         }
 
         $sql = "SELECT a.id_alumno
+                      ,p.id_persona
                       ,a.legajo
                       ,a.regular
                       ,r1.id_alumno_cc
@@ -731,6 +758,7 @@ class dao_consultas
                                              ,ard.fecha_origen_venc_debito
                                              ,ard.id_alumno_cc) AS r1 ON r1.id_alumno_cc = max_fecha.id_alumno_cc and max_fecha.UltimaFecha = r1.fecha
                          INNER JOIN alumno a ON a.id_alumno = acc.id_alumno
+                         INNER JOIN persona p ON a.id_persona = p.id_persona
                 WHERE 1=1;
 			   ";
 
@@ -1491,8 +1519,13 @@ class dao_consultas
          * Valido el estado del servidor AFIP (AppServer) para la generación de los comprobantes
          * por el momento no valido los parámetros DbServer y AuthServer
          */
-        $afip = new Afip(array('CUIT' => '27127112784'));
+
+        $afip = new Afip();
+        return $afip->conectado();
+
+        /*$afip = new Afip();
         $server_status = $afip->ElectronicBilling->GetServerStatus();
+        var_dump($server_status);
         if ($server_status === NULL) {
             return false;
         } else {
@@ -1500,7 +1533,7 @@ class dao_consultas
                 return false;
             }
         }
-        return true;
+        return true;*/
     }
 
     /*
@@ -1518,10 +1551,14 @@ class dao_consultas
 
         $sql = "SELECT acc.id_alumno_cc
                       ,acc.cuota
-                      ,acc.descripcion
+                      ,acc.descripcion || ' - Alumnos: ' || (p.apellidos ||', '|| p.nombres) as descripcion
                       ,p.nombres
                       ,p.apellidos
-                      ,(p.apellidos ||', '|| p.nombres) as persona 
+                      ,(p.apellidos ||', '|| p.nombres) as persona
+                      ,a.direccion_calle
+                      ,a.direccion_numero
+                      ,a.direccion_piso
+                      ,a.direccion_depto
                 FROM alumno_cuenta_corriente acc
                     INNER JOIN alumno a on acc.id_alumno = a.id_alumno
                     INNER JOIN persona p on a.id_persona = p.id_persona
@@ -1676,4 +1713,53 @@ class dao_consultas
         toba::logger()->debug(__METHOD__." : ".$sql);
         return toba::db()->consultar($sql);
     }
+
+    public static function get_documento_tutor($filtro = null)
+    {
+        $where = 'WHERE 1=1';
+
+        if (isset($filtro)) {
+            if (isset($filtro['id_persona'])) {
+                $where .= " AND p.id_persona = '{$filtro['id_persona']}'";
+            }
+        }
+
+        $sql = "SELECT pa.id_persona_allegado
+                      ,pa.id_persona
+                      ,(p.apellidos || ', ' || p.nombres) as nombre_alumno
+                      ,pa.id_alumno
+                      ,pa.id_tipo_allegado
+                      ,ta.nombre as allegado
+                      ,per.id_persona as id_persona_tutor
+                      ,per.nombres
+                      ,per.apellidos
+                      ,(per.apellidos || ', ' || per.nombres) as nombre_tutor
+                      ,ptd.numero as identificacion_tutor
+                FROM persona_allegado pa
+                    INNER JOIN alumno a on pa.id_alumno = a.id_alumno
+                    INNER JOIN persona p on p.id_persona = a.id_persona
+                    INNER JOIN persona per on per.id_persona = pa.id_persona
+                    LEFT OUTER JOIN (persona_tipo_documento ptd JOIN tipo_documento td on ptd.id_tipo_documento = td.id_tipo_documento)
+                                     ON ptd.id_persona = per.id_persona AND td.jerarquia = (SELECT MIN(X1.jerarquia)
+                                                                                            FROM tipo_documento X1
+                                                                                                ,persona_tipo_documento X2
+                                                                                            WHERE X1.id_tipo_documento = X2.id_tipo_documento
+                                                                                               AND X2.id_persona = p.id_persona)
+                    INNER JOIN tipo_allegado ta on pa.id_tipo_allegado = ta.id_tipo_allegado
+                $where
+                  AND pa.tutor = 'S' AND pa.activo = 'S'
+                ORDER BY ta.jerarquia
+                        ,pa.id_tipo_allegado
+               ";
+
+        toba::logger()->debug(__METHOD__." : ".$sql);
+        $datos = consultar_fuente($sql);
+        if (isset($filtro['solo_identificacion_tutor'])) {
+            if ($filtro['solo_identificacion_tutor'] == 1) {
+                return $datos[0]['identificacion_tutor'];
+            }
+        }
+        return $datos;
+    }
+
 }

@@ -4,7 +4,7 @@ class dao_personas
     /*
      * Retorna los datos de las personas
      */
-    public function get_datos_personas($filtro=null)
+    public static function get_datos_personas($filtro=null)
     {
         $where = 'WHERE 1=1';
         $select = $select_inicial = $from = '';
@@ -361,12 +361,18 @@ class dao_personas
                       ,subconsulta_cuenta_corriente.numero_comprobante
                       ,subconsulta_cuenta_corriente.numero_autorizacion
                       ,subconsulta_cuenta_corriente.numero_lote
+                      ,subconsulta_cuenta_corriente.punto_venta
+                      ,subconsulta_cuenta_corriente.comprobante_tipo
+                      ,subconsulta_cuenta_corriente.comprobante_numero
+                      ,(subconsulta_cuenta_corriente.punto_venta ||'-'|| subconsulta_cuenta_corriente.comprobante_numero) as comprobante_generado
+                      ,p.id_persona 
                 FROM alumno_cuenta_corriente acc
                          INNER JOIN alumno a on acc.id_alumno = a.id_alumno
                          INNER JOIN persona p on p.id_persona = a.id_persona
                          INNER JOIN (select id_alumno_cc, id_transaccion_cc, fecha_transaccion, id_estado_cuota, importe, fecha_pago
                                           ,fecha_respuesta_prisma, numero_comprobante, numero_autorizacion, numero_lote
                                           ,id_medio_pago, id_marca_tarjeta, id_motivo_rechazo1, id_motivo_rechazo2, codigo_error_debito, descripcion_error_debito
+                                          ,punto_venta, comprobante_tipo, comprobante_numero
                                      from transaccion_cuenta_corriente) as subconsulta_cuenta_corriente ON subconsulta_cuenta_corriente.id_alumno_cc = acc.id_alumno_cc
                          INNER JOIN estado_cuota ec on ec.id_estado_cuota = subconsulta_cuenta_corriente.id_estado_cuota
                          LEFT OUTER JOIN motivo_rechazo mr on mr.id_motivo_rechazo = subconsulta_cuenta_corriente.id_motivo_rechazo1

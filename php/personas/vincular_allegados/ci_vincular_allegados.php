@@ -33,6 +33,7 @@ class ci_vincular_allegados extends ci_abm_personas
     public function get_nombres_personas_ci()
     {
         $filtro['solo_alumnos'] = false;
+        $filtro['con_dni'] = true;
         return dao_consultas::get_nombres_persona($filtro);
     }
 

@@ -1,8 +1,11 @@
+<?php
+header('Content-Type: text/html; charset=iso-8859-1');
+?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="iso-8859-1">
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel='stylesheet' type='text/css' media='screen' href='css/styles.css'>
 </head>
@@ -18,7 +21,7 @@
     <div class="logo row my-3">
         <hr/>
         <div class="col-2">
-            <img src="logo.png" width="150px" height="150px"/>
+           <!-- <img src="logo.png" width="150px" height="150px"/> -->
           </div>
       <div class="nombre">
         <h2>Factura N° </h2>
@@ -33,7 +36,7 @@
         <br>
         <strong>Fecha Emisión: </strong> 05/10/2022
         <br> <br>
-        <strong>CUIT: </strong> 27127112784
+        <strong>CUIT: </strong> <?php echo $cuit_institucion; ?></p>
         <br>
         <strong>Ingresos Brutos: </strong> 27127112784
         <br>

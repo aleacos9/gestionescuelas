@@ -1,15 +1,16 @@
 <?php
+
 class Afip
 {
     public $afip_config;
     protected $afip;
     protected $padron_cuatro;
+    protected $factura_electronica;
 
     public function __construct()
     {
         $afip_ini = new toba_ini(toba::instalacion()->get_path_carpeta_instalacion()."/afip.ini");
         $this->afip_config = $afip_ini->get_datos_entrada('afip_config');
-
         $this->afip_config['cuit'] = getenv('AFIP_WS_CUIT') ?: $this->afip_config['cuit'];
         $this->afip_config['produccion'] = getenv('AFIP_WS_PRODUCCION') ?: $this->afip_config['produccion'];
         $this->afip_config['cert'] = getenv('AFIP_WS_CERT') ?: $this->afip_config['cert'];
@@ -28,6 +29,15 @@ class Afip
             try {
                 $this->afip = new \SIU\Afip\Afip($config);
                 $this->padron_cuatro = new \SIU\Afip\WebService\PadronAlcanceCuatro($this->afip);
+
+                /*$this->factura_electronica = new \SIU\Afip\WebService\FacturaElectronica($this->afip);
+                $punto_venta = 1;
+                $tipo_comprobante = 11;
+                $result = $this->factura_electronica->getUltimoComprobante($punto_venta, $tipo_comprobante);
+                //$result = $factura_electronica->getTiposCbte();
+                //$result = $factura_electronica->getTiposConcepto();
+                //$result = $factura_electronica->getEstadoServicio();
+                //var_dump($result);*/
             } catch (\Exception $e) {
                 toba::notificacion()->warning($e->getMessage());
                 toba::logger()->info($e->getMessage());
@@ -113,5 +123,10 @@ class Afip
         }
 
         return $prov_domicilios;
+    }
+
+    public function getAfip()
+    {
+        return $this->afip;
     }
 }

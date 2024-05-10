@@ -24,6 +24,7 @@ class cn_alta_manual_pagos extends gestionescuelas_cn
                 $persona->grabar_pago_persona();
                 if (dao_consultas::catalogo_de_parametros("genera_comprobante_afip") == 'SI') {
                     $persona->generar_comprobante_afip();
+                    $persona->actualizar_datos_comprobante_generado();
                 }
                 return $ok;
             }

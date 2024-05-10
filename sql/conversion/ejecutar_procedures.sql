@@ -75,3 +75,6 @@ SELECT alta_parametro_definir_fecha_desde_listado_cuenta_corriente();
 
 --Alejandro feature/permitir-pago-inscripcion-en-cuotas 02/11/2023
 SELECT permitir_pago_inscripcion_en_cuotas();
+
+--Alejandro feature/generacion-de-comprobantes-afip-desde-el-alta-de-pagos 23/02/2024
+SELECT generacion_de_comprobantes_afip_desde_alta_pagos();

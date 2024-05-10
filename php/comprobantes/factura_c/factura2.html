@@ -1,291 +1,259 @@
+<?php
+header('Content-Type: text/html; charset=iso-8859-1');
+?>
 <!DOCTYPE html>
 <html>
-<head>
-	<meta charset="UTF-8">
-	<title>Factura C</title>
-	<style>
-		@page {
-			size: A4;
-			margin: 2cm;
-		}
+	<head>
+		<meta charset="iso-8859-1">
+		<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+		<title>Factura C</title>
+		<style>
+			@page {
+				size: A4;
+				margin: 2cm;
+			}
 
-		body {
-			font-family: Arial, sans-serif;
-			font-size: 12px;
-			color: #000;
-			margin: 0;
-			padding: 0;
-			border: 1px solid black;
-		}
+			body {
+				font-family: Arial, sans-serif;
+				font-size: 12px;
+				color: #000;
+				margin: 0;
+				padding: 0;
+				border: 1px solid black;
+			}
 
-		h1 {
-			font-size: 16px;
-			text-align: center;
-			margin-bottom: 20px;
-		}
+			h1 {
+				font-size: 16px;
+				text-align: center;
+				margin-bottom: 20px;
+			}
 
-		table {
-			width: 100%;
-			border-collapse: collapse;
-			margin-bottom: 20px;
-		}
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				margin-bottom: 20px;
+			}
 
-		table th, table td {
-			padding: 5px;
-			border: 1px solid #000;
-		}
+			table th, table td {
+				padding: 5px;
+				border: 1px solid #000;
+			}
 
-		table th {
-			background-color: #ccc;
-			font-weight: bold;
-			text-align: center;
-		}
+			table th {
+				background-color: #ccc;
+				font-weight: bold;
+				text-align: center;
+			}
 
-		table td {
-			text-align: center;
-		}
+			table td {
+				text-align: center;
+			}
 
-		hr {
-			border: none;
-			border-top: 1px solid black;
-			margin: 0;
-		}
+			hr {
+				border: none;
+				border-top: 1px solid black;
+				margin: 0;
+			}
 
-		.logo {
-			position: absolute;
-			top: 10px;
-			left: 10px;
-			width: 150px;
-			height: 150px;
-		}
+			.logo {
+				position: absolute;
+				top: 10px;
+				left: 10px;
+				width: 150px;
+				height: 150px;
+			}
 
-		/*.header {
-			position: relative;
-			height: 80px;
-			margin: 1cm;
-		}*/
+			.header {
+				position: relative;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				height: 80px;
+				margin: 1cm;
+			}
 
-		.header {
-			position: relative;
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			height: 80px;
-			margin: 1cm;
-		}
+			.header-left {
+				position: absolute;
+				left: 0;
+				width: 35%;
+				height: 100%;
+				font-size: 12px;
+				color: #555;
+			}
 
-		/*.header-left {
-			position: absolute;
-			top: 0;
-			left: 0;
-			width: 35%;
-			height: 100%;
-			display: flex;
-			justify-content: flex-start;
-			align-items: center;
-			font-size: 12px;
-			color: #555;
-		}*/
+			.header-right {
+				position: absolute;
+				right: 0;
+				width: 40%;
+				height: 100%;
+				font-size: 12px;
+				color: #555;
+			}
 
-		.header-left {
-			position: absolute;
-			left: 0;
-			width: 35%;
-			height: 100%;
-			font-size: 12px;
-			color: #555;
-		}
+			.header-info {
+				margin-top: 50px;
+			}
 
-		/*.header-right {
-			position: absolute;
-			top: 0;
-			right: 0;
-			width: 40%;
-			height: 100%;
-			display: flex;
-			justify-content: flex-end;
-			align-items: center;
-			font-size: 12px;
-			color: #555;
-		}*/
+			.comprobante,
+			.fecha {
+				font-weight: bold;
+				margin: 0 20px;
+			}
 
-		.header-right {
-			position: absolute;
-			right: 0;
-			width: 40%;
-			height: 100%;
-			font-size: 12px;
-			color: #555;
-		}
+			.comprobante {
+				margin-left: 0;
+			}
 
-		.header-info {
-			margin-top: 50px;
-		}*/
+			.datos-cliente {
+				font-size: 12px;
+				border-top: 1px solid black; /* Agregamos un borde superior */
+				margin-top: 20px;
+			}
 
-		.comprobante,
-		.fecha {
-			font-weight: bold;
-			margin: 0 20px;
-		}
+			.datos-cliente p {
+				margin: 5px 0;
+				margin-left: 5px;
+			}
 
-		.comprobante {
-			margin-left: 0;
-		}
+			.detalle-factura {
+				border-collapse: collapse;
+				width: 100%;
+				margin-top: 20px;
+				font-size: 12px;
+				color: #555;
+			}
 
-		.datos-cliente {
-			font-size: 12px;
-			border-top: 1px solid black; /* Agregamos un borde superior */
-			margin-top: 20px;
-		}
+			.detalle-factura th {
+				padding: 10px;
+				border: 1px solid black;
+				text-align: center;
+			}
 
-		.datos-cliente p {
-			margin: 5px 0;
-			margin-left: 5px;
-		}
+			.detalle-factura td {
+				font-size: 12px;
+				color: #000;
+				text-align: left;
+			}
 
-		.detalle-factura {
-			border-collapse: collapse;
-			width: 100%;
-			margin-top: 20px;
-			font-size: 12px;
-			color: #555;
-		}
+			.detalle-factura td:nth-child(1) {
+				text-align: center;
+			}
 
-		.detalle-factura th {
-			padding: 10px;
-			border: 1px solid black;
-			text-align: center;
-		}
+			.detalle-factura td:nth-child(3),
+			.detalle-factura td:nth-child(4) {
+				text-align: right;
+			}
 
-		.detalle-factura td {
-			font-size: 12px;
-			color: #000;
-			text-align: left;
-		}
+			.detalle-factura th:nth-child(1),
+			.detalle-factura th:nth-child(4),
+			.detalle-factura td:nth-child(1),
+			.detalle-factura td:nth-child(4) {
+				border-left: none;
+				border-right: none;
+			}
 
-		.detalle-factura td:nth-child(1) {
-			text-align: center;
-		}
+			.footer {
+				position: fixed;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				height: 4cm;
+				/*background-color: #f7f7f7;*/
+				font-size: 12px;
+				color: #555;
+				padding: 30px;
+			}
 
-		.detalle-factura td:nth-child(3),
-		.detalle-factura td:nth-child(4) {
-			text-align: right;
-		}
+			.footer table {
+				width: 100%;
+			}
 
-		.detalle-factura th:nth-child(1),
-		.detalle-factura th:nth-child(4),
-		.detalle-factura td:nth-child(1),
-		.detalle-factura td:nth-child(4) {
-			border-left: none;
-			border-right: none;
-		}
+			.footer th {
+				text-align: left;
+				width: 50%;
+			}
 
-		.footer {
-			position: fixed;
-			bottom: 0;
-			left: 0;
-			right: 0;
-			height: 4cm;
-			/*background-color: #f7f7f7;*/
-			font-size: 12px;
-			color: #555;
-			padding: 30px;
-		}
+			.footer td {
+				text-align: right;
+				width: 50%;
+			}
 
-		.footer table {
-			width: 100%;
-		}
+			/* Estilo para los datos adicionales */
+			.datos-adicionales-footer {
+				font-size: 10px;
+				text-align: right;
+				margin-top: 10px;
+			}
+		</style>
+	</head>
 
-		.footer th {
-			text-align: left;
-			width: 50%;
-		}
-
-		.footer td {
-			text-align: right;
-			width: 50%;
-		}
-
-		/* Estilo para los datos adicionales */
-		.datos-adicionales-footer {
-			font-size: 10px;
-			text-align: right;
-			margin-top: 10px;
-		}
-	</style>
-	<!--link rel="stylesheet" type="text/css" href="css/factura2.css"-->
-</head>
-
-<body>
-	<div class="header">
-		<div class="header-left">
-			<img src="logo.png" alt="Logo" class="logo">
-			<!--div class="header-info"-->
+	<body>
+		<div class="header">
+			<div class="header-left">
 				<p class="comprobante"><?php echo $razon_social_institucion; ?></p>
 				<p class="comprobante">Domicilio Comercial: <?php echo $domicilio_comercial_institucion; ?></p>
-				<p class="comprobante">Condición frente al IVA: <?php echo $condicion_frente_iva_institucion; ?></p>
-			<!--/div-->
+				<p class="comprobante">Condicion frente al IVA: <?php echo $condicion_frente_iva_institucion; ?></p>
+
+			</div>
+
+			<div class="header-right">
+				<p class="comprobante">FACTURA C</p>
+				<p class="comprobante">Punto de Venta: <?php echo $punto_venta; ?></p>
+				<p class="comprobante">Comp. N: <?php echo $numero; ?></p>
+				<p class="comprobante">Fecha de Emision: <?php echo $fecha; ?></p>
+				<p class="comprobante">CUIT: <?php echo $cuit_institucion; ?></p>
+				<p class="comprobante">Ingresos Brutos: <?php echo $iibb_institucion; ?></p>
+				<p class="comprobante">Fecha de inicio de actividades: <?php echo $fecha_inicio_actividades_institucion; ?></p>
+			</div>
 		</div>
 
-		<div class="header-right">
-			<p class="comprobante">FACTURA C</p>
-			<p class="comprobante">Punto de Venta: <?php echo $punto_venta; ?></p>
-			<p class="comprobante">Comp. N°: <?php echo $numero; ?></p>
-			<p class="comprobante">Fecha de Emisión: <?php echo $fecha; ?></p>
-			<p class="comprobante">CUIT: <?php echo $cuit_institucion; ?></p>
-			<p class="comprobante">Ingresos Brutos: <?php echo $iibb_institucion; ?></p>
-			<p class="comprobante">Fecha de inicio de actividades: <?php echo $fecha_inicio_actividades_institucion; ?></p>
+		<div class="datos-cliente">
+			<p>CUIT: <?php echo $cuit_cliente; ?></p>
+			<p>Apellido y Nombres: <?php echo $apellido_nombre_cliente; ?></p>
+			<p>Condicion ante el IVA: <?php echo $condicion_frente_iva_cliente; ?></p>
 		</div>
-	</div>
-
-	<div class="datos-cliente">
-		<p>CUIT: <?php echo $cuit_cliente; ?></p>
-		<p>Apellido y Nombres: <?php echo $apellido_nombre_cliente; ?></p>
-		<p>Condición ante el IVA: <?php echo $condicion_frente_iva_cliente; ?></p>
-	</div>
-	<hr>
-	<table class="detalle-factura">
-		<thead>
-		<tr>
-			<th>Cantidad</th>
-			<th>Descripción</th>
-			<th>Precio unitario</th>
-			<th>Importe</th>
-		</tr>
-		</thead>
-		<tbody>
-		<tr>
-			<td>1</td>
-			<td><?php echo $descripcion; ?></td>
-			<td>$<?php echo number_format($subtotal, 2, ',', '.'); ?></td>
-			<td>$<?php echo number_format($subtotal, 2, ',', '.'); ?></td>
-		</tr>
-		</tbody>
-	</table>
-
-	<!-- Pie de página -->
-	<div class="footer">
-		<table>
+		<hr>
+		<table class="detalle-factura">
+			<thead>
 			<tr>
-				<th>Subtotal:</th>
+				<th>Cantidad</th>
+				<th>Descripcion</th>
+				<th>Precio unitario</th>
+				<th>Importe</th>
+			</tr>
+			</thead>
+			<tbody>
+			<tr>
+				<td>1</td>
+				<td><?php echo $descripcion; ?></td>
+				<td>$<?php echo number_format($subtotal, 2, ',', '.'); ?></td>
 				<td>$<?php echo number_format($subtotal, 2, ',', '.'); ?></td>
 			</tr>
-			<tr>
-				<th>Importe Otros Tributos:</th>
-				<td>$<?php echo number_format($otros_tributos, 2, ',', '.'); ?></td>
-			</tr>
-			<tr>
-				<th>Importe Total:</th>
-				<td>$<?php echo number_format($importe_total, 2, ',', '.'); ?></td>
-			</tr>
+			</tbody>
 		</table>
-		<!-- Datos adicionales footer -->
-		<div class="datos-adicionales-footer">
-			<p class="comprobante">CAE N°: <?php echo $cae; ?></p>
-			<p class="comprobante">Fecha de Vto. de CAE: <?php echo $fecha_vto_cae; ?></p>
+
+		<div class="footer">
+			<table>
+				<tr>
+					<th>Subtotal:</th>
+					<td>$<?php echo number_format($subtotal, 2, ',', '.'); ?></td>
+				</tr>
+				<tr>
+					<th>Importe Otros Tributos:</th>
+					<td>$<?php echo number_format($otros_tributos, 2, ',', '.'); ?></td>
+				</tr>
+				<tr>
+					<th>Importe Total:</th>
+					<td>$<?php echo number_format($importe_total, 2, ',', '.'); ?></td>
+				</tr>
+			</table>
+
+			<div class="datos-adicionales-footer">
+				<p class="comprobante">CAE N: <?php echo $cae; ?></p>
+				<p class="comprobante">Fecha de Vto. de CAE: <?php echo $fecha_vto_cae; ?></p>
+			</div>
+
+			<div class="page-number"></div>
 		</div>
-		<!-- Número de página -->
-		<div class="page-number"></div>
-	</div>
-</body>
+	</body>
 </html>

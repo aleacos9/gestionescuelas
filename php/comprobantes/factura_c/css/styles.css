@@ -1,81 +1,208 @@
-  .factura {
-    table-layout: fixed;
-  }
-  
-  .fact-info > div > h5 {
-    font-weight: bold;
-  }
-  
-  .factura > thead {
-    border-top: solid 3px #000;
-    border-bottom: 3px solid #000;
-  }
-  
-  .factura > thead > tr > th:nth-child(2),
-  .factura > tbod > tr > td:nth-child(2) {
-    width: 300px;
-  }
-  
-  .factura > thead > tr > th:nth-child(n+3) {
-    text-align: right;
-  }
-  
-  .factura > tbody > tr > td:nth-child(n+3) {
-    text-align: right;
-  }
-  
-  .factura > tfoot > tr > th,
-  .factura > tfoot > tr > th:nth-child(n+3) {
-    font-size: 24px;
-    text-align: right;
-  }
-  
-  .cond {
-    border-top: solid 2px #000;
-  }
+@page {
+  size: A4;
+  margin: 2cm;
+}
 
-  .nombre{
+body {
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  color: #000;
+  margin: 0;
+  padding: 0;
+  border: 1px solid black;
+}
+
+h1 {
+  font-size: 16px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+table th, table td {
+  padding: 5px;
+  border: 1px solid #000;
+}
+
+table th {
+  background-color: #ccc;
+  font-weight: bold;
+  text-align: center;
+}
+
+table td {
+  text-align: center;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid black;
+  margin: 0;
+}
+
+.logo {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 150px;
+  height: 150px;
+}
+
+/*.header {
+    position: relative;
+    height: 80px;
+    margin: 1cm;
+}*/
+
+.header {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 80px;
+  margin: 1cm;
+}
+
+/*.header-left {
     position: absolute;
-    height: 30.9vh;
-    margin-left: 180px;
-    margin-top: -164px;
-    border-right: thick solid #181515ce;
-  }
+    top: 0;
+    left: 0;
+    width: 35%;
+    height: 100%;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    font-size: 12px;
+    color: #555;
+}*/
 
-  .logo{
-    border-left: thick solid #181515ce;
-    border-right: thick solid #181515ce;
-  }
+.header-left {
+  position: absolute;
+  left: 0;
+  width: 35%;
+  height: 100%;
+  font-size: 12px;
+  color: #555;
+}
 
-  .ladoderecho{
+/*.header-right {
     position: absolute;
-    margin-left: 700px;
-    margin-top: -120px;
-  }
+    top: 0;
+    right: 0;
+    width: 40%;
+    height: 100%;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    font-size: 12px;
+    color: #555;
+}*/
 
-  .medio{
-    border-left: thick solid #181515ce;
-    border-right: thick solid #181515ce;
-  }
+.header-right {
+  position: absolute;
+  right: 0;
+  width: 40%;
+  height: 100%;
+  font-size: 12px;
+  color: #555;
+}
 
-  .abajo1{
-    border-left: thick solid #181515ce;
-    border-right: thick solid #181515ce;
-    height: 60vh;
-  }
+.header-info {
+  margin-top: 50px;
+}
 
-  .textofooter{
-   /* position: absolute;
-    margin-top: 300px;
-    margin-left: 1000px;*/
-    text-align: right;
-  }
+.comprobante,
+.fecha {
+  font-weight: bold;
+  margin: 0 20px;
+}
 
-  footer{
-    border-left: thick solid #181515ce;
-    border-right: thick solid #181515ce; 
-  }
+.comprobante {
+  margin-left: 0;
+}
 
-  .textofooter2{
-    text-align: center;
-  }
+.datos-cliente {
+  font-size: 12px;
+  border-top: 1px solid black; /* Agregamos un borde superior */
+  margin-top: 20px;
+}
+
+.datos-cliente p {
+  margin: 5px 0;
+  margin-left: 5px;
+}
+
+.detalle-factura {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 20px;
+  font-size: 12px;
+  color: #555;
+}
+
+.detalle-factura th {
+  padding: 10px;
+  border: 1px solid black;
+  text-align: center;
+}
+
+.detalle-factura td {
+  font-size: 12px;
+  color: #000;
+  text-align: left;
+}
+
+.detalle-factura td:nth-child(1) {
+  text-align: center;
+}
+
+.detalle-factura td:nth-child(3),
+.detalle-factura td:nth-child(4) {
+  text-align: right;
+}
+
+.detalle-factura th:nth-child(1),
+.detalle-factura th:nth-child(4),
+.detalle-factura td:nth-child(1),
+.detalle-factura td:nth-child(4) {
+  border-left: none;
+  border-right: none;
+}
+
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4cm;
+  /*background-color: #f7f7f7;*/
+  font-size: 12px;
+  color: #555;
+  padding: 30px;
+}
+
+.footer table {
+  width: 100%;
+}
+
+.footer th {
+  text-align: left;
+  width: 50%;
+}
+
+.footer td {
+  text-align: right;
+  width: 50%;
+}
+
+/* Estilo para los datos adicionales */
+.datos-adicionales-footer {
+  font-size: 10px;
+  text-align: right;
+  margin-top: 10px;
+}

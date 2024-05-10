@@ -1,5 +1,8 @@
 <?php
-ini_set('display_errors', '1');
+ini_set('display_error', '1');
+error_reporting(E_ALL);
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
 class gestionescuelas_ext_ci extends toba_ci
 {
@@ -12,6 +15,8 @@ class gestionescuelas_ext_ci extends toba_ci
     protected $s__alumno_editar;
     protected $s__nombre_alumno;
     protected $s__datos_allegados = array();
+
+    protected $afip;
 
     public function ini()
     {
@@ -26,27 +31,6 @@ class gestionescuelas_ext_ci extends toba_ci
             $this->s__id_persona = $this->s__id_persona[0]['id_persona'];
         }
         //***FIN obtención del id_persona del usuario loggueado***//
-
-
-        /*$afip = new Afip(array('CUIT' => '27127112784'));
-        $last_voucher = $afip->ElectronicBilling->GetLastVoucher(1,11);
-        $datos['numero_comprobante'] = $last_voucher;
-        $datos['tipo_comprobante'] = 11; //Factura C
-        $datos['punto_venta'] = 1;
-        $persona = new persona($this->s__persona_editar);
-        $datos_comp = $persona::obtener_datos_comprobante_afip($datos);
-        /*if (isset($datos_comp)) {
-            $datos_comp['CbteNro'] = $last_voucher;
-            $datos_comp['cuit'] = 27127112784;
-            toba::logger()->error('datos_comp:');
-            toba::logger()->error($datos_comp);
-            //$persona->generar_qr_comprobante_afip($datos_comp);
-        }*/
-
-        /*$dompdf = new Dompdf\Dompdf();
-        $dompdf->loadHtml('<h1>Hola mundo</h1><br><a href="https://parzibyte.me/blog">By Parzibyte</a>');
-        $dompdf->render();
-        $dompdf->stream();*/
     }
 
     public function estado_servidor_afip()
@@ -86,6 +70,35 @@ class gestionescuelas_ext_ci extends toba_ci
     {
         $this->dep('datos')->cargar($datos);
         $this->set_pantalla('edicion');
+    }
+
+    //---- cuadro_cuenta_corriente ------------------------------------------------------
+
+    function conf_evt__cuadro_cuenta_corriente__descargar_comprobante($evento, $fila)
+    {
+        // Determinar la variable a utilizar
+        $datos = isset($this->s__datos_cuadro_cuenta_corriente) ? $this->s__datos_cuadro_cuenta_corriente : $this->s__datos_alta_manual_pago;
+
+        if (!isset($datos[$fila]['id_medio_pago'])) {
+            $evento->anular();
+        }
+
+        if (isset($datos[$fila]['punto_venta']) &&
+            isset($datos[$fila]['comprobante_tipo']) &&
+            isset($datos[$fila]['comprobante_numero'])
+        ) {
+            $evento->activar();
+            $evento->set_imagen('extension_pdf.png');
+            // Agregar los parámetros necesarios
+            $evento->vinculo()->agregar_parametro(utf8_encode('punto_venta'), $datos[$fila]['punto_venta']);
+            $evento->vinculo()->agregar_parametro(utf8_encode('comprobante_tipo'), $datos[$fila]['comprobante_tipo']);
+            $evento->vinculo()->agregar_parametro(utf8_encode('comprobante_numero'), $datos[$fila]['comprobante_numero']);
+            $evento->vinculo()->agregar_parametro(utf8_encode('id_persona'), $datos[$fila]['id_persona']);
+            $evento->vinculo()->agregar_parametro(utf8_encode('id_alumno_cc'), $datos[$fila]['id_alumno_cc']);
+        } else {
+            $evento->desactivar();
+            $evento->set_imagen('error.png');
+        }
     }
 
     //---- formulario -------------------------------------------------------------------
