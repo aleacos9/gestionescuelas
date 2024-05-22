@@ -1069,3 +1069,17 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/correcciones-varias-perfil-administrativo 21/05/2024
+CREATE OR REPLACE FUNCTION correcciones_varias_perfil_administrativo() RETURNS VOID AS
+$$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM parametros_sistema WHERE parametro = 'punto_venta') THEN
+
+        INSERT INTO parametros_sistema (id_parametro, parametro, descripcion, desc_corta, valor, version_publicacion)
+        VALUES (NEXTVAL('sq_id_parametro'), 'punto_venta', 'Punto de Venta AFIP', 'Punto de Venta', 3, '1.0.0');
+
+    END IF;
+END;
+$$ LANGUAGE 'plpgsql';

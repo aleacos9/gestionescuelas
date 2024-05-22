@@ -1,4 +1,11 @@
 <?php
+
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Builder\Builder;
+use Endroid\QrCode\Writer\PngWriter;
+use Endroid\QrCode\Encoding\Encoding;
+use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevelLow;
+
 class dao_personas
 {
     /*
@@ -499,4 +506,55 @@ class dao_personas
             }
         }
     }
+
+    /**
+     * Genera los datos de AFIP para generar el QR del comprobante
+     * @param $datos_comprobante
+     * @return string
+     */
+    public static function get_datos_afip_qr($datos_comprobante)
+    {
+        $fecha = new fecha($datos_comprobante['CbteFch']);
+        $compr_fecha = $fecha->get_fecha_pantalla_guiones();
+        $val = str_replace(",", ".", $datos_comprobante['ImpTotal']);
+        $importe = preg_replace("/[\,\.](\d{3})/", "$1", $val);
+        $url = 'https://www.afip.gob.ar/fe/qr/';
+        $json_qr = '{
+                       "ver":1,
+                       "fecha":"'.$compr_fecha.'",
+                       "cuit":'.dao_consultas::catalogo_de_parametros('cuit_institucion').',
+                       "ptoVta":'.intval($datos_comprobante['PtoVta']).',
+                       "tipoCmp":'.$datos_comprobante['CbteTipo'].',
+                       "nroCmp":'.intval($datos_comprobante['numero_comprobante']).',
+                       "importe":'.$importe.',
+                       "moneda":"PES",
+                       "ctz":1,
+                       "tipoDocRec":'.$datos_comprobante['DocTipo'].',
+                       "nroDocRec":'.$datos_comprobante['DocNro'].',
+                       "tipoCodAut":"E",
+                       "codAut":'.$datos_comprobante['CodAutorizacion'].'
+                    }';
+
+        $qr_url = $url.'?p='.base64_encode($json_qr);
+        toba::logger()->info("URL generada para el código QR: " . $qr_url);
+        return $qr_url;
+    }
+
+    /*
+     * Retorna el base64 del qr
+     */
+    public static function generarQRBase64($url)
+    {
+        $result = Builder::create()
+            ->writer(new PngWriter())
+            ->data($url)
+            ->encoding(new Encoding('UTF-8'))
+            ->errorCorrectionLevel(new ErrorCorrectionLevelLow())
+            ->size(300)
+            ->margin(10)
+            ->build();
+
+        return $result->getDataUri();
+    }
+
 }

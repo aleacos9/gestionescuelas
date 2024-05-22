@@ -99,6 +99,12 @@ class fecha
         return $aux;
     }
 
+    public function get_fecha_pantalla_guiones()
+    {
+        $aux = date("Y-m-d", $this->timestamp);
+        return $aux;
+    }
+
     //Metodos estaticos para convertir fechas
     public function convertir_fecha_a_timestamp($fecha)
     {

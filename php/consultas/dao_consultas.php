@@ -452,11 +452,11 @@ class dao_consultas
 				FROM persona p
 				    $from
 				    LEFT OUTER JOIN (persona_tipo_documento ptd JOIN tipo_documento td on ptd.id_tipo_documento = td.id_tipo_documento)
-                            ON ptd.id_persona = p.id_persona AND td.jerarquia = (SELECT MIN(X1.jerarquia)
+                            ON ptd.id_persona = p.id_persona /*AND td.jerarquia = (SELECT MIN(X1.jerarquia)
                                                                                    FROM tipo_documento X1
                                                                                        ,persona_tipo_documento X2
                                                                                    WHERE X1.id_tipo_documento = X2.id_tipo_documento
-                                                                                        AND X2.id_persona = p.id_persona)
+                                                                                        AND X2.id_persona = p.id_persona)*/
                 $where
                 ORDER BY p.apellidos, p.nombres
 			   ";
