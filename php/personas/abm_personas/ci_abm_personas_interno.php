@@ -47,7 +47,6 @@ class ci_abm_personas_interno extends ci_abm_personas
                                                     ,"activo"=>$documentos[$i]["activo"]);
                 }
             }
-
             $this->s__datos_allegados = $persona->get_alumnos_vinculados();
         }
     }
@@ -172,14 +171,11 @@ class ci_abm_personas_interno extends ci_abm_personas
             $salida = array();
             foreach (array_keys($this->s__documentos) as $id) {
                 $this->s__documentos[$id]['id_tipo_documento'] = $id;
-                if ($this->s__documentos[$id]['activo'] == 'S') {
+                if ($this->s__documentos[$id]['activo'] == 'A') {
                     $this->s__documentos[$id]['activo_completo'] = 'Si';
                 } else {
                     $this->s__documentos[$id]['activo_completo'] = 'No';
                 }
-                //Obtengo la descripción del tipo del documento
-                $descripcion_tipo_documento = dao_consultas::get_tipos_documentos($this->s__documentos[$id]['id_tipo_documento']);
-                $this->s__documentos[$id]['tipo_documento'] = $descripcion_tipo_documento[0]['nombre'];
                 if (!isset($this->s__documentos[$id]['estado']) || $this->s__documentos[$id]['estado'] != 'B') {
                     $salida[] = $this->s__documentos[$id];
                 }

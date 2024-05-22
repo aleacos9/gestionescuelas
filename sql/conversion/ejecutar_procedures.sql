@@ -78,3 +78,6 @@ SELECT permitir_pago_inscripcion_en_cuotas();
 
 --Alejandro feature/generacion-de-comprobantes-afip-desde-el-alta-de-pagos 23/02/2024
 SELECT generacion_de_comprobantes_afip_desde_alta_pagos();
+
+--Alejandro feature/generacion-de-comprobantes-afip-desde-el-alta-de-pagos 23/02/2024
+SELECT correcciones_varias_perfil_administrativo();

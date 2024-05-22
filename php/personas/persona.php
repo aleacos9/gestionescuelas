@@ -1183,14 +1183,14 @@ class persona
                     INNER JOIN persona p on p.id_persona = a.id_persona
                     INNER JOIN persona per on per.id_persona = pa.id_persona
                     LEFT OUTER JOIN (persona_tipo_documento ptd JOIN tipo_documento td on ptd.id_tipo_documento = td.id_tipo_documento)
-                                     ON ptd.id_persona = per.id_persona AND td.jerarquia = (SELECT MIN(X1.jerarquia)
+                                     ON ptd.id_persona = per.id_persona /*AND td.jerarquia = (SELECT MIN(X1.jerarquia)
                                                                                             FROM tipo_documento X1
                                                                                                 ,persona_tipo_documento X2
                                                                                             WHERE X1.id_tipo_documento = X2.id_tipo_documento
-                                                                                               AND X2.id_persona = p.id_persona)
+                                                                                               AND X2.id_persona = p.id_persona)*/
                     INNER JOIN tipo_allegado ta on pa.id_tipo_allegado = ta.id_tipo_allegado
                 WHERE p.id_persona = {$this->persona}
-                  AND pa.tutor = 'S' AND pa.activo = 'S'
+                  AND pa.tutor = 'S' AND pa.activo = 'S' AND td.id_tipo_documento = 7
                 ORDER BY ta.jerarquia
                         ,pa.id_tipo_allegado
                ";
@@ -1421,8 +1421,8 @@ class persona
                       ,td.nombre as documento_largo
                       ,td.nombre_corto as documento_corto
                       ,ptd.activo
-                      ,(CASE WHEN ptd.activo = 'S' THEN 'Activo'
-                             WHEN ptd.activo = 'N' THEN 'Inactivo'
+                      ,(CASE WHEN ptd.activo = 'A' THEN 'Activo'
+                             WHEN ptd.activo != 'A' THEN 'Inactivo'
                         END) as activo_completo
                       ,ptd.fecha_alta
                       ,ptd.usuario_alta
@@ -2273,7 +2273,7 @@ class persona
 
         $data = array(
             'CantReg' 	=> 1,  // Cantidad de comprobantes a registrar
-            'PtoVta' 	=> 1,  // Punto de venta
+            'PtoVta' 	=> dao_consultas::catalogo_de_parametros("punto_venta"),  // Punto de venta
             'CbteTipo' 	=> 11,  // Tipo de comprobante (ver tipos disponibles)
             'Concepto' 	=> 2,  // Concepto del Comprobante: (1)Productos, (2)Servicios, (3)Productos y Servicios
             'DocTipo' 	=> 96, // Tipo de documento del comprador (99 consumidor final, 86 CUIL / 96 DNI)
@@ -2310,7 +2310,7 @@ class persona
         $this->afip = $afip->getAfip();
         $factura_electronica = new \SIU\Afip\WebService\FacturaElectronica($this->afip);
 
-        $punto_venta = 1;
+        $punto_venta = dao_consultas::catalogo_de_parametros("punto_venta");
         $tipo_comprobante = 11;
         if (!isset($nro_comprobante)) {
             $nro_comprobante = $factura_electronica->getUltimoComprobante($punto_venta, $tipo_comprobante);
@@ -2332,386 +2332,7 @@ class persona
                 $datos_a_pasar['id_alumno_cc'] = $id_alumno_cc;
             }
             return $datos_a_pasar;
-            //$this->mostrar_comprobante_afip($datos_a_pasar);
         }
-    }
-
-    public function mostrar_comprobante_afip($datos_comprobante)
-    {
-        //Defino los datos fijos de la factura
-        /*$cuit_institucion = dao_consultas::catalogo_de_parametros('cuit_institucion');
-        $iibb_institucion = dao_consultas::catalogo_de_parametros('iibb_institucion');
-        $fecha_inicio_actividades_institucion = dao_consultas::catalogo_de_parametros('fecha_inicio_actividades_institucion');
-        $razon_social_institucion = utf8_encode(dao_consultas::catalogo_de_parametros('razon_social_institucion'));
-        $domicilio_comercial_institucion = utf8_encode(dao_consultas::catalogo_de_parametros('domicilio_comercial_institucion'));
-        $condicion_frente_iva_institucion = dao_consultas::catalogo_de_parametros('condicion_frente_iva_institucion');
-
-        // Obtener los datos del comprobante
-        $punto_venta = str_pad($datos_comprobante['PtoVta'], 5, '0', STR_PAD_LEFT);
-        $numero = str_pad($datos_comprobante['numero_comprobante'], 8, '0', STR_PAD_LEFT);
-        $fecha = fecha::formatear_para_pantalla($datos_comprobante['CbteFch']);
-
-        //estas 3 fechas hay q obtenerlas
-        $periodo_factura_desde = fecha::formatear_para_pantalla($datos_comprobante['FchServDesde']);
-        $periodo_factura_hasta = fecha::formatear_para_pantalla($datos_comprobante['FchServHasta']);
-        $fecha_vto_pago = fecha::formatear_para_pantalla($datos_comprobante['FchVtoPago']);
-
-        $subtotal = '$'.$datos_comprobante['ImpNeto'];
-        $otros_tributos = '$'.$datos_comprobante['ImpTrib'];
-        $importe_total = '$'.$datos_comprobante['ImpTotal'];
-        $cae = $datos_comprobante['CodAutorizacion'];
-        $fecha_vto_cae = fecha::formatear_para_pantalla($datos_comprobante['FchVto']);
-        $cuit_cliente = $datos_comprobante['DocNro'];
-        $datos_cargo = dao_consultas::get_datos_alumno_cuenta_corriente($datos_comprobante);
-        if (isset($datos_cargo)) {
-            if (isset($datos_cargo[0]['descripcion'])) {
-                $descripcion = utf8_encode($datos_cargo[0]['descripcion']);
-            }
-            if (isset($datos_cargo[0]['persona'])) {
-                $apellido_nombre_cliente = utf8_encode($datos_cargo[0]['persona']);
-            }
-            if (isset($datos_cargo[0]['direccion_calle'])) {
-                $dir_calle = isset($datos_cargo[0]['direccion_calle']) ? utf8_encode($datos_cargo[0]['direccion_calle']) : '';
-                $dir_numero = isset($datos_cargo[0]['direccion_numero']) ? utf8_encode($datos_cargo[0]['direccion_numero']) : '';
-                $domicilio_cliente = $dir_calle . ' ' . $dir_numero;
-            } else {
-                $domicilio_cliente = '';
-            }
-        }
-        $condicion_frente_iva_cliente = dao_consultas::catalogo_de_parametros('condicion_frente_iva_cliente');
-        $condicion_venta = 'Contado';
-
-        //if (isset($datos_comprobante['CAE'])) {
-            //$datos_qr = $this->get_datos_afip_qr($datos_comprobante);
-        //}
-
-        // Generar el HTML del comprobante
-        $html_comprobante = <<<HTML
-        <!DOCTYPE html>
-        <html>
-            <head>
-                <meta charset="iso-8859-1">
-                <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-                <title>Factura C</title>
-                <style>
-                    @page {
-                        size: A4;
-                        margin: 2cm;
-                    }
-        
-                    body {
-                        font-family: Arial, sans-serif;
-                        font-size: 12px;
-                        color: #000;
-                        margin: 0;
-                        padding: 0;
-                        border: 1px solid black;
-                    }
-        
-                    h1 {
-                        font-size: 16px;
-                        text-align: center;
-                        margin-bottom: 20px;
-                    }
-        
-                    table {
-                        width: 100%;
-                        border-collapse: collapse;
-                        margin-bottom: 20px;
-                    }
-        
-                    table th, table td {
-                        padding: 5px;
-                        border: 1px solid #000;
-                    }
-        
-                    table th {
-                        background-color: #ccc;
-                        font-weight: bold;
-                        text-align: center;
-                    }
-        
-                    table td {
-                        text-align: center;
-                    }
-        
-                    hr {
-                        border: none;
-                        border-top: 1px solid black;
-                        margin: 0;
-                    }
-        
-                    .logo {
-                        position: absolute;
-                        top: 10px;
-                        left: 10px;
-                        width: 150px;
-                        height: 150px;
-                    }
-        
-                    .header {
-                        position: relative;
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                        height: 80px;
-                        margin: 1cm;
-                    }
-        
-                    .header-left {
-                        position: absolute;
-                        left: 0;
-                        right: 50%;
-                        top: -30px;
-                        width: auto;
-                        height: 100%;
-                        font-size: 12px;
-                        color: #555;
-                    }
-        
-                    .header-right {
-                        position: absolute;
-                        right: 0;
-                        left: 50%;
-                        top: -30px;
-                        width: auto;
-                        height: 100%;
-                        font-size: 12px;
-                        color: #555;
-                    }
-        
-                    .header-info {
-                        margin-top: 50px;
-                    }
-        
-                    .comprobante,
-                    .fecha {
-                        margin: 0 20px;
-                    }
-        
-                    .comprobante {
-                        margin-left: 0;
-                    }
-                    
-                    .comprobante strong {
-                        font-weight: bold;
-                    }
-                    
-                    .comprobante.razon-social {
-                        font-size: 22px;
-                        text-align: center;
-                    }
-                    
-                    .comprobante.factura {
-                        font-size: 22px;
-                        text-align: left;
-                    }
-                              
-                    .datos-factura {
-                        font-size: 12px;
-                        border-top: 1px solid black;
-                        margin-top: 10px;
-                    }
-                    
-                    .datos-factura p {
-                        display: inline-block;
-                        margin: 5px 0;
-                    }
-                    
-                    .datos-cliente {
-                        font-size: 12px;
-                        border-top: 1px solid black;
-                        margin-top: 10px;
-                    }
-        
-                    .datos-cliente p {
-                        margin: 5px 0;
-                        margin-left: 5px;
-                    }
-        
-                    .detalle-factura {
-                        border-collapse: collapse;
-                        width: 100%;
-                        margin-top: 20px;
-                        font-size: 12px;
-                        color: #555;
-                    }
-        
-                    .detalle-factura th {
-                        padding: 10px;
-                        border: 1px solid black;
-                        text-align: center;
-                    }
-        
-                    .detalle-factura td {
-                        font-size: 12px;
-                        color: #000;
-                        text-align: left;
-                    }
-        
-                    .detalle-factura td:nth-child(1) {
-                        text-align: center;
-                    }
-        
-                    .detalle-factura td:nth-child(3),
-                    .detalle-factura td:nth-child(4) {
-                        text-align: right;
-                    }
-        
-                    .detalle-factura th:nth-child(1),
-                    .detalle-factura th:nth-child(4),
-                    .detalle-factura td:nth-child(1),
-                    .detalle-factura td:nth-child(4) {
-                        border-left: none;
-                        border-right: none;
-                    }
-        
-                    .footer {
-                        position: fixed;
-                        bottom: 0;
-                        left: 0;
-                        right: 0;
-                        height: 4cm;
-                        background-color: #f7f7f7;
-                        font-size: 12px;
-                        color: #555;
-                        padding: 30px;
-                    }
-        
-                    .footer table {
-                        width: 100%;
-                    }
-        
-                    .footer th {
-                        text-align: left;
-                        width: 50%;
-                    }
-        
-                    .footer td {
-                        text-align: right;
-                        width: 50%;
-                    }
-
-                    .datos-adicionales-footer {
-                        font-size: 10px;
-                        text-align: right;
-                        margin-top: 10px;
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <div class="header-left">
-                        <p class="comprobante razon-social">$razon_social_institucion</p>
-                        <p class="comprobante"><strong>Domicilio Comercial:</strong> $domicilio_comercial_institucion</p>
-                        <p class="comprobante"><strong>Condicion frente al IVA:</strong> $condicion_frente_iva_institucion</p>
-                    </div>
-                    <div class="header-right">
-                        <p class="comprobante factura">FACTURA C</p>
-                        <p class="comprobante"><strong>Punto de Venta: $punto_venta</strong></p>
-                        <p class="comprobante"><strong>Comp. Nro: $numero</strong></p>
-                        <p class="comprobante"><strong>Fecha de Emision: $fecha</strong></p>
-                        <p class="comprobante"><strong>CUIT:</strong> $cuit_institucion</p>
-                        <p class="comprobante"><strong>Ingresos Brutos:</strong> $iibb_institucion</p>
-                        <p class="comprobante"><strong>Fecha de inicio de actividades:</strong> $fecha_inicio_actividades_institucion</p>
-                    </div>
-                </div>
-                <div class="datos-factura">
-                    <p><strong>Periodo facturado desde:</strong> $periodo_factura_desde</p>
-                    <p><strong>Hasta:</strong> $periodo_factura_hasta</p>
-                    <p><strong>Fecha de vto. para el pago:</strong> $fecha_vto_pago</p>
-                </div>
-                <div class="datos-cliente">
-                    <p><strong>CUIL:</strong> $cuit_cliente</p>
-                    <p><strong>Apellido y Nombres:</strong> $apellido_nombre_cliente</p>
-                    <p><strong>Condicion frente al IVA:</strong> $condicion_frente_iva_cliente</p>
-                    <p><strong>Domicilio:</strong> $domicilio_cliente</p>
-                    <p><strong>Condicion de venta:</strong> $condicion_venta</p>
-                </div>
-                <hr>
-                <table class="detalle-factura">
-                    <thead>
-                    <tr>
-                        <th>Cantidad</th>
-                        <th>Descripcion</th>
-                        <th>Precio unitario</th>
-                        <th>Importe</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr>
-                        <td>1</td>
-                        <td>$descripcion</td>
-                        <td>$subtotal</td>
-                        <td>$subtotal</td>
-                    </tr>
-                    </tbody>
-                </table>
-                <div class="footer">
-                    <table>
-                        <tr>
-                            <th>Subtotal:</th>
-                            <td>$subtotal</td>
-                        </tr>
-                        <tr>
-                            <th>Importe Otros Tributos:</th>
-                            <td>$otros_tributos</td>
-                        </tr>
-                        <tr>
-                            <th>Importe Total:</th>
-                            <td>$importe_total</td>
-                        </tr>
-                    </table>
-                    <div class="datos-adicionales-footer">
-                        <p class="comprobante">CAE N: $cae</p>
-                        <p class="comprobante">Fecha de Vto. de CAE: $fecha_vto_cae</p>
-                    </div>
-                    <div class="page-number"></div>
-                </div>
-                <!-- Incrustar el código QR en el PDF -->
-                <img src="data:image/png;base64,' . base64_encode($datos_qr) . '" alt="Codigo QR">
-                <!--div style="width:25%; text-align:center; display:block; float:left;"> {!! QrCode::size(200)->generate($to_qr); !!} </div -->
-            </body>
-        </html>
-        HTML;
-
-        // Crear una instancia de Dompdf
-        $dompdf = new Dompdf();
-
-        // Cargar el HTML en Dompdf
-        $dompdf->loadHtml(mb_convert_encoding($html_comprobante, 'HTML-ENTITIES', 'ISO-8859-1'));
-        $dompdf->loadHtml($html_comprobante);
-
-        $dompdf->setPaper('A4', 'portrait');
-
-        // Renderizar el PDF
-        $dompdf->render();
-
-        // Generar el PDF con dompdf
-        $dompdf->stream("comprobante_".$numero.".pdf");
-
-        // Obtener el contenido del PDF generado
-        $pdf_content = $dompdf->output();
-
-        // Limpiar el búfer de salida
-        ob_end_clean();
-
-        // Configurar los encabezados para la descarga del archivo
-        header('Content-Description: File Transfer');
-        header('Content-Type: application/pdf');
-        header('Content-Disposition: attachment; filename="comprobante_'.$numero.'.pdf"');
-        header('Content-Length: ' . strlen($pdf_content));
-        header('Cache-Control: private, no-cache, no-store, must-revalidate');
-        header('Pragma: no-cache');
-        header('Expires: 0');
-
-        // Enviar el contenido del PDF como un archivo descargable
-        echo $pdf_content;
-
-        //Guardamos el PDF en el servidor
-        /*$dir_home = '/data/local/sistema/proyectos/gestionescuelas/www/comprobantes_afip/';
-        file_put_contents($dir_home.'factura'.$datos_comprobante['numero_comprobante'].'.pdf', $dompdf->output());
-        toba::notificacion()->agregar('El comprobante fue generado y almacenado con éxito.', 'info');*/
     }
 
     public function generar_qr_comprobante_afip($datos = null)
@@ -2755,7 +2376,7 @@ class persona
         $url = 'https://www.afip.gob.ar/fe/qr/';
         $json_qr = '{
                        "ver":1,
-                       "fecha":"'.$datos_comprobante['CbteFch'].'",
+                       "fecha":'.$datos_comprobante['CbteFch'].',
                        "cuit":'.$datos_comprobante['cuit'].',
                        "ptoVta":'.intval($datos_comprobante['PtoVta']).',
                        "tipoCmp":'.$datos_comprobante['CbteTipo'].',
@@ -2782,8 +2403,9 @@ class persona
 
         if (isset($comprobante_numero) AND isset($ultimo_id_transaccion_cc)) {
             //se actualizan los datos del comprobante generado (punto_venta, comprobante_tipo y comprobante_numero)
+            $punto_venta = dao_consultas::catalogo_de_parametros("punto_venta");
             $sql = "UPDATE transaccion_cuenta_corriente 
-                    SET punto_venta = 1
+                    SET punto_venta = $punto_venta
                        ,comprobante_tipo = 11
                        ,comprobante_numero = $comprobante_numero
                     WHERE id_transaccion_cc = $ultimo_id_transaccion_cc
