@@ -131,7 +131,7 @@ use Dompdf\Dompdf;
                     
                     .qr {
                         position: absolute;
-                        bottom: -47px;
+                        bottom: 40px;
                         left: 10px;
                         width: 150px;
                         height: 150px;
@@ -256,14 +256,14 @@ use Dompdf\Dompdf;
         
                     .footer {
                         position: fixed;
-                        bottom: 0;
+                        bottom: 3cm;
                         left: 0;
                         right: 0;
                         height: 4cm;
                         /*background-color: #f7f7f7;*/
                         font-size: 12px;
                         color: #555;
-                        padding: 30px;
+                        padding: 10px;
                     }
         
                     .footer table {
@@ -362,7 +362,7 @@ use Dompdf\Dompdf;
                 </div>
                 <!-- Incrustar el código QR en el PDF --> 
                 <div class = "qr">
-                    <img width="100" height="100" float="left" id="qrcode" src="$qr_base64" alt="QR Code">
+                   <img id="qrcode" src="$qr_base64" alt="QR Code" width="180" height="180">
                 </div>    
             </body>
         </html>

@@ -26,9 +26,12 @@ class cn_alta_masiva_pagos extends gestionescuelas_cn
                         $persona->set_datos_cuenta_corriente($pago);
                         $persona->set_usuario_ultima_modificacion($this->datos_pago['usuario_ultima_modificacion']);
                         $persona->grabar_pago_persona();
-                        if (dao_consultas::catalogo_de_parametros("genera_comprobante_afip") == 'SI') {
-                            $persona->generar_comprobante_afip();
-                            $persona->actualizar_datos_comprobante_generado();
+
+                        if (trim($pago['descripcion_error_debito']) == 'NUL') {
+                            if (dao_consultas::catalogo_de_parametros("genera_comprobante_afip") == 'SI') {
+                                $persona->generar_comprobante_afip();
+                                $persona->actualizar_datos_comprobante_generado();
+                            }
                         }
                     }
                     if (dao_consultas::catalogo_de_parametros("genera_comprobante_afip") == 'SI') {
