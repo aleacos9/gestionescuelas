@@ -2144,11 +2144,12 @@ class persona
     {
         $where = 'WHERE 1 = 1';
         $salida = true;
+        $anio_actual = date('Y');
 
         $condicion_x_cargo = [
             constantes::get_valor_constante('INSCRIPCION_ANUAL') => " AND cuota = '{$this->anio_cuota}' AND numero_cuota = '{$this->numero_cuota_inscripcion}'",
             constantes::get_valor_constante('CUOTA_MENSUAL') => " AND cuota = '{$this->cuota_completa}'",
-            constantes::get_valor_constante('MATERIALES') => " AND cuota = '' AND numero_cuota = '{$this->numero_cuota_materiales}'"
+            constantes::get_valor_constante('MATERIALES') => " AND cuota = '' AND substring(descripcion from '\d{4}')::integer = '{$anio_actual}' AND numero_cuota = '{$this->numero_cuota_materiales}'"
         ];
 
         if (array_key_exists($this->cargo_a_generar, $condicion_x_cargo)) {
