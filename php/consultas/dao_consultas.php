@@ -9,6 +9,10 @@ class dao_consultas
         $where = 'WHERE 1=1';
 
         if (isset($filtro)) {
+            if (isset($filtro['id'])) {
+                $where .= " AND id_tipo_documento = '{$filtro['id']}'";
+            }
+
             if (isset($filtro['id_tipo_documento'])) {
                 $where .= " AND id_tipo_documento = '{$filtro['id_tipo_documento']}'";
             }
