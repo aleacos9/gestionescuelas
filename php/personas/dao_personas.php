@@ -259,11 +259,11 @@ class dao_personas
                                                                              ,persona_tipo_documento X2
                                                                          WHERE X1.id_tipo_documento = X2.id_tipo_documento
                                                                             AND X2.id_persona = p.id_persona)
-                INNER JOIN localidad ln on p.id_localidad_nacimiento = ln.id_localidad
-                JOIN provincia pro_ln on ln.id_provincia = pro_ln.id_provincia
-                INNER JOIN localidad lr on lr.id_localidad = p.id_localidad_residencia
-                JOIN provincia pro_lr on lr.id_provincia = pro_lr.id_provincia
-                INNER JOIN nacionalidad n on p.id_nacionalidad = n.id_nacionalidad  
+                LEFT OUTER JOIN localidad ln on p.id_localidad_nacimiento = ln.id_localidad
+                LEFT OUTER JOIN provincia pro_ln on ln.id_provincia = pro_ln.id_provincia
+                LEFT OUTER JOIN localidad lr on lr.id_localidad = p.id_localidad_residencia
+                LEFT OUTER JOIN provincia pro_lr on lr.id_provincia = pro_lr.id_provincia
+                LEFT OUTER JOIN nacionalidad n on p.id_nacionalidad = n.id_nacionalidad  
                 $from
                 LEFT OUTER JOIN (SELECT id_persona, id_alumno
 					 		     FROM persona_allegado pa3

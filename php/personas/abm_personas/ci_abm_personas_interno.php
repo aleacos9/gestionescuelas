@@ -111,6 +111,25 @@ class ci_abm_personas_interno extends ci_abm_personas
         $this->cn()->set_datos_alumno($this->s__datos_alumno);
     }
 
+    public function validar_documento($datos)
+    {
+        if (empty($datos['identificacion'])) {
+            throw new toba_error("El número de documento es obligatorio.");
+        }
+        if (empty($datos['id'])) {
+            throw new toba_error("El tipo de documento es obligatorio.");
+        }
+        if ($datos['id'] == 8 && !preg_match('/^\d{8}$/', $datos['identificacion'])) {
+            throw new toba_error("El número de documento debe tener 8 dígitos para el tipo DNI.");
+        }
+        if ($datos['id'] == 6  && !preg_match('/^\d{11}$/', $datos['identificacion'])) {
+            throw new toba_error("El número de documento debe tener 11 dígitos para el tipo CUIT.");
+        }
+        if ($datos['id'] == 7  && !preg_match('/^\d{11}$/', $datos['identificacion'])) {
+            throw new toba_error("El número de documento debe tener 11 dígitos para el tipo CUIL.");
+        }
+    }
+
     //---- pant_persona -----------------------------------------------------------------
 
     //---- form_datos_persona -----------------------------------------------------------
@@ -134,10 +153,11 @@ class ci_abm_personas_interno extends ci_abm_personas
 	public function conf__form_documentos($form)
 	{
         $datos = array();
-	    if (isset($this->s__documento_seleccionado)) {
-            foreach (array_keys($this->s__documentos) as $k) {
-                if ($k == $this->s__documento_seleccionado) {
-                    $datos = $this->s__documentos[$k];
+        if (isset($this->s__documento_seleccionado)) {
+            foreach ($this->s__documentos as $documento) {
+                if ($documento['id_tipo_documento'] == $this->s__documento_seleccionado) {
+                    $datos = $documento;
+                    break;
                 }
             }
             $form->set_datos($datos);
@@ -146,14 +166,25 @@ class ci_abm_personas_interno extends ci_abm_personas
 
 	public function evt__form_documentos__alta($datos)
 	{
+        $this->validar_documento($datos);
+
         $datos['estado'] = 'A'; //Se marca para darlo de alta luego en la base
         $this->controlar_alta_documento($datos);
+        $datos['tipo_documento'] = dao_consultas::get_tipos_documentos($datos)[0]['nombre'];
+        $datos['id_tipo_documento'] = $datos['id'];
         $this->s__documentos[] = $datos;
     }
 
     public function evt__form_documentos__modificacion($datos)
 	{
-        $this->s__documentos[$this->s__documento_seleccionado] = $datos;
+        //Busco el documento con el id_tipo_documento correspondiente
+        foreach ($this->s__documentos as &$documento) {
+            if ($documento['id_tipo_documento'] == $this->s__documento_seleccionado) {
+                //Actualizo los datos del documento encontrado
+                $documento = array_merge($documento, $datos);
+                break;
+            }
+        }
         unset($this->s__documento_seleccionado);
 	}
 
@@ -167,17 +198,18 @@ class ci_abm_personas_interno extends ci_abm_personas
 	public function conf__cuadro_documentos($cuadro)
 	{
         if (!empty($this->s__documentos)) {
-            //Muestro las filas que tienen estado <> 'B' o que no tienen seteado el estado
             $salida = array();
-            foreach (array_keys($this->s__documentos) as $id) {
-                $this->s__documentos[$id]['id_tipo_documento'] = $id;
-                if ($this->s__documentos[$id]['activo'] == 'A') {
-                    $this->s__documentos[$id]['activo_completo'] = 'Si';
+            foreach ($this->s__documentos as $documento) {
+                //Convertir el campo 'activo' en 'activo_completo'
+                if ($documento['activo'] == 'A') {
+                    $documento['activo_completo'] = 'Si';
                 } else {
-                    $this->s__documentos[$id]['activo_completo'] = 'No';
+                    $documento['activo_completo'] = 'No';
                 }
-                if (!isset($this->s__documentos[$id]['estado']) || $this->s__documentos[$id]['estado'] != 'B') {
-                    $salida[] = $this->s__documentos[$id];
+
+                // Solo agregar los documentos que no tienen estado 'B'
+                if (!isset($documento['estado']) || $documento['estado'] != 'B') {
+                    $salida[] = $documento;
                 }
             }
             $cuadro->set_datos($salida);
@@ -191,20 +223,12 @@ class ci_abm_personas_interno extends ci_abm_personas
 
 	public function evt__cuadro_documentos__eliminar($seleccion)
 	{
-        /*foreach ($this->s__documentos as $key => $doc) {
-            if (isset($doc['estado']) && $doc['estado'] == 'A') {
-                //es un alta temporal, por lo tanto se saca del array
-                unset($this->s__documentos[$key]);
-            } else {
-                //Está en la base, por lo tanto se marca para darlo de baja
-                $this->s__documentos[$key]['estado'] = 'B';
-            }
-            break;
-        }*/
-
-        foreach (array_keys($this->s__documentos) as $d) {
-            if ($d == $seleccion['id_tipo_documento']) {
-                unset($this->s__documentos[$d]);
+        if (isset($seleccion['id_tipo_documento'])) {
+            foreach ($this->s__documentos as $d => $documento) {
+                if ($documento['id_tipo_documento'] == $seleccion['id_tipo_documento']) {
+                    unset($this->s__documentos[$d]);
+                    break;
+                }
             }
         }
 	}
