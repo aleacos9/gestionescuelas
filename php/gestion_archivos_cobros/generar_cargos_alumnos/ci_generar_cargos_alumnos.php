@@ -6,15 +6,22 @@ class ci_generar_cargos_alumnos extends gestionescuelas_ext_ci
 
     //---- Funciones ---------------------------------------------------------------------
 
-    /*function ini()
+    function ini()
     {
-        $cuota_x_grado = dao_consultas::catalogo_de_parametros("importe_mensual_cuota_x_grado");
+        /*$cuota_x_grado = dao_consultas::catalogo_de_parametros("importe_mensual_cuota_x_grado");
         if ($cuota_x_grado == 'NO') {
             $this->s__importe_cuota = dao_consultas::catalogo_de_parametros("importe_mensual_cuota");
         } else {
             //aca debería incluir la lógica para que se el importe dependa del grado/nivel al que concurra el alumno
+        }*/
+
+        $anios_activos = dao_consultas::get_anios(['solo_activos' => 'S']);
+
+        // Validar que exista un año activo antes de comenzar la operación
+        if (empty($anios_activos)) {
+            throw new toba_error("No se encontraron años activos. Por favor, revise la configuración de años o contacte al administrador del sistema.");
         }
-    }*/
+    }
 
     /*
      * Retorna los nombres de los alumnos
