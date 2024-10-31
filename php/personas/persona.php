@@ -1850,8 +1850,10 @@ class persona
         ejecutar_fuente($sql);
 
         $this->persona = recuperar_secuencia('sq_id_persona');
-        if ($this->persona['es_alumno'] == 'S') {
-            $this->id_alumno = recuperar_secuencia('sq_id_alumno');
+        if (isset($this->persona['es_alumno'])) {
+            if ($this->persona['es_alumno'] == 'S') {
+                $this->id_alumno = recuperar_secuencia('sq_id_alumno');
+            }
         }
 
         $sql = "INSERT INTO persona_sexo
@@ -2127,13 +2129,16 @@ class persona
                     ejecutar_fuente($sql2);
                 }
             }
+            return ['error' => false];
         } else {
             $alumnos_con_error['id_persona'] = $this->persona;
         }
         if (!empty($alumnos_con_error)) {
             $this->mostrar_mensajes($alumnos_con_error);
+            return ['error' => true, 'mensaje' => 'Cargo no generado: error al validar generación del cargo.'];
         } else {
             toba::notificacion()->agregar('Los cargos en los alumnos fueron generados con éxito.', 'info');
+            return ['error' => false];
         }
     }
 
@@ -2146,10 +2151,43 @@ class persona
         $salida = true;
         $anio_actual = date('Y');
 
-        $condicion_x_cargo = [
+        /*$condicion_x_cargo = [
             constantes::get_valor_constante('INSCRIPCION_ANUAL') => " AND cuota = '{$this->anio_cuota}' AND numero_cuota = '{$this->numero_cuota_inscripcion}'",
             constantes::get_valor_constante('CUOTA_MENSUAL') => " AND cuota = '{$this->cuota_completa}'",
             constantes::get_valor_constante('MATERIALES') => " AND cuota = '' AND substring(descripcion from '\d{4}')::integer = '{$anio_actual}' AND numero_cuota = '{$this->numero_cuota_materiales}'"
+        ];*/
+
+        /*$condicion_inscripcion_anual = constantes::get_valor_constante('INSCRIPCION_ANUAL');
+        $condicion_cuota_mensual = constantes::get_valor_constante('CUOTA_MENSUAL');
+        $condicion_materiales = constantes::get_valor_constante('MATERIALES');
+
+        //Condiciones de cargo en función del valor de cant_cuotas_cobro_inscripcion
+        $condicion_x_cargo = [
+            $condicion_inscripcion_anual => " AND " . (
+                $this->cant_cuotas_cobro_inscripcion == 1
+                    ? "cuota = '{$this->anio_cuota}'"
+                    : "cuota IS NULL"
+                ) . " AND numero_cuota = '{$this->numero_cuota_inscripcion}'",
+
+            $condicion_cuota_mensual => " AND cuota = '{$this->cuota_completa}'",
+
+            $condicion_materiales => " AND cuota = '' AND substring(descripcion from '\\d{4}')::integer = '{$anio_actual}'" .
+                (!empty($this->numero_cuota_materiales) ? " AND numero_cuota = '{$this->numero_cuota_materiales}'" : '')
+        ];*/
+
+        $cant_cuotas_cobro_inscripcion = dao_consultas::catalogo_de_parametros("cant_cuotas_cobro_inscripcion");
+
+        //Condiciones de cargo en función del valor de cant_cuotas_cobro_inscripcion
+        $condicion_x_cargo = [
+            constantes::get_valor_constante('INSCRIPCION_ANUAL') =>
+                " AND cuota = '{$this->anio_cuota}'" .
+                (!empty($this->numero_cuota_inscripcion) ? " AND numero_cuota = '{$this->numero_cuota_inscripcion}'" : ''),
+
+            constantes::get_valor_constante('CUOTA_MENSUAL') => " AND cuota = '{$this->cuota_completa}'",
+
+            constantes::get_valor_constante('MATERIALES') =>
+                " AND cuota = '' AND substring(descripcion from '\\d{4}')::integer = '{$anio_actual}'" .
+                (!empty($this->numero_cuota_materiales) ? " AND numero_cuota = '{$this->numero_cuota_materiales}'" : '')
         ];
 
         if (array_key_exists($this->cargo_a_generar, $condicion_x_cargo)) {
