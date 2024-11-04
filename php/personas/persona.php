@@ -1081,18 +1081,64 @@ class persona
         return $this->modo;
     }
 
+    /**
+     * Obtiene el grado actual de cursada del alumno.
+     * Este dato se obtiene a partir del año activo, es decir,
+     * aquel año que está marcado como 'A' en la base de datos.
+     *
+     * @return int|null El id del grado actual de cursada o null si no está definido.
+     */
     public function get_grado_actual_cursada()
     {
         toba::logger()->info("get_grado_actual_cursada");
         return $this->datos_actuales_cursada[0]['id_grado'];
     }
 
+    /**
+     * Obtiene el siguiente grado de cursada del alumno.
+     * Este dato se obtiene a partir del año activo, es decir,
+     * aquel año que está marcado como 'A' en la base de datos.
+     * Si el alumno está en 6to grado, se devuelve "Fin de ciclo".
+     *
+     * @return int|string El id del siguiente grado o "Fin de ciclo" si no hay siguiente grado.
+     */
+    public function get_grado_siguiente_cursada()
+    {
+        toba::logger()->info("get_grado_siguiente_cursada");
+
+        if (empty($this->datos_actuales_cursada) || !isset($this->datos_actuales_cursada[0]['id_grado_siguiente'])) {
+            toba::logger()->info("El array datos_actuales_cursada está vacío o no contiene 'id_grado_siguiente'.");
+            return null;
+        }
+
+        if (is_null($this->datos_actuales_cursada[0]['id_grado_siguiente'])) {
+            return "Fin de ciclo";
+        }
+
+        return $this->datos_actuales_cursada[0]['id_grado_siguiente'];
+    }
+
+    /**
+     * Obtiene el año actual de cursada del alumno.
+     * Este dato se obtiene a partir del año activo, es decir,
+     * aquel año que está marcado como 'A' en la base de datos.
+     *
+     * @return int|null El año actual de cursada o null si no está definido.
+     */
     public function get_anio_actual_cursada()
     {
         toba::logger()->info("get_anio_actual_cursada");
         return $this->datos_actuales_cursada[0]['anio_cursada'];
     }
 
+    /**
+     * Obtiene el nivel actual de cursada del alumno.
+     * Este dato se obtiene a partir del año activo, es decir,
+     * aquel año que está marcado como 'A' en la base de datos.
+     * Si no se encuentra el nivel, se registra un error en el log.
+     *
+     * @return int|null El id del nivel actual de cursada o null si no está definido.
+     */
     public function get_nivel_actual_cursada()
     {
         toba::logger()->info("get_nivel_actual_cursada");
@@ -1745,18 +1791,24 @@ class persona
                       ,g.id_nivel
                       ,n.nombre AS nivel
                       ,adc.anio_cursada
+                      ,anio.anio
                       ,adc.genero_costo_inscripcion
                       ,adc.pago_inscripcion
                       ,g.nombre AS grado
+                      ,g.id_grado_siguiente
+                      ,COALESCE(gs.nombre, 'Fin de ciclo') AS nombre_grado_siguiente
                 FROM (SELECT max(id_grado) AS id_grado, id_alumno
                       FROM alumno_datos_cursada
                       GROUP BY id_alumno) AS max
                     INNER JOIN alumno_datos_cursada AS adc ON adc.id_alumno = max.id_alumno
-                    INNER JOIN grado g ON adc.id_grado = g.id_grado AND max.id_grado = g.id_grado
+                    INNER JOIN grado g ON adc.id_grado = g.id_grado AND max.id_grado = g.id_grado   
+                    LEFT JOIN grado gs ON g.id_grado_siguiente = gs.id_grado    
                     INNER JOIN nivel n ON g.id_nivel = n.id_nivel
                     INNER JOIN alumno a ON a.id_alumno = adc.id_alumno
                     INNER JOIN persona p ON p.id_persona = a.id_persona
-                WHERE p.id_persona = {$this->persona}   
+                    INNER JOIN anio ON adc.anio_cursada = anio.id_anio                                       
+                WHERE p.id_persona = {$this->persona}
+                    AND anio.estado = 'A'
                ";
 
         toba::logger()->debug(__METHOD__." : ".$sql);

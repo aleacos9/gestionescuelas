@@ -77,22 +77,31 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
 
         //Inicializo variables
         $this->datos_formulario['actualiza_pago_inscripcion_en_cuotas'] = false;
-        $nivel_actual = $persona->get_nivel_actual_cursada();
         $cargo_a_generar = $this->datos_formulario['cargo_a_generar'];
+        $siguiente_grado = $persona->get_grado_siguiente_cursada();
+
+        if (is_null($siguiente_grado) || $siguiente_grado === "Fin de ciclo") {
+            toba::logger()->info("No se generará cargo para el alumno {$persona->get_id_alumno()} ya que su siguiente grado de cursada es null o fin de ciclo.");
+            if ($this->datos_formulario['forma_generacion'] == 'I') {
+                throw new toba_error("Al alumno {$persona->get_nombre_completo_alumno()} no le corresponde la generación de la inscripción.");
+            }
+            $this->resumen['cargos_no_generados']++;
+            return;
+        }
 
         if ($cargo_a_generar == constantes::get_valor_constante('INSCRIPCION_ANUAL')) {
             //Determino si la inscripción permite el pago en cuotas en función del nivel
             $cobra_en_cuotas = dao_consultas::catalogo_de_parametros(
-                $nivel_actual == 1 ? "cobra_inscripcion_en_cuotas_inicial" : "cobra_inscripcion_en_cuotas_primario"
+                $siguiente_grado == 2 ? "cobra_inscripcion_en_cuotas_inicial" : "cobra_inscripcion_en_cuotas_primario"
             );
 
             if ($cobra_en_cuotas == 'SI') {
                 $this->actualizar_pago_en_cuotas($persona);
             }
 
-            //Establezco el importe de cuota según el nivel
+            //Establezco el importe de cuota según el siguiente grado
             $this->datos_formulario['importe_cuota'] = dao_consultas::catalogo_de_parametros(
-                    $nivel_actual == 1 ? "importe_inscripcion_inicial" : "importe_inscripcion_primario"
+                    $siguiente_grado == 2 ? "importe_inscripcion_inicial" : "importe_inscripcion_primario"
                 ) ?? 0;
 
             //Genero los cargos de inscripción en función de la cantidad de cuotas permitidas
@@ -157,19 +166,9 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
      */
     private function procesar_inscripcion_multiple_cuotas($persona)
     {
-        $anio_actual = dao_consultas::get_anios(['solo_activos' => 'S'])[0];
-
-        if (($persona->get_grado_actual_cursada() == 8) && ($persona->get_anio_actual_cursada() == $anio_actual['id_anio'])) {
-            toba::logger()->error("El alumno {$persona->get_id_alumno()} está cursando el último grado y no se le generará inscripción.");
-            if ($this->datos_formulario['forma_generacion'] == 'I') {
-                throw new toba_error("Al alumno {$persona->get_nombre_completo_alumno()} no le corresponde la generación de la inscripción.");
-            }
-        } else {
-            $parametro = $this->obtener_parametro_cuota($persona->get_grado_actual_cursada());
-            $this->datos_formulario['importe_cuota'] = dao_consultas::catalogo_de_parametros($parametro) ?? 0;
-
-            $this->generar_cargo_persona($persona);
-        }
+        $parametro = $this->obtener_parametro_cuota($persona->get_grado_actual_cursada());
+        $this->datos_formulario['importe_cuota'] = dao_consultas::catalogo_de_parametros($parametro) ?? 0;
+        $this->generar_cargo_persona($persona);
     }
 
     /**
