@@ -1106,7 +1106,7 @@ class persona
     {
         toba::logger()->info("get_grado_siguiente_cursada");
 
-        if (empty($this->datos_actuales_cursada) || !isset($this->datos_actuales_cursada[0]['id_grado_siguiente'])) {
+        if (empty($this->datos_actuales_cursada)) {
             toba::logger()->info("El array datos_actuales_cursada está vacío o no contiene 'id_grado_siguiente'.");
             return null;
         }

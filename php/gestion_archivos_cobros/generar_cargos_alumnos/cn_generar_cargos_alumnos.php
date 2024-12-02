@@ -49,26 +49,19 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
     }
 
     /**
-     * Procesa la generación de cargos para una persona específica.
+     * Procesa la generación de cargos para una persona en función de su grado siguiente y el tipo de cargo especificado.
      *
-     * Este método se encarga de lo siguiente:
-     * - Crea una instancia de la clase `persona` con el ID proporcionado.
-     * - Incrementa el contador total de alumnos procesados.
-     * - Inicializa las variables necesarias para el procesamiento.
-     * - Determina si el cargo a generar corresponde a una inscripción anual.
+     * Este método evalúa varias condiciones para determinar si corresponde generar un cargo para la persona:
+     * 1. Si el siguiente grado es "Fin de ciclo" y el cargo a generar es INSCRIPCION_ANUAL, no se genera el cargo.
+     * 2. Si el siguiente grado es "Fin de ciclo" y el cargo a generar es CUOTA_MENSUAL, sí se genera el cargo.
+     * 3. Si el siguiente grado es null y el cargo a generar es INSCRIPCION_ANUAL, se genera el cargo.
+     * 4. Si el siguiente grado es null y el cargo a generar es CUOTA_MENSUAL, no se genera el cargo.
      *
-     * Si el cargo es de inscripción anual:
-     * - Verifica si se permite el pago en cuotas según el nivel actual del alumno, y si es así,
-     *   actualiza el estado del pago en cuotas.
-     * - Establece el importe de la cuota según el nivel de la persona.
-     * - Genera los cargos de inscripción basándose en la cantidad de cuotas permitidas.
-     *   Si hay solo una cuota, se llama a `generar_cargo_persona()`, de lo contrario,
-     *   se procesa la inscripción en múltiples cuotas a través del método `procesar_inscripcion_multiple_cuotas()`.
+     * Además, para cargos de inscripción anual, el método evalúa si se permite el pago en cuotas
+     * y calcula el importe correspondiente según el grado siguiente.
      *
-     * En caso de que el cargo no sea de inscripción anual, genera el cargo correspondiente
-     * utilizando `generar_cargo_persona()`.
-     *
-     * @param mixed $persona Identificador de la persona para la cual se generarán los cargos.
+     * @param array $persona Datos de la persona para la cual se procesarán los cargos.
+     * @throws toba_error Si el cargo no corresponde y la forma de generación es individual ('I').
      */
     public function procesar_especifico($persona)
     {
@@ -80,17 +73,24 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
         $cargo_a_generar = $this->datos_formulario['cargo_a_generar'];
         $siguiente_grado = $persona->get_grado_siguiente_cursada();
 
-        if (is_null($siguiente_grado) || $siguiente_grado === "Fin de ciclo") {
-            toba::logger()->info("No se generará cargo para el alumno {$persona->get_id_alumno()} ya que su siguiente grado de cursada es null o fin de ciclo.");
-            if ($this->datos_formulario['forma_generacion'] == 'I') {
-                throw new toba_error("Al alumno {$persona->get_nombre_completo_alumno()} no le corresponde la generación de la inscripción.");
-            }
-            $this->resumen['cargos_no_generados']++;
-            return;
-        }
-
+        //Procesamiento según tipo de cargo
         if ($cargo_a_generar == constantes::get_valor_constante('INSCRIPCION_ANUAL')) {
-            //Determino si la inscripción permite el pago en cuotas en función del nivel
+            if ($siguiente_grado === "Fin de ciclo") {
+                //Caso 1: siguiente grado es "Fin de ciclo" y cargo INSCRIPCION_ANUAL
+                toba::logger()->info("No se generará cargo para el alumno {$persona->get_id_alumno()} ya que su siguiente grado de cursada es 'Fin de ciclo'.");
+                if ($this->datos_formulario['forma_generacion'] == 'I') {
+                    throw new toba_error("Al alumno {$persona->get_nombre_completo_alumno()} no le corresponde la generación de la inscripción.");
+                }
+                $this->resumen['cargos_no_generados']++;
+                return;
+            }
+
+            if (is_null($siguiente_grado)) {
+                //Caso 2: siguiente grado es null y cargo INSCRIPCION_ANUAL
+                toba::logger()->info("El alumno {$persona->get_id_alumno()} tiene grado siguiente null. Se generará el cargo de inscripción anual.");
+            }
+
+            //Generación de cargos INSCRIPCION_ANUAL
             $cobra_en_cuotas = dao_consultas::catalogo_de_parametros(
                 $siguiente_grado == 2 ? "cobra_inscripcion_en_cuotas_inicial" : "cobra_inscripcion_en_cuotas_primario"
             );
@@ -99,23 +99,39 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
                 $this->actualizar_pago_en_cuotas($persona);
             }
 
-            //Establezco el importe de cuota según el siguiente grado
             $this->datos_formulario['importe_cuota'] = dao_consultas::catalogo_de_parametros(
                     $siguiente_grado == 2 ? "importe_inscripcion_inicial" : "importe_inscripcion_primario"
                 ) ?? 0;
 
-            //Genero los cargos de inscripción en función de la cantidad de cuotas permitidas
             $cant_cuotas = dao_consultas::catalogo_de_parametros("cant_cuotas_cobro_inscripcion");
             if ($cant_cuotas == 1) {
                 $this->generar_cargo_persona($persona);
             } else {
                 $this->procesar_inscripcion_multiple_cuotas($persona);
             }
-        } else {
-            //Genero cargos para otros casos
-            $this->generar_cargo_persona($persona);
+            return;
         }
+
+        if ($cargo_a_generar == constantes::get_valor_constante('CUOTA_MENSUAL')) {
+            if ($siguiente_grado === "Fin de ciclo") {
+                //Caso 3: siguiente grado es "Fin de ciclo" y cargo CUOTA_MENSUAL
+                toba::logger()->info("Se generará cargo mensual para el alumno {$persona->get_id_alumno()} ya que su siguiente grado de cursada es 'Fin de ciclo'.");
+                $this->generar_cargo_persona($persona);
+                return;
+            }
+
+            if (is_null($siguiente_grado)) {
+                //Caso 4: siguiente grado es null y cargo CUOTA_MENSUAL
+                toba::logger()->info("No se generará cargo mensual para el alumno {$persona->get_id_alumno()} ya que su siguiente grado de cursada es null.");
+                $this->resumen['cargos_no_generados']++;
+                return;
+            }
+        }
+
+        //Generación para otros casos
+        $this->generar_cargo_persona($persona);
     }
+
 
     /**
      * Actualiza el estado del pago de inscripción en cuotas para una persona,
