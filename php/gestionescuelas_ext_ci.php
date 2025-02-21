@@ -31,6 +31,35 @@ class gestionescuelas_ext_ci extends toba_ci
             $this->s__id_persona = $this->s__id_persona[0]['id_persona'];
         }
         //***FIN obtención del id_persona del usuario loggueado***//
+
+        //Obtengo el año activo en el sistema
+        $sql = "SELECT anio FROM anio WHERE estado = 'A' ORDER BY anio DESC LIMIT 1";
+        $anio_sistema = toba::db()->consultar_fila($sql); // Obtiene el año activo más reciente
+        $anio_actual = date('Y');
+
+        //Verifico cuántos años están marcados como activos en la base de datos
+        $sql_anios_activos = "SELECT COUNT(*) AS cantidad FROM anio WHERE estado = 'A'";
+        $anios_activos = toba::db()->consultar_fila($sql_anios_activos);
+
+        if ($anios_activos['cantidad'] == 0) {
+            //No hay ningún año activo en el sistema
+            toba::notificacion()->agregar("No hay ningún año activo en el sistema. Debe activarse al menos un año.", "error");
+        } elseif ($anios_activos['cantidad'] > 1) {
+            //Hay más de un año activo en el sistema
+            toba::notificacion()->agregar("Hay más de un año activo en el sistema. Solo debe haber uno marcado como activo.", "error");
+        }
+
+        //Verifico si el año actual está registrado en la tabla
+        $sql_existe = "SELECT COUNT(*) AS existe FROM anio WHERE anio = $anio_actual";
+        $anio_existe = toba::db()->consultar_fila($sql_existe);
+
+        if ($anio_existe['existe'] == 0) {
+            //El año actual no está registrado en la tabla
+            toba::notificacion()->agregar("El año $anio_actual no está registrado en el sistema. Debe darse de alta.", "error");
+        } elseif (empty($anio_sistema) || $anio_actual != $anio_sistema['anio']) {
+            //El año actual está registrado, pero no está marcado como activo
+            toba::notificacion()->agregar("El año $anio_actual está registrado pero no está marcado como activo.", "error");
+        }
     }
 
     public function estado_servidor_afip()

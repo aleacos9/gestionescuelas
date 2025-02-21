@@ -97,7 +97,7 @@ class ci_alta_manual_pagos extends ci_administrar_formas_cobro
             $datos['estado'] = 'nuevo';
             $datos['modo'] = "alta_individual";
             //Obtengo el primer y el último dia del mes que está pagando la cuota para agregarlo en el comprobante AFIP
-            if (isset($datos['cuota'])) {
+            if (isset($datos['cuota']) && strlen(trim($datos['cuota'])) === 6) {
                 $mes = substr($datos['cuota'], 0, 2); // Obtener los dos primeros dígitos
                 $anio = substr($datos['cuota'], 2, 4); // Obtener los cuatro últimos dígitos
                 $datos['fecha_primer_dia_mes_pago'] = fecha::primer_dia_mes($mes, $anio);
