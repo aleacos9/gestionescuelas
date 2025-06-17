@@ -1359,6 +1359,7 @@ class dao_consultas
                                                         ,p.id_persona
                                                 ORDER BY acc.id_alumno) AS subconsulta_saldo ON subconsulta_saldo.id_alumno = a.id_alumno and subconsulta_saldo.id_persona = p.id_persona 
                              ";
+                    $where .= " AND COALESCE(subconsulta_saldo.saldo, 0) <> 0";
                 }
             }
 
@@ -1764,6 +1765,85 @@ class dao_consultas
             }
         }
         return $datos;
+    }
+
+    /**
+     * Retorna un listado de cuotas que deben ser actualizadas por deuda.
+     *
+     * Filtra por cuota y año si se proporcionan en el parámetro $filtro.
+     * La cuota se almacena como una cadena en el formato 'MMYYYY', donde MM es el mes con dos dígitos.
+     * Si la cuota es 11, también se permite que acc.cuota esté vacía.
+     *
+     * La consulta selecciona cuotas que:
+     * - Corresponden a cargos pendientes (id_cargo_cuenta_corriente = 2).
+     * - No están pagadas ni tienen comprobantes o medios de pago asignados.
+     * - Tienen una fecha de transacción o generación anterior al mes actual.
+     * - No fueron actualizadas en el mes anterior.
+     * - No están completamente cubiertas por pagos existentes.
+     *
+     * @param array|null $filtro ['cuota' => int|string, 'anio' => int|string]
+     * @return array Resultado de la consulta SQL.
+     */
+    public static function get_listado_cuotas_para_actualizar_deuda($filtro = null)
+    {
+        $where = '';
+
+        if (isset($filtro['cuota']) && isset($filtro['anio'])) {
+            $mes = str_pad($filtro['cuota'], 2, '0', STR_PAD_LEFT); // asegura que tenga 2 dígitos
+            $anio = $filtro['anio'];
+            $cuota_completa = $mes . $anio;
+
+            if ($filtro['cuota'] == 11) {
+                $where .= " AND (acc.cuota = '{$cuota_completa}' OR acc.cuota = '')";
+            } else {
+                $where .= " AND acc.cuota = '{$cuota_completa}'";
+            }
+        }
+
+        $sql = "SELECT (p.apellidos || ', ' || p.nombres) as alumno
+                      ,acc.cuota
+                      ,acc.descripcion descripcion_cuota
+                      ,tcc.importe
+                      ,tcc.id_transaccion_cc
+                FROM transaccion_cuenta_corriente tcc
+                    JOIN alumno_cuenta_corriente acc ON tcc.id_alumno_cc = acc.id_alumno_cc
+                    JOIN alumno a ON acc.id_alumno = a.id_alumno
+                    JOIN persona p ON a.id_persona = p.id_persona
+                WHERE acc.id_cargo_cuenta_corriente = 2
+                    AND tcc.id_estado_cuota = 1
+                    AND tcc.importe > 0
+                    AND tcc.numero_comprobante IS NULL
+                    AND tcc.numero_lote IS NULL
+                    AND tcc.numero_autorizacion IS NULL
+                    AND tcc.id_medio_pago IS NULL
+                    AND tcc.id_marca_tarjeta IS NULL
+                    AND tcc.punto_venta IS NULL
+                    AND tcc.comprobante_tipo IS NULL
+                    AND tcc.comprobante_numero IS NULL
+                    AND LEAST(COALESCE(tcc.fecha_transaccion, now()), COALESCE(acc.fecha_generacion_cc, now()))
+                             < date_trunc('month', current_date)
+                    AND (tcc.fecha_actualizacion_importe IS NULL
+                         OR tcc.fecha_actualizacion_importe < date_trunc('month', current_date - interval '1 month')
+                        )
+                    AND NOT EXISTS (SELECT 1
+                                    FROM transaccion_cuenta_corriente pagos
+                                    WHERE pagos.id_alumno_cc = tcc.id_alumno_cc
+                                          AND pagos.id_transaccion_cc <> tcc.id_transaccion_cc
+                                          AND pagos.importe < 0
+                                    GROUP BY pagos.id_alumno_cc
+                                    HAVING SUM(pagos.importe) * -1 >= tcc.importe
+                                   )
+                    $where
+                GROUP BY p.apellidos
+                        ,p.nombres
+                        ,acc.cuota
+                        ,acc.descripcion
+                        ,tcc.importe
+                        ,tcc.id_transaccion_cc
+                   ";
+
+        toba::logger()->debug(__METHOD__." : ".$sql);
+        return toba::db()->consultar($sql);
     }
 
 }

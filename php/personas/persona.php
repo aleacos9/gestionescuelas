@@ -2149,8 +2149,22 @@ class persona
                 $numero_cuota_materiales = 'null';
             }
             //Primero, inserto en la tabla alumno_cuenta_corriente
-            $sql = "INSERT INTO alumno_cuenta_corriente (id_alumno, usuario_alta, fecha_generacion_cc, cuota, descripcion, id_cargo_cuenta_corriente, numero_cuota) 
-				    VALUES ({$this->id_alumno},'{$usuario}', '{$hoy}', '{$this->cuota_completa}', '{$this->descripcion_cuota}', '{$this->cargo_a_generar}', {$numero_cuota_materiales})
+            $sql = "INSERT INTO alumno_cuenta_corriente (id_alumno
+                                                        ,usuario_alta
+                                                        ,fecha_generacion_cc
+                                                        ,cuota
+                                                        ,descripcion
+                                                        ,id_cargo_cuenta_corriente
+                                                        ,numero_cuota
+                                                        ) 
+				    VALUES ({$this->id_alumno}
+				           ,'{$usuario}'
+				           ,'{$hoy}'
+				           ,'{$this->cuota_completa}'
+				           ,'{$this->descripcion_cuota}'
+				           ,'{$this->cargo_a_generar}'
+				           ,{$numero_cuota_materiales}
+				           )
 			   ";
 
             toba::logger()->debug(__METHOD__ . " : " . $sql);
@@ -2162,8 +2176,22 @@ class persona
             $id_alumno_cc = $datos[0]['seq'];
 
             //Segundo, inserto en la tabla transaccion_cuenta_corriente
-            $sql1 = "INSERT INTO transaccion_cuenta_corriente (id_alumno_cc, fecha_transaccion, id_estado_cuota, importe, usuario_ultima_modificacion, fecha_ultima_modificacion)
-                     VALUES ({$id_alumno_cc}, '{$hoy}', 1, '{$this->importe_cuota}', '{$usuario}', '{$hoy}');                                        
+            $sql1 = "INSERT INTO transaccion_cuenta_corriente (id_alumno_cc
+                                                              ,fecha_transaccion
+                                                              ,id_estado_cuota
+                                                              ,importe
+                                                              ,importe_original
+                                                              ,usuario_ultima_modificacion
+                                                              ,fecha_ultima_modificacion
+                                                              )
+                     VALUES ({$id_alumno_cc}
+                            ,'{$hoy}'
+                            ,1
+                            ,'{$this->importe_cuota}'
+                            ,'{$this->importe_cuota}'
+                            ,'{$usuario}'
+                            ,'{$hoy}'
+                            );                                        
                    ";
 
             toba::logger()->debug(__METHOD__ . " : " . $sql1);
