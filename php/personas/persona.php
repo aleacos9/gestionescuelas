@@ -2180,7 +2180,7 @@ class persona
                                                               ,fecha_transaccion
                                                               ,id_estado_cuota
                                                               ,importe
-                                                              ,importe_original
+                                                              --,importe_original
                                                               ,usuario_ultima_modificacion
                                                               ,fecha_ultima_modificacion
                                                               )
@@ -2188,7 +2188,7 @@ class persona
                             ,'{$hoy}'
                             ,1
                             ,'{$this->importe_cuota}'
-                            ,'{$this->importe_cuota}'
+                            --,'{$this->importe_cuota}'
                             ,'{$usuario}'
                             ,'{$hoy}'
                             );                                        
