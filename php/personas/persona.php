@@ -2180,7 +2180,7 @@ class persona
                                                               ,fecha_transaccion
                                                               ,id_estado_cuota
                                                               ,importe
-                                                              ,importe_original
+                                                              --,importe_original
                                                               ,usuario_ultima_modificacion
                                                               ,fecha_ultima_modificacion
                                                               )
@@ -2188,7 +2188,7 @@ class persona
                             ,'{$hoy}'
                             ,1
                             ,'{$this->importe_cuota}'
-                            ,'{$this->importe_cuota}'
+                            --,'{$this->importe_cuota}'
                             ,'{$usuario}'
                             ,'{$hoy}'
                             );                                        
@@ -2390,6 +2390,17 @@ class persona
             $importe = (float)$importe_pago_sin_coma * -1;
         }
 
+        $fecha_desde = $this->get_primer_dia_mes_cuota();
+        $fecha_hasta = $this->get_ultimo_dia_mes_cuota();
+
+        if (empty($fecha_desde) || empty($fecha_hasta)) {
+            // Si no hay cuota asociada, usar rango predeterminado de servicio
+            $anio_actual = date('Y');
+            $mes_actual = date('m');
+            $fecha_desde = $anio_actual . $mes_actual . '01';
+            $fecha_hasta = date('Ymd', strtotime('last day of this month'));
+        }
+
         $data = array(
             'CantReg' 	=> 1,  // Cantidad de comprobantes a registrar
             'PtoVta' 	=> dao_consultas::catalogo_de_parametros("punto_venta"),  // Punto de venta
@@ -2397,8 +2408,8 @@ class persona
             'Concepto' 	=> 2,  // Concepto del Comprobante: (1)Productos, (2)Servicios, (3)Productos y Servicios
             'DocTipo' 	=> 96, // Tipo de documento del comprador (99 consumidor final, 86 CUIL / 96 DNI)
             'DocNro' 	=> $this->identificador_tutor,  // Número de documento del comprador (0 consumidor final)
-            'FchServDesde'=> $this->get_primer_dia_mes_cuota(),
-            'FchServHasta'=> $this->get_ultimo_dia_mes_cuota(),
+            'FchServDesde'=> $fecha_desde,
+            'FchServHasta'=> $fecha_hasta,
             'FchVtoPago'  => intval(date('Ymd')),
             'CbteDesde' 	=> 1,  // Número de comprobante o numero del primer comprobante en caso de ser mas de uno
             'CbteHasta' 	=> 1,  // Número de comprobante o numero del último comprobante en caso de ser mas de uno
