@@ -15,6 +15,8 @@ class cn_alta_masiva_pagos extends gestionescuelas_cn
 
                     $procesados_ok = 0;
                     $genera_afip = dao_consultas::catalogo_de_parametros("genera_comprobante_afip");
+                    $alumnos_procesados_ok = [];
+                    $alumnos_procesados_error = [];
 
                     foreach ($registros_a_procesar as $pago) {
                         //Obtengo el primer y el último dia del mes que está pagando la cuota para agregarlo en el comprobante AFIP
@@ -30,7 +32,7 @@ class cn_alta_masiva_pagos extends gestionescuelas_cn
                         $persona->set_modo($this->datos_pago['modo']);
                         $persona->set_datos_cuenta_corriente($pago);
                         $persona->set_usuario_ultima_modificacion($this->datos_pago['usuario_ultima_modificacion']);
-                        $persona->grabar_pago_persona();
+                        $nombre_completo = $persona->grabar_pago_persona(true);
 
                         if (($pago['id_medio_pago'] == 4 && isset($pago['rechazo1']) && $pago['rechazo1'] == '00') ||
                             ($pago['id_medio_pago'] == 3 && trim($pago['descripcion_error_debito']) == 'NUL')) {
@@ -40,6 +42,13 @@ class cn_alta_masiva_pagos extends gestionescuelas_cn
                                 $procesados_ok++;
                             } else {
                                 $procesados_ok++;
+                            }
+                            if ($nombre_completo) {
+                                $alumnos_procesados_ok[] = $nombre_completo;
+                            }
+                        } else {
+                            if ($nombre_completo) {
+                                $alumnos_procesados_error[] = $nombre_completo;
                             }
                         }
                     }
@@ -53,7 +62,18 @@ class cn_alta_masiva_pagos extends gestionescuelas_cn
                         toba::notificacion()->agregar('El procesamiento de los pagos fue realizada con éxito.', "info");
                     }
                     // Notificación al usuario
-                    toba::notificacion()->agregar("Se aplicaron efectivamente {$procesados_ok} pagos.",'info');
+                    $detalle_ok = !empty($alumnos_procesados_ok)
+                        ? "Pagos procesados correctamente a:<br/>" . implode("<br/>", $alumnos_procesados_ok)
+                        : "No hubo pagos aplicados correctamente.";
+
+                    $detalle_error = !empty($alumnos_procesados_error)
+                        ? "<br/><br/>Pagos que no pudieron procesarse:<br/>" . implode("<br/>", $alumnos_procesados_error)
+                        : "";
+
+                    toba::notificacion()->agregar(
+                        "Se procesaron {$procesados_ok} pagos.<br/>{$detalle_ok}{$detalle_error}",
+                        'info'
+                    );
                     return $ok;
                 } else {
                     throw new toba_error("La cuota y el año seleccionado no tiene pagos para procesar.");
