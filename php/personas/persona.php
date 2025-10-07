@@ -2328,7 +2328,12 @@ class persona
         return $errores;
     }
 
-    public function grabar_pago_persona()
+    /**
+     * Graba el pago de una persona.
+     * @param bool $retornar_nombres  Si es true, devuelve los nombres de los pagos procesados
+     * @return string|null
+     */
+    public function grabar_pago_persona($retornar_nombres = false)
     {
         toba::logger()->info("persona.grabar_pago_persona()");
 
@@ -2375,6 +2380,17 @@ class persona
 
         if ($this->mostrar_mensaje_individual) {
             toba::notificacion()->agregar('El alta del pago fue realizada con éxito.', 'info');
+        }
+
+        if ($retornar_nombres) {
+            $sql_nombre = "SELECT p.apellidos || ', ' || p.nombres AS nombre_completo
+                           FROM alumno_cuenta_corriente acc
+                                INNER JOIN alumno a ON acc.id_alumno = a.id_alumno
+                                INNER JOIN persona p ON a.id_persona = p.id_persona
+                           WHERE acc.id_alumno_cc = {$this->id_alumno_cc}
+                          ";
+            $datos_nombre = consultar_fuente($sql_nombre);
+            return $datos_nombre[0]['nombre_completo'] ?? null;
         }
     }
 
