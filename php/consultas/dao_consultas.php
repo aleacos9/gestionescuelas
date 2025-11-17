@@ -524,6 +524,33 @@ class dao_consultas
         return toba::db()->consultar($sql);
     }
 
+    /**
+     * Retorna el primer año posterior al indicado que se encuentre dado de alta
+     * pero con estado inactivo ('I') en la tabla anio.
+     *
+     * @param int|null $anio_actual ID del año actual o de referencia.
+     * @return array|null Retorna un array con los datos del año posterior inactivo o null si no existe.
+     */
+    public static function get_anio_posterior_de_alta_inactivo($anio_actual = null)
+    {
+        $where = "WHERE estado = 'I'";
+
+        if (!is_null($anio_actual)) {
+            $where .= " AND id_anio > '{$anio_actual}'";
+        }
+
+        $sql = "SELECT id_anio
+                      ,anio
+                FROM anio
+                $where
+                ORDER BY anio ASC
+                LIMIT 1
+               ";
+
+        toba::logger()->debug(__METHOD__." : ".$sql);
+        return toba::db()->consultar_fila($sql);
+    }
+
     public static function get_meses_del_anio()
     {
         $meses[0]['id'] = 1;
