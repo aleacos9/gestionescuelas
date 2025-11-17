@@ -86,8 +86,61 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
             }
 
             if (is_null($siguiente_grado)) {
-                //Caso 2: siguiente grado es null y cargo INSCRIPCION_ANUAL
-                toba::logger()->info("El alumno {$persona->get_id_alumno()} tiene grado siguiente null. Se generará el cargo de inscripción anual.");
+                //Caso 2: siguiente grado es null y cargo INSCRIPCION_ANUAL, debo validar que sea inscripción del año siguiente
+                toba::logger()->info("El alumno {$persona->get_id_alumno()} tiene grado siguiente NULL. Intentando determinarlo según el año siguiente...");
+
+                // 1) Obtengo el año activo
+                $anio_activo = dao_consultas::get_anios(['solo_activos' => 'S']);
+                if (!empty($anio_activo)) {
+                    $anio_activo_id = $anio_activo[0]['id_anio'];
+                    $anio_activo_valor = $anio_activo[0]['anio'];
+
+                    // 2) Busco si existe un año posterior dado de alta (estado = 'I') y que sea inactivo
+                    $anio_siguiente = dao_consultas::get_anio_posterior_de_alta_inactivo($anio_activo_id);
+
+                    if (!empty($anio_siguiente)) {
+                        toba::logger()->info("Año siguiente encontrado: {$anio_siguiente['anio']} (id={$anio_siguiente['id_anio']})");
+
+                        // 3) Busco si el alumno tiene datos de cursada para ese año
+                        $id_alumno = $persona->get_id_alumno();
+
+                        $sql_cursada = "SELECT id_grado
+                                        FROM alumno_datos_cursada
+                                        WHERE id_alumno = {$id_alumno}
+                                            AND anio_cursada = {$anio_siguiente['id_anio']}
+                                        LIMIT 1
+                                       ";
+
+                        $datos_cursada = toba::db()->consultar_fila($sql_cursada);
+
+                        if (!empty($datos_cursada)) {
+                            // 4) Con el id_grado, obtengo el grado siguiente desde la tabla grado
+                            $sql_grado_siguiente = "SELECT id_grado_siguiente
+                                                    FROM grado
+                                                    WHERE id_grado = {$datos_cursada['id_grado']}
+                                                   ";
+
+                            $grado_siguiente = toba::db()->consultar_fila($sql_grado_siguiente);
+
+                            if (!empty($grado_siguiente) && !empty($grado_siguiente['id_grado_siguiente'])) {
+                                $siguiente_grado = $grado_siguiente['id_grado_siguiente'];
+                                toba::logger()->info("Grado siguiente determinado dinámicamente: {$siguiente_grado} (desde id_grado={$datos_cursada['id_grado']})");
+                            } else {
+                                toba::logger()->info("El grado {$datos_cursada['id_grado']} no tiene grado siguiente definido en la tabla grado.");
+                                $this->resumen['mensajes'][] = "El grado {$datos_cursada['id_grado']} del alumno {$persona->get_nombre_completo_alumno()} no tiene grado siguiente definido.";
+                            }
+                        } else {
+                            toba::logger()->info("El alumno {$id_alumno} no tiene registro en alumno_datos_cursada para el año {$anio_siguiente['anio']}.");
+                            $this->resumen['mensajes'][] = "El alumno {$persona->get_nombre_completo_alumno()} no tiene cursada cargada para el año {$anio_siguiente['anio']}.";
+                        }
+                    } else {
+                        toba::logger()->info("No existe un año posterior al activo ({$anio_activo_valor}) con estado 'I'.");
+                        $this->resumen['mensajes'][] = "No existe un año posterior al activo ({$anio_activo_valor}) con estado 'I'. No se pudieron generar inscripciones anuales.";
+                    }
+                } else {
+                    toba::logger()->info("No se pudo determinar el año activo.");
+                    $this->resumen['mensajes'][] = "No se pudo determinar el año activo en la base de datos.";
+                }
             }
 
             //Generación de cargos INSCRIPCION_ANUAL
@@ -274,6 +327,15 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
         $mensaje .= "Total de alumnos procesados: {$this->resumen['total_alumnos']}<br />";
         $mensaje .= "Total de cargos generados: {$this->resumen['cargos_generados']}<br />";
         $mensaje .= "Total de cargos no generados: {$this->resumen['cargos_no_generados']}";
+
+        //Agrego mensajes adicionales si existen
+        if (!empty($this->resumen['mensajes'])) {
+            $mensaje .= "<br /><br /><strong>Observaciones:</strong><ul>";
+            foreach ($this->resumen['mensajes'] as $msg) {
+                $mensaje .= "<li>{$msg}</li>";
+            }
+            $mensaje .= "</ul>";
+        }
 
         toba::notificacion()->agregar($mensaje, 'info');
     }
