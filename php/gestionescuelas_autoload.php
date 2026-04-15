@@ -19,6 +19,7 @@ class gestionescuelas_autoload
 
 	static protected $clases = array(
 		'ci_abm_parametros_sistema' => 'ABMs/abm_parametros_sistema/ci_abm_parametros_sistema.php',
+		'ci_abm_anios' => 'administracion/abm_anios/ci_abm_anios.php',
 		'ci_alta_usuarios' => 'administracion/alta_usuarios/ci_alta_usuarios.php',
 		'ci_cambiar_clave' => 'administracion/cambiar_clave/ci_cambiar_clave.php',
 		'Afip' => 'afip.php',
@@ -45,6 +46,8 @@ class gestionescuelas_autoload
 		'gestionescuelas_servicio_web' => 'extension_toba/componentes/gestionescuelas_servicio_web.php',
 		'gestionescuelas_comando' => 'extension_toba/gestionescuelas_comando.php',
 		'gestionescuelas_modelo' => 'extension_toba/gestionescuelas_modelo.php',
+		'ci_actualizar_importe_cuotas' => 'gestion_archivos_cobros/actualizar_importe_cuotas/ci_actualizar_importe_cuotas.php',
+		'cn_actualizar_importe_cuotas' => 'gestion_archivos_cobros/actualizar_importe_cuotas/cn_actualizar_importe_cuotas.php',
 		'ci_alta_manual_pagos' => 'gestion_archivos_cobros/alta_manual_pagos/ci_alta_manual_pagos.php',
 		'cn_alta_manual_pagos' => 'gestion_archivos_cobros/alta_manual_pagos/cn_alta_manual_pagos.php',
 		'eiformulario' => 'gestion_archivos_cobros/alta_manual_pagos/eiformulario.php',

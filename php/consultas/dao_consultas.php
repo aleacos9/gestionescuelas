@@ -514,7 +514,8 @@ class dao_consultas
 
         $sql = "SELECT id_anio
                       ,anio
-                      ,estado 
+                      ,estado
+                      ,CASE WHEN estado = 'A' THEN 'Activo' ELSE 'Inactivo' END estado
 				FROM anio
                 $where
                 ORDER BY anio
