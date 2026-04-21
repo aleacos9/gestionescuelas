@@ -1874,4 +1874,75 @@ class dao_consultas
         return toba::db()->consultar($sql);
     }
 
+    static function get_afectacion_archivos_debito_automatico($filtro)
+    {
+        $where = [];
+
+        if (!empty($filtro['nombre_archivo'])) {
+            $where[] = "ar.nombre_archivo ILIKE " . quote('%' . $filtro['nombre_archivo'] . '%');
+        }
+
+        if (!empty($filtro['anio'])) {
+            $where[] = "substring(ar.nombre_archivo, 10, 4) = " . quote($filtro['anio']);
+        }
+
+        if (!empty($filtro['mes'])) {
+            $where[] = "substring(ar.nombre_archivo, 14, 2) = " . quote(str_pad($filtro['mes'], 2, '0', STR_PAD_LEFT));
+        }
+
+        if (!empty($filtro['nombre_alumno'])) {
+            $where[] = "p.apellidos ILIKE " . quote('%' . $filtro['nombre_alumno'] . '%');
+        }
+
+        if (!empty($filtro['numero'])) {
+            $where[] = "a.legajo = " . quote($filtro['numero']);
+        }
+
+        if (!empty($filtro['cuota'])) {
+            $where[] = "r1.cuota = " . quote($filtro['cuota']);
+        }
+
+        $sql_where = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+
+        $sql = "
+        SELECT
+            ar.nombre_archivo,
+            ard.numero_tarjeta,
+            ard.numero_tarjeta_nueva,
+            concat(p.apellidos, ' ', p.nombres) as nombrealumno,
+            a.legajo as numero,
+            to_date(ard.fecha_presentacion, 'DDMMYY') as fecha_presentacion,
+            REPLACE(ard.importe, ',', '.')::NUMERIC as importe,
+            ard.cuenta_debito_fondos,
+            to_date(ard.fecha_devolucion_respuesta, 'DDMMYY') as fecha_devolucion_respuesta,
+            ard.rechazo1,
+            ard.descripcion_rechazo1,
+            ard.rechazo2,
+            ard.descripcion_rechazo2,
+            ard.codigo_error_debito,
+            ard.descripcion_error_debito,
+            r1.cuota,
+            r1.saldo,
+            (CASE  WHEN p.es_alumno = 'S' AND a.regular = 'S' THEN 'Regular'
+                    WHEN p.es_alumno = 'S' AND a.regular = 'N' THEN 'No regular'
+                    WHEN p.es_alumno = 'N' THEN '-'
+              END) AS estado_alumno
+        FROM Archivo_respuesta ar
+        INNER JOIN Archivo_respuesta_Detalle ard ON ar.id_archivo_respuesta = ard.id_archivo_respuesta
+        INNER JOIN alumno a ON a.id_alumno = ard.id_alumno
+        INNER JOIN persona p ON p.id_persona = a.id_persona
+        INNER JOIN (
+            SELECT tcc.id_alumno_cc, acc.cuota, SUM(tcc.importe) AS saldo
+            FROM alumno_cuenta_corriente acc
+            INNER JOIN transaccion_cuenta_corriente tcc
+                ON acc.id_alumno_cc = tcc.id_alumno_cc
+            GROUP BY tcc.id_alumno_cc, acc.cuota
+        ) r1 ON r1.id_alumno_cc = ard.id_alumno_cc
+        $sql_where
+        ORDER BY a.legajo, ar.id_archivo_respuesta
+    ";
+
+        return toba::db()->consultar($sql);
+    }
+
 }
