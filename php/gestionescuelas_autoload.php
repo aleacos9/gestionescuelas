@@ -57,6 +57,7 @@ class gestionescuelas_autoload
 		'cn_generar_cargos_alumnos' => 'gestion_archivos_cobros/generar_cargos_alumnos/cn_generar_cargos_alumnos.php',
 		'gestionescuelas_autoload' => 'gestionescuelas_autoload.php',
 		'gestionescuelas_ext_ci' => 'gestionescuelas_ext_ci.php',
+		'ci_afectaciones_archivos_debito_automatico' => 'listados/afectaciones_archivos_debito_automatico/ci_afectaciones_archivos_debito_automatico.php',
 		'ci_cuadro_control' => 'listados/cuadro_control/ci_cuadro_control.php',
 		'ci_listado_estado_deuda_alumnos' => 'listados/estado_deuda_alumnos/ci_listado_estado_deuda_alumnos.php',
 		'ci_listado_deudores' => 'listados/listado_deudores/ci_listado_deudores.php',
