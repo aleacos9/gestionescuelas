@@ -177,6 +177,16 @@ class gestionescuelas_ext_ci extends toba_ci
         parent::disparar_limpieza_memoria($no_borrar);
     }
 
+    /*
+     * Retorna los nombres de los alumnos
+     */
+    public function get_nombres_alumnos_ci()
+    {
+        $filtro['solo_alumnos'] = true;
+        $filtro['con_dni'] = true;
+        return dao_consultas::get_nombres_persona($filtro);
+    }
+
     //-----------------------------------------------------------------------------------
     //---- FIN Métodos Varios -----------------------------------------------------------
     //-----------------------------------------------------------------------------------

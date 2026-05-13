@@ -24,16 +24,6 @@ class ci_generar_cargos_alumnos extends gestionescuelas_ext_ci
     }
 
     /*
-     * Retorna los nombres de los alumnos
-     */
-    public function get_nombres_alumnos_ci()
-    {
-        $filtro['solo_alumnos'] = true;
-        $filtro['con_dni'] = true;
-        return dao_consultas::get_nombres_persona($filtro);
-    }
-
-    /*
      * Retorna un array con el detalle de las cuotas para el pago de materiales,
      * definidas a través de un parámetro general del sistema
      */
