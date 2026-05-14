@@ -61,6 +61,7 @@ class gestionescuelas_autoload
 		'ci_cuadro_control' => 'listados/cuadro_control/ci_cuadro_control.php',
 		'ci_listado_estado_deuda_alumnos' => 'listados/estado_deuda_alumnos/ci_listado_estado_deuda_alumnos.php',
 		'ci_listado_deudores' => 'listados/listado_deudores/ci_listado_deudores.php',
+		'ci_listado_rechazos' => 'listados/listado_rechazos/ci_listado_rechazos.php',
 		'ci_login' => 'login/ci_login.php',
 		'cuadro_autologin' => 'login/cuadro_autologin.php',
 		'pant_login' => 'login/pant_login.php',
@@ -78,6 +79,7 @@ class gestionescuelas_autoload
 		'ci_cuenta_corriente' => 'tutor/cuenta_corriente/ci_cuenta_corriente.php',
 		'ci_deuda_corriente' => 'tutor/deuda_corriente/ci_deuda_corriente.php',
 		'conversion_tipo_datos' => 'utiles/conversion_tipo_datos.php',
+		'envio_correo' => 'utiles/envio_correo.php',
 		'fecha' => 'utiles/fecha.php',
 	);
 }

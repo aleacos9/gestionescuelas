@@ -1945,4 +1945,98 @@ class dao_consultas
         return toba::db()->consultar($sql);
     }
 
+    /**
+     * Retorna el listado de rechazos de debitos para notificar.
+     */
+    public static function get_listado_rechazos_debitos($filtro = null)
+    {
+        $where = array();
+        $where[] = "tcc.id_estado_cuota = 4"; // Rechazada
+        $where[] = "pa.activo = 'S'";
+        $where[] = "pa.tutor = 'S'";
+
+        if (isset($filtro)) {
+            if (isset($filtro['cuota']) && isset($filtro['anio'])) {
+                $mes = str_pad($filtro['cuota'], 2, '0', STR_PAD_LEFT);
+                $anio = $filtro['anio'];
+                $cuota_completa = $mes . $anio;
+
+                if ($filtro['cuota'] == 11) {
+                    $where[] = "acc.cuota IN ('{$cuota_completa}', '')";
+                } else {
+                    $where[] = "acc.cuota = '{$cuota_completa}'";
+                }
+            }
+            if (isset($filtro["notificado_mail"])) {
+                if ($filtro["notificado_mail"] == "S") {
+                    $where[] = "tcc.notificado_mail = TRUE";
+                } else {
+                    $where[] = "tcc.notificado_mail = FALSE";
+                }
+            }
+            if (isset($filtro["notificado_whatsapp"])) {
+                if ($filtro["notificado_whatsapp"] == "S") {
+                    $where[] = "tcc.notificado_whatsapp = TRUE";
+                } else {
+                    $where[] = "tcc.notificado_whatsapp = FALSE";
+                }
+            }
+            if (isset($filtro['id_persona'])) { $where[] = "p_est.id_persona = " . toba::db()->quote($filtro['id_persona']); }
+        }
+
+        $sql_where = "WHERE " . implode(' AND ', $where);
+        
+
+        $sql = "SELECT 
+                    tcc.id_transaccion_cc,
+                    acc.cuota,
+                    acc.descripcion as descripcion_cuota,
+                    tcc.fecha_transaccion,
+                    tcc.importe,
+                    tcc.codigo_error_debito,
+                    tcc.descripcion_error_debito,
+                    CASE WHEN tcc.notificado_mail is false THEN 'NO'
+                        ELSE 'SI' END notificado_mail, 
+                    tcc.fecha_notificacion_mail,
+                    CASE WHEN tcc.notificado_whatsapp is false THEN 'NO'
+                        ELSE 'SI' END notificado_whatsapp,
+                    tcc.fecha_notificacion_whatsapp,
+                    p_est.apellidos || ', ' || p_est.nombres AS alumno,
+                    p_tut.apellidos || ', ' || p_tut.nombres AS tutor,
+                    p_tut.correo_electronico AS tutor_email,
+                    p_tut.telefono AS tutor_telefono
+                FROM transaccion_cuenta_corriente tcc
+                JOIN alumno_cuenta_corriente acc ON tcc.id_alumno_cc = acc.id_alumno_cc
+                JOIN alumno al ON acc.id_alumno = al.id_alumno
+                JOIN persona p_est ON al.id_persona = p_est.id_persona
+                JOIN persona_allegado pa ON al.id_alumno = pa.id_alumno
+                AND pa.id_persona_allegado = (SELECT MIN(id_persona_allegado) FROM persona_allegado WHERE id_alumno = al.id_alumno AND tutor = 'S' AND activo = 'S')
+                JOIN persona p_tut ON pa.id_persona = p_tut.id_persona
+                $sql_where
+                ORDER BY acc.cuota DESC, p_est.apellidos, p_est.nombres
+               ";
+
+        return toba::db()->consultar($sql);
+    }
+
+    public static function set_notificacion_mail($id_transaccion)
+    {
+        $id = toba::db()->quote($id_transaccion);
+        $fecha = toba::db()->quote(date('Y-m-d H:i:s'));
+        $sql = "UPDATE transaccion_cuenta_corriente 
+                SET notificado_mail = TRUE, fecha_notificacion_mail = $fecha 
+                WHERE id_transaccion_cc = $id";
+        toba::db()->ejecutar($sql);
+    }
+
+    public static function set_notificacion_whatsapp($id_transaccion)
+    {
+        $id = toba::db()->quote($id_transaccion);
+        $fecha = toba::db()->quote(date('Y-m-d H:i:s'));
+        $sql = "UPDATE transaccion_cuenta_corriente 
+                SET notificado_whatsapp = TRUE, fecha_notificacion_whatsapp = $fecha 
+                WHERE id_transaccion_cc = $id";
+        toba::db()->ejecutar($sql);
+    }
 }
+?>
