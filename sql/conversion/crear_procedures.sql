@@ -1083,3 +1083,19 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/grabar-en-tabla-transaccion-cuenta-corriente-importe-actualizado 20/08/2024
+CREATE OR REPLACE FUNCTION grabar_en_tabla_transaccion_cuenta_corriente_importe_actualizado() RETURNS VOID AS
+$$
+BEGIN
+    IF NOT EXISTS ( SELECT '' FROM information_schema.columns WHERE table_name = 'transaccion_cuenta_corriente' and column_name = 'importe_original') THEN
+
+        --Le agrego a la tabla transaccion_cuenta_corriente el nuevo campo
+        ALTER TABLE transaccion_cuenta_corriente
+            ADD COLUMN importe_original INTEGER;
+
+
+    END IF;
+END;
+$$ LANGUAGE 'plpgsql';
