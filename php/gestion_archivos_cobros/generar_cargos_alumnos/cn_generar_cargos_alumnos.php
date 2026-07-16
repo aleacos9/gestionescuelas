@@ -33,6 +33,7 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
         $this->resumen['total_alumnos'] = 0;
         $this->resumen['cargos_generados'] = 0;
         $this->resumen['cargos_no_generados'] = 0;
+        $this->notificaciones = array();
 
         if (isset($this->datos_formulario)) {
             if ((is_array($this->datos_formulario['id_persona'])) && ($this->datos_formulario['forma_generacion'] == 'G')) {
@@ -44,6 +45,7 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
             } else {
                 throw new toba_error("Ha ocurrido un error en la generación de los cargos a alumnos, revise los datos ingresados o contáctese con un administrador del sistema.");
             }
+            $this->enviar_notificaciones_acumuladas();
             $this->mostrar_resumen();
         }
     }
@@ -298,6 +300,11 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
         //Valido si el cargo se generó o no
         if (empty($resultado['error'])) {
             $this->resumen['cargos_generados']++;
+            if ($this->tipo_procesamiento == 'Individual') {
+                $this->enviar_notificacion_cargo($persona);
+            } else {
+                $this->acumular_notificacion_cargo($persona);
+            }
         } else {
             $this->resumen['cargos_no_generados']++;
         }
@@ -328,6 +335,10 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
         $mensaje .= "Total de cargos generados: {$this->resumen['cargos_generados']}<br />";
         $mensaje .= "Total de cargos no generados: {$this->resumen['cargos_no_generados']}";
 
+        if (dao_consultas::catalogo_de_parametros("envia_notif_al_generar_cargo") == 'SI') {
+            $mensaje .= "<br />Total de correos encolados: {$this->resumen['correos_encolados']}";
+        }
+
         //Agrego mensajes adicionales si existen
         if (!empty($this->resumen['mensajes'])) {
             $mensaje .= "<br /><br /><strong>Observaciones:</strong><ul>";
@@ -338,6 +349,245 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
         }
 
         toba::notificacion()->agregar($mensaje, 'info');
+    }
+
+    private function enviar_notificacion_cargo($persona)
+    {
+        if (dao_consultas::catalogo_de_parametros("envia_notif_al_generar_cargo") != 'SI') {
+            return;
+        }
+
+        $tutor_data = dao_consultas::get_tutor_notificacion_cargo($persona->get_id_persona());
+        if (empty($tutor_data) || empty($tutor_data['tutor_email'])) {
+            return;
+        }
+        $tutor_email = $tutor_data['tutor_email'];
+        $tutor_nombre = $tutor_data['tutor'];
+
+        $todos_cargos = dao_consultas::get_cargos_cuenta_corriente();
+        $cargo_map = array();
+        foreach ($todos_cargos as $c) {
+            $cargo_map[$c['id_cargo_cuenta_corriente']] = $c['nombre'];
+        }
+        $cargo_nombre = $cargo_map[$this->tipo_cargo] ?? '';
+
+        $importe = $this->datos_formulario['importe_cuota'] ?? 0;
+        $periodo = $this->datos_formulario['cuota'] ?? '';
+        $anio = $this->datos_formulario['anio'] ?? '';
+        $cuota_completa = $persona->get_cuota_completa();
+        if ($cuota_completa && strlen($cuota_completa) == 6) {
+            $meses = array(
+                '01' => 'Enero', '02' => 'Febrero', '03' => 'Marzo', '04' => 'Abril',
+                '05' => 'Mayo', '06' => 'Junio', '07' => 'Julio', '08' => 'Agosto',
+                '09' => 'Septiembre', '10' => 'Octubre', '11' => 'Noviembre', '12' => 'Diciembre'
+            );
+            $mes_nro = substr($cuota_completa, 0, 2);
+            $anio_str = substr($cuota_completa, 2);
+            $mes_nombre = isset($meses[$mes_nro]) ? $meses[$mes_nro] : '';
+            if ($mes_nombre) {
+                $periodo = $mes_nombre . ' / ' . $anio_str;
+            }
+        } elseif ($cuota_completa && $anio) {
+            $periodo = $anio;
+        }
+        $descripcion = $cargo_nombre . ($periodo ? ' (' . $periodo . ')' : '');
+
+        $fecha = new fecha();
+        $fecha_generacion = $fecha->get_timestamp_db();
+
+        $nombre_institucion = dao_consultas::catalogo_de_parametros("nombre_institucion");
+
+        $detalle_deuda = array();
+        if (dao_consultas::catalogo_de_parametros("envia_detalle_deuda_en_correo") == 'SI') {
+            $datos_deuda = $persona->get_datos_deuda_corriente();
+            foreach ($datos_deuda as $item) {
+                $id_cargo = $item['id_cargo_cuenta_corriente'] ?? 0;
+                $concepto = $item['concepto'];
+                if (empty($concepto)) {
+                    $concepto = $cargo_map[$id_cargo] ?? $item['estado_cuota'];
+                }
+                $detalle_deuda[] = array(
+                    'concepto' => $concepto,
+                    'periodo'  => $item['cuota'],
+                    'importe'  => number_format($item['importe'], 2, ',', '.'),
+                    'estado'   => $item['estado_cuota']
+                );
+            }
+        }
+
+        $forma_pago = array();
+        if (dao_consultas::catalogo_de_parametros("envia_forma_pago_en_correo") == 'SI') {
+            $formas_cobro = $persona->get_datos_formas_cobro();
+            foreach ($formas_cobro as $fc) {
+                if (isset($fc['activo']) && $fc['activo'] == 'S') {
+                    $mp = $fc['medio_pago'] ?? '';
+                    if (empty($mp)) {
+                        $mp = $fc['marca_tarjeta'] ?? '';
+                    }
+                    $forma_pago = array(
+                        'medio_pago'      => $mp,
+                        'marca_tarjeta'   => $fc['marca_tarjeta'] ?? '',
+                        'entidad_bancaria' => $fc['entidad_bancaria'] ?? '',
+                    );
+                    break;
+                }
+            }
+        }
+
+        $datos_correo = array(
+            'alumno'           => $persona->get_apellidos() . ', ' . $persona->get_nombres() . ' - Legajo: ' . ($persona->get_legajo() ?? ''),
+            'tutor'            => $tutor_nombre,
+            'cargo_nombre'     => $cargo_nombre,
+            'descripcion'      => $descripcion,
+            'importe'          => number_format($importe, 2, ',', '.'),
+            'fecha_generacion' => $fecha_generacion,
+            'periodo'          => $periodo,
+            'nombre_institucion' => $nombre_institucion,
+            'detalle_deuda'    => $detalle_deuda,
+            'forma_pago'       => $forma_pago,
+        );
+
+        $asunto = envio_correo::generar_asunto_notificacion_cargo();
+        $cuerpo = envio_correo::generar_cuerpo_notificacion_cargo($datos_correo);
+
+        $sql = "INSERT INTO correo_pendiente (email_destino, asunto, cuerpo) VALUES ("
+            . toba::db()->quote($tutor_email) . ", "
+            . toba::db()->quote($asunto) . ", "
+            . toba::db()->quote($cuerpo) . ")";
+        toba::db()->consultar($sql);
+        if (!isset($this->resumen['correos_encolados'])) {
+            $this->resumen['correos_encolados'] = 0;
+        }
+        $this->resumen['correos_encolados']++;
+    }
+
+    private function acumular_notificacion_cargo($persona)
+    {
+        if (dao_consultas::catalogo_de_parametros("envia_notif_al_generar_cargo") != 'SI') {
+            return;
+        }
+
+        $tutor_data = dao_consultas::get_tutor_notificacion_cargo($persona->get_id_persona());
+        if (empty($tutor_data) || empty($tutor_data['tutor_email'])) {
+            return;
+        }
+        $tutor_email = $tutor_data['tutor_email'];
+        $tutor_nombre = $tutor_data['tutor'];
+
+        $todos_cargos = dao_consultas::get_cargos_cuenta_corriente();
+        $cargo_map = array();
+        foreach ($todos_cargos as $c) {
+            $cargo_map[$c['id_cargo_cuenta_corriente']] = $c['nombre'];
+        }
+        $cargo_nombre = $cargo_map[$this->tipo_cargo] ?? '';
+
+        $importe = $this->datos_formulario['importe_cuota'] ?? 0;
+        $periodo = $this->datos_formulario['cuota'] ?? '';
+        $anio = $this->datos_formulario['anio'] ?? '';
+        $cuota_completa = $persona->get_cuota_completa();
+        if ($cuota_completa && strlen($cuota_completa) == 6) {
+            $meses = array(
+                '01' => 'Enero', '02' => 'Febrero', '03' => 'Marzo', '04' => 'Abril',
+                '05' => 'Mayo', '06' => 'Junio', '07' => 'Julio', '08' => 'Agosto',
+                '09' => 'Septiembre', '10' => 'Octubre', '11' => 'Noviembre', '12' => 'Diciembre'
+            );
+            $mes_nro = substr($cuota_completa, 0, 2);
+            $anio_str = substr($cuota_completa, 2);
+            $mes_nombre = isset($meses[$mes_nro]) ? $meses[$mes_nro] : '';
+            if ($mes_nombre) {
+                $periodo = $mes_nombre . ' / ' . $anio_str;
+            }
+        } elseif ($cuota_completa && $anio) {
+            $periodo = $anio;
+        }
+        $descripcion = $cargo_nombre . ($periodo ? ' (' . $periodo . ')' : '');
+
+        $fecha = new fecha();
+        $fecha_generacion = $fecha->get_timestamp_db();
+
+        $detalle_deuda = array();
+        if (dao_consultas::catalogo_de_parametros("envia_detalle_deuda_en_correo") == 'SI') {
+            $datos_deuda = $persona->get_datos_deuda_corriente();
+            foreach ($datos_deuda as $item) {
+                $id_cargo = $item['id_cargo_cuenta_corriente'] ?? 0;
+                $concepto = $item['concepto'];
+                if (empty($concepto)) {
+                    $concepto = $cargo_map[$id_cargo] ?? $item['estado_cuota'];
+                }
+                $detalle_deuda[] = array(
+                    'concepto' => $concepto,
+                    'periodo'  => $item['cuota'],
+                    'importe'  => number_format($item['importe'], 2, ',', '.'),
+                    'estado'   => $item['estado_cuota']
+                );
+            }
+        }
+
+        $forma_pago = array();
+        if (dao_consultas::catalogo_de_parametros("envia_forma_pago_en_correo") == 'SI') {
+            $formas_cobro = $persona->get_datos_formas_cobro();
+            foreach ($formas_cobro as $fc) {
+                if (isset($fc['activo']) && $fc['activo'] == 'S') {
+                    $mp = $fc['medio_pago'] ?? '';
+                    if (empty($mp)) {
+                        $mp = $fc['marca_tarjeta'] ?? '';
+                    }
+                    $forma_pago = array(
+                        'medio_pago'      => $mp,
+                        'marca_tarjeta'   => $fc['marca_tarjeta'] ?? '',
+                        'entidad_bancaria' => $fc['entidad_bancaria'] ?? '',
+                    );
+                    break;
+                }
+            }
+        }
+
+        $alumno_data = array(
+            'alumno'           => $persona->get_apellidos() . ', ' . $persona->get_nombres() . ' - Legajo: ' . ($persona->get_legajo() ?? ''),
+            'cargo_nombre'     => $cargo_nombre,
+            'descripcion'      => $descripcion,
+            'importe'          => number_format($importe, 2, ',', '.'),
+            'fecha_generacion' => $fecha_generacion,
+            'periodo'          => $periodo,
+            'detalle_deuda'    => $detalle_deuda,
+            'forma_pago'       => $forma_pago,
+        );
+
+        if (!isset($this->notificaciones[$tutor_email])) {
+            $this->notificaciones[$tutor_email] = array(
+                'tutor_nombre' => $tutor_nombre,
+                'alumnos' => array(),
+            );
+        }
+        $this->notificaciones[$tutor_email]['alumnos'][] = $alumno_data;
+    }
+
+    private function enviar_notificaciones_acumuladas()
+    {
+        if (empty($this->notificaciones)) {
+            return;
+        }
+
+        $this->resumen['correos_encolados'] = 0;
+        $nombre_institucion = dao_consultas::catalogo_de_parametros("nombre_institucion");
+
+        foreach ($this->notificaciones as $tutor_email => $data) {
+            $datos_correo = array(
+                'tutor'              => $data['tutor_nombre'],
+                'alumnos'            => $data['alumnos'],
+                'nombre_institucion' => $nombre_institucion,
+            );
+
+            $asunto = envio_correo::generar_asunto_notificacion_cargo();
+            $cuerpo = envio_correo::generar_cuerpo_notificacion_cargos_multiples($datos_correo);
+
+            $sql = "INSERT INTO correo_pendiente (email_destino, asunto, cuerpo) VALUES ("
+                . toba::db()->quote($tutor_email) . ", "
+                . toba::db()->quote($asunto) . ", "
+                . toba::db()->quote($cuerpo) . ")";
+            toba::db()->consultar($sql);
+            $this->resumen['correos_encolados']++;
+        }
     }
 
     /**

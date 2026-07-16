@@ -486,6 +486,7 @@ class dao_consultas
                       ,nombre
                       ,nombre_corto
                       ,observaciones
+                      ,notifica_mail
 				FROM cargo_cuenta_corriente
                 $where
 			   ";
@@ -2038,5 +2039,24 @@ class dao_consultas
                 WHERE id_transaccion_cc = $id";
         toba::db()->ejecutar($sql);
     }
+
+    public static function get_tutor_notificacion_cargo($id_persona)
+    {
+        $sql = "SELECT p_tut.apellidos || ', ' || p_tut.nombres AS tutor
+                       ,p_tut.correo_electronico AS tutor_email
+                FROM persona p_est
+                    JOIN alumno al ON p_est.id_persona = al.id_persona
+                    JOIN persona_allegado pa ON al.id_alumno = pa.id_alumno
+                        AND pa.id_persona_allegado = (
+                            SELECT MIN(id_persona_allegado)
+                            FROM persona_allegado
+                            WHERE id_alumno = al.id_alumno AND tutor = 'S' AND activo = 'S'
+                        )
+                    JOIN persona p_tut ON pa.id_persona = p_tut.id_persona
+                WHERE p_est.id_persona = " . toba::db()->quote($id_persona);
+        return toba::db()->consultar_fila($sql);
+    }
+
+
 }
 ?>

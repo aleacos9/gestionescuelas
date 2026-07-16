@@ -109,6 +109,255 @@ class envio_correo
 
         return $mensaje;
     }
+    public static function generar_asunto_notificacion_cargo()
+    {
+        return 'Nuevo cargo generado - Gestion Escuelas';
+    }
+
+    public static function generar_cuerpo_notificacion_cargo($datos)
+    {
+        $alumno = htmlspecialchars($datos['alumno']);
+        $tutor = htmlspecialchars($datos['tutor']);
+        $cargo_nombre = htmlspecialchars($datos['cargo_nombre']);
+        $descripcion = htmlspecialchars($datos['descripcion']);
+        $importe = htmlspecialchars($datos['importe']);
+        $fecha = htmlspecialchars($datos['fecha_generacion']);
+        $periodo = htmlspecialchars($datos['periodo']);
+
+        $nombre_institucion = htmlspecialchars($datos['nombre_institucion']);
+
+        $detalle_deuda = '';
+        if (!empty($datos['detalle_deuda'])) {
+            $detalle_deuda = '
+                <h3 style="color: #5bc0de; margin-top: 20px;">Detalle de Deuda Actual</h3>
+                <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+                    <thead>
+                        <tr style="background-color: #5bc0de; color: #fff;">
+                            <th style="padding: 8px; border: 1px solid #ddd;">Concepto</th>
+                            <th style="padding: 8px; border: 1px solid #ddd;">Periodo</th>
+                            <th style="padding: 8px; border: 1px solid #ddd;">Importe</th>
+                            <th style="padding: 8px; border: 1px solid #ddd;">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>';
+            foreach ($datos['detalle_deuda'] as $deuda) {
+                $detalle_deuda .= '
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($deuda['concepto']) . '</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($deuda['periodo']) . '</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">$ ' . htmlspecialchars($deuda['importe']) . '</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($deuda['estado']) . '</td>
+                        </tr>';
+            }
+            $detalle_deuda .= '
+                    </tbody>
+                </table>';
+        }
+
+        $forma_pago = '';
+        if (!empty($datos['forma_pago'])) {
+            $forma_pago = '
+                <h3 style="color: #5bc0de; margin-top: 20px;">Forma de Pago Registrada</h3>
+                <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Medio de Pago:</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($datos['forma_pago']['medio_pago']) . '</td>
+                    </tr>';
+            if (!empty($datos['forma_pago']['marca_tarjeta'])) {
+                $forma_pago .= '
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Marca:</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($datos['forma_pago']['marca_tarjeta']) . '</td>
+                    </tr>';
+            }
+            if (!empty($datos['forma_pago']['entidad_bancaria'])) {
+                $forma_pago .= '
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Banco/Entidad:</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($datos['forma_pago']['entidad_bancaria']) . '</td>
+                    </tr>';
+            }
+            $forma_pago .= '
+                </table>';
+        }
+
+        $mensaje = '
+            <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto;">
+                <div style="background-color: #5bc0de; color: #fff; padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
+                    <h2 style="margin: 0;">Nuevo Cargo Generado</h2>
+                </div>
+
+                <div style="padding: 20px; border: 1px solid #ddd; border-top: none;">
+                    <p>Estimado/a <strong>' . $tutor . '</strong>,</p>
+                    <p>Le informamos que se ha generado un nuevo cargo en la cuenta corriente del alumno/a <strong>' . $alumno . '</strong>.</p>
+
+                    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Tipo de Cargo:</strong></td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">' . $cargo_nombre . '</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Descripcion:</strong></td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">' . $descripcion . '</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Periodo:</strong></td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">' . $periodo . '</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Importe:</strong></td>
+                            <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #d9534f;">$ ' . $importe . '</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Fecha de Generacion:</strong></td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">' . $fecha . '</td>
+                        </tr>
+                    </table>
+
+                    ' . $detalle_deuda . '
+
+                    ' . $forma_pago . '
+
+                    <p style="margin-top: 20px;">Por favor, le solicitamos se regularice la situación a la brevedad. Si ya ha realizado el pago por otro medio, por favor envíe el comprobante por este medio o por correo para que podamos registrarlo correctamente, ya que en ocasiones se realiza el pago pero no recibimos la constancia necesaria.</p>
+                    <p>Ante cualquier consulta, no dude en comunicarse con la institución.</p>
+
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                    <p style="font-size: 12px; color: #999; text-align: center;">' . $nombre_institucion . ' - Sistema de Gestion de Escuelas</p>
+                </div>
+            </div>
+        ';
+
+        return $mensaje;
+    }
+
+
+    public static function generar_asunto_notificacion_cargos_multiples()
+    {
+        return 'Nuevos cargos generados - Gestion Escuelas';
+    }
+
+    public static function generar_cuerpo_notificacion_cargos_multiples($datos)
+    {
+        $tutor = htmlspecialchars($datos['tutor']);
+        $nombre_institucion = htmlspecialchars($datos['nombre_institucion']);
+
+        $alumnos_html = '';
+        foreach ($datos['alumnos'] as $al) {
+            $alumno = htmlspecialchars($al['alumno']);
+            $cargo_nombre = htmlspecialchars($al['cargo_nombre']);
+            $descripcion = htmlspecialchars($al['descripcion']);
+            $importe = htmlspecialchars($al['importe']);
+            $fecha = htmlspecialchars($al['fecha_generacion']);
+            $periodo = htmlspecialchars($al['periodo']);
+
+            $detalle_deuda = '';
+            if (!empty($al['detalle_deuda'])) {
+                $detalle_deuda = '
+                    <h4 style="color: #5bc0de;">Detalle de Deuda Actual</h4>
+                    <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+                        <thead>
+                            <tr style="background-color: #5bc0de; color: #fff;">
+                                <th style="padding: 8px; border: 1px solid #ddd;">Concepto</th>
+                                <th style="padding: 8px; border: 1px solid #ddd;">Periodo</th>
+                                <th style="padding: 8px; border: 1px solid #ddd;">Importe</th>
+                                <th style="padding: 8px; border: 1px solid #ddd;">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>';
+                foreach ($al['detalle_deuda'] as $deuda) {
+                    $detalle_deuda .= '
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($deuda['concepto']) . '</td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($deuda['periodo']) . '</td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">$ ' . htmlspecialchars($deuda['importe']) . '</td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($deuda['estado']) . '</td>
+                            </tr>';
+                }
+                $detalle_deuda .= '
+                        </tbody>
+                    </table>';
+            }
+
+            $forma_pago = '';
+            if (!empty($al['forma_pago'])) {
+                $forma_pago = '
+                    <h4 style="color: #5bc0de;">Forma de Pago Registrada</h4>
+                    <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Medio de Pago:</strong></td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($al['forma_pago']['medio_pago']) . '</td>
+                        </tr>';
+                if (!empty($al['forma_pago']['marca_tarjeta'])) {
+                    $forma_pago .= '
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Marca:</strong></td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($al['forma_pago']['marca_tarjeta']) . '</td>
+                        </tr>';
+                }
+                if (!empty($al['forma_pago']['entidad_bancaria'])) {
+                    $forma_pago .= '
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Banco/Entidad:</strong></td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($al['forma_pago']['entidad_bancaria']) . '</td>
+                        </tr>';
+                }
+                $forma_pago .= '
+                    </table>';
+            }
+
+            $alumnos_html .= '
+                    <div style="margin-bottom: 30px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background-color: #fafafa;">
+                        <h3 style="color: #555; margin-top: 0;">' . $alumno . '</h3>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Tipo de Cargo:</strong></td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">' . $cargo_nombre . '</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Descripcion:</strong></td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">' . $descripcion . '</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Periodo:</strong></td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">' . $periodo . '</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Importe:</strong></td>
+                                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #d9534f;">$ ' . $importe . '</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Fecha de Generacion:</strong></td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">' . $fecha . '</td>
+                            </tr>
+                        </table>
+                        ' . $detalle_deuda . '
+                        ' . $forma_pago . '
+                    </div>';
+        }
+
+        $mensaje = '
+            <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto;">
+                <div style="background-color: #5bc0de; color: #fff; padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
+                    <h2 style="margin: 0;">Nuevos Cargos Generados</h2>
+                </div>
+
+                <div style="padding: 20px; border: 1px solid #ddd; border-top: none;">
+                    <p>Estimado/a <strong>' . $tutor . '</strong>,</p>
+                    <p>Se han generado los siguientes cargos en las cuentas corrientes de los alumnos a su cargo:</p>
+
+                    ' . $alumnos_html . '
+
+                    <p style="margin-top: 20px;">Por favor, le solicitamos se regularice la situación a la brevedad. Si ya ha realizado el pago por otro medio, por favor envíe el comprobante por este medio o por correo para que podamos registrarlo correctamente, ya que en ocasiones se realiza el pago pero no recibimos la constancia necesaria.</p>
+                    <p>Ante cualquier consulta, no dude en comunicarse con la institución.</p>
+
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                    <p style="font-size: 12px; color: #999; text-align: center;">' . $nombre_institucion . ' - Sistema de Gestion de Escuelas</p>
+                </div>
+            </div>
+        ';
+
+        return $mensaje;
+    }
 
     public static function generar_mensaje_whatsapp_rechazo($datos)
     {

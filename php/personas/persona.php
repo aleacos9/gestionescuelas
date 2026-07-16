@@ -1319,6 +1319,16 @@ class persona
         return $this->ultimo_dia_mes_cuota;
     }
 
+    public function get_descripcion_cuota()
+    {
+        return $this->descripcion_cuota;
+    }
+
+    public function get_cuota_completa()
+    {
+        return $this->cuota_completa;
+    }
+
     //---------------------------------------------------------------------
     //                     MÉTODOS
     //---------------------------------------------------------------------

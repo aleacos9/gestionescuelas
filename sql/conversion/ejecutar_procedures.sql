@@ -81,3 +81,9 @@ SELECT generacion_de_comprobantes_afip_desde_alta_pagos();
 
 --Alejandro feature/generacion-de-comprobantes-afip-desde-el-alta-de-pagos 23/02/2024
 SELECT correcciones_varias_perfil_administrativo();
+
+--Agregar parametros de notificacion al generar cargo 15/07/2026
+SELECT altas_parametros_notificacion_cargos();
+
+--Alejandro feature/generacion-de-cargos-notificaciones 16/07/2026
+SELECT altas_tabla_correo_pendiente();
