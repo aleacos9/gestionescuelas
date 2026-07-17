@@ -336,7 +336,7 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
         $mensaje .= "Total de cargos no generados: {$this->resumen['cargos_no_generados']}";
 
         if (dao_consultas::catalogo_de_parametros("envia_notif_al_generar_cargo") == 'SI') {
-            $mensaje .= "<br />Total de correos encolados: {$this->resumen['correos_encolados']}";
+            $mensaje .= "<br />Total de correos encolados: " . ($this->resumen['correos_encolados'] ?? 0);
         }
 
         //Agrego mensajes adicionales si existen
