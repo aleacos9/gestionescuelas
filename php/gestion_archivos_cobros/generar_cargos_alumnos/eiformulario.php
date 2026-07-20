@@ -5,7 +5,8 @@ class eiformulario extends gestionescuelas_ei_formulario
 	{
 		$importe_mensual_cuota_x_grado = dao_consultas::catalogo_de_parametros("importe_mensual_cuota_x_grado");
 		$ingresa_importe_en_generacion_cargos = dao_consultas::catalogo_de_parametros("ingresa_importe_en_generacion_cargos");
-        $cant_cuotas_cobro_inscripcion = dao_consultas::catalogo_de_parametros("cant_cuotas_cobro_inscripcion");
+		$cant_cuotas_cobro_inscripcion = dao_consultas::catalogo_de_parametros("cant_cuotas_cobro_inscripcion");
+		$envia_notif = dao_consultas::catalogo_de_parametros("envia_notif_al_generar_cargo");
 
 		echo "
 		{$this->objeto_js}.ini = function()
@@ -38,7 +39,11 @@ class eiformulario extends gestionescuelas_ei_formulario
 		{
 			if (!es_inicial) {
 			    if (this.ef('forma_generacion').get_estado() == 'G') {
-			        alert('Tenga en cuenta que al seleccionar la opción Grupal se le generará el costo a todos los alumnos activos cargados en el sistema');
+			        alert('Tenga en cuenta que al seleccionar la opción Grupal se le generará el cargo a todos los alumnos activos cargados en el sistema');
+		        var envia_notif_al_generar_cargo = '{$envia_notif}';
+		        if (envia_notif_al_generar_cargo == 'SI') {
+		            alert('Además, se enviarán correos electrónicos de notificación a cada tutor de los alumnos procesados.');
+		        }
 			        this.ef('id_persona').set_obligatorio(0);
 			        this.ef('id_persona').resetear_estado();
 			        this.ef('id_persona').ocultar();
@@ -73,7 +78,7 @@ class eiformulario extends gestionescuelas_ei_formulario
 			        }
 			        
 			        if ((cant_cuotas_cobro_inscripcion > 1) && (ingresa_importe_en_generacion_cargos == 'SI')) {
-			            alert('Tenga en cuenta que los valores de las cuotas que va a generar para las inscripciones NO saldrán del importe ingresado por pantalla, sino que se tomará de los parámetros correspondientes:".'\n'." * importe_cuota_uno_nivel_inicial ".'\n'." *importe_cuota_dos_nivel_inicial ".'\n'." *importe_cuota_uno_nivel_primario ".'\n'." *importe_cuota_dos_nivel_primario".'\n'."Se recomienda cambiar a NO el valor del parámetro ingresa_importe_en_generacion_cargos".'\n'."'); 
+			            alert('Tenga en cuenta que los valores de las cuotas que va a generar para las inscripciones NO saldrán del importe ingresado por pantalla, sino que se tomará de los parámetros correspondientes:" . '\n' . " * importe_cuota_uno_nivel_inicial " . '\n' . " *importe_cuota_dos_nivel_inicial " . '\n' . " *importe_cuota_uno_nivel_primario " . '\n' . " *importe_cuota_dos_nivel_primario" . '\n' . "Se recomienda cambiar a NO el valor del parámetro ingresa_importe_en_generacion_cargos" . '\n' . "'); 
 			        }
 			        break;
 				case '2': //cuota mensual
@@ -102,4 +107,3 @@ class eiformulario extends gestionescuelas_ei_formulario
 		";
 	}
 }
-?>

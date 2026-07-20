@@ -33,6 +33,8 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
         $this->resumen['total_alumnos'] = 0;
         $this->resumen['cargos_generados'] = 0;
         $this->resumen['cargos_no_generados'] = 0;
+        $this->resumen['alumnos_duplicados'] = array();
+        $this->resumen['alumnos_sin_email'] = array();
         $this->notificaciones = array();
 
         if (isset($this->datos_formulario)) {
@@ -307,6 +309,23 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
             }
         } else {
             $this->resumen['cargos_no_generados']++;
+            if (isset($resultado['id_persona'])) {
+                $filtro = array('id_persona' => $resultado['id_persona'], 'solo_alumnos' => true, 'con_dni' => false);
+                $datos_persona = dao_consultas::get_nombres_persona($filtro);
+                $dni = '';
+                $documentos = $persona->get_documentos();
+                foreach ($documentos as $doc) {
+                    if ($doc['id_tipo_documento'] == 8) {
+                        $dni = $doc['identificacion'];
+                        break;
+                    }
+                }
+                if ($datos_persona) {
+                    $this->resumen['alumnos_duplicados'][] = $datos_persona[0]['nombre_completo'] . ($dni ? ' - DNI ' . $dni : '');
+                } else {
+                    $this->resumen['alumnos_duplicados'][] = $resultado['id_persona'];
+                }
+            }
         }
     }
 
@@ -339,6 +358,24 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
             $mensaje .= "<br />Total de correos encolados: " . ($this->resumen['correos_encolados'] ?? 0);
         }
 
+        //Alumnos que ya tenían el cargo generado
+        if (!empty($this->resumen['alumnos_duplicados'])) {
+            $mensaje .= "<br /><br /><strong>Los siguientes alumnos ya tienen el cargo generado para el período seleccionado:</strong><ul>";
+            foreach ($this->resumen['alumnos_duplicados'] as $dup) {
+                $mensaje .= "<li>{$dup}</li>";
+            }
+            $mensaje .= "</ul>";
+        }
+
+        //Alumnos sin tutor activo con correo electrónico
+        if (!empty($this->resumen['alumnos_sin_email'])) {
+            $mensaje .= "<br /><br /><strong>Los siguientes alumnos no tienen tutor activo con correo electrónico asociado:</strong><ul>";
+            foreach ($this->resumen['alumnos_sin_email'] as $nom) {
+                $mensaje .= "<li>{$nom}</li>";
+            }
+            $mensaje .= "</ul>";
+        }
+
         //Agrego mensajes adicionales si existen
         if (!empty($this->resumen['mensajes'])) {
             $mensaje .= "<br /><br /><strong>Observaciones:</strong><ul>";
@@ -359,6 +396,15 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
 
         $tutor_data = dao_consultas::get_tutor_notificacion_cargo($persona->get_id_persona());
         if (empty($tutor_data) || empty($tutor_data['tutor_email'])) {
+            $dni = '';
+            $documentos = $persona->get_documentos();
+            foreach ($documentos as $doc) {
+                if ($doc['id_tipo_documento'] == 8) {
+                    $dni = $doc['identificacion'];
+                    break;
+                }
+            }
+            $this->resumen['alumnos_sin_email'][] = $persona->get_nombre_completo_persona() . ($dni ? ' - DNI ' . $dni : '');
             return;
         }
         $tutor_email = $tutor_data['tutor_email'];
@@ -469,6 +515,15 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
 
         $tutor_data = dao_consultas::get_tutor_notificacion_cargo($persona->get_id_persona());
         if (empty($tutor_data) || empty($tutor_data['tutor_email'])) {
+            $dni = '';
+            $documentos = $persona->get_documentos();
+            foreach ($documentos as $doc) {
+                if ($doc['id_tipo_documento'] == 8) {
+                    $dni = $doc['identificacion'];
+                    break;
+                }
+            }
+            $this->resumen['alumnos_sin_email'][] = $persona->get_nombre_completo_persona() . ($dni ? ' - DNI ' . $dni : '');
             return;
         }
         $tutor_email = $tutor_data['tutor_email'];
