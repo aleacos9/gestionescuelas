@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Clase para manejar el envio de correos electronicos en el Sistema de Gestion de Escuelas.
  */
@@ -7,8 +8,8 @@ class envio_correo
     private $email;
     private $asunto;
     private $cuerpo;
-    private $max_intentos = 3;  
-    private $pausa = 2;         
+    private $max_intentos = 3;
+    private $pausa = 2;
 
     public function __construct($email)
     {
@@ -66,18 +67,27 @@ class envio_correo
 
     public static function generar_cuerpo_notificacion_rechazo($datos)
     {
-        $alumno = htmlspecialchars($datos['alumno']);
+        $alumno = htmlspecialchars($datos['alumno'], ENT_QUOTES, 'ISO-8859-1');
         $cuota_raw = $datos['cuota']; // Viene como MMYYYY
-        $error = htmlspecialchars($datos['descripcion_error_debito']);
-        $tutor = htmlspecialchars($datos['tutor']);
+        $error = htmlspecialchars($datos['descripcion_error_debito'], ENT_QUOTES, 'ISO-8859-1');
+        $tutor = htmlspecialchars($datos['tutor'], ENT_QUOTES, 'ISO-8859-1');
 
         // Formateamos la cuota
         $meses = array(
-            '01' => 'Enero', '02' => 'Febrero', '03' => 'Marzo', '04' => 'Abril',
-            '05' => 'Mayo', '06' => 'Junio', '07' => 'Julio', '08' => 'Agosto',
-            '09' => 'Septiembre', '10' => 'Octubre', '11' => 'Noviembre', '12' => 'Diciembre'
+            '01' => 'Enero',
+            '02' => 'Febrero',
+            '03' => 'Marzo',
+            '04' => 'Abril',
+            '05' => 'Mayo',
+            '06' => 'Junio',
+            '07' => 'Julio',
+            '08' => 'Agosto',
+            '09' => 'Septiembre',
+            '10' => 'Octubre',
+            '11' => 'Noviembre',
+            '12' => 'Diciembre'
         );
-        
+
         $mes_nro = substr($cuota_raw, 0, 2);
         $anio = substr($cuota_raw, 2);
         $mes_nombre = (isset($meses[$mes_nro])) ? $meses[$mes_nro] : 'Mes ' . $mes_nro;
@@ -91,7 +101,7 @@ class envio_correo
                 
                 <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
                     <tr>
-                        <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Cuota (Mes/AÃ±o):</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Cuota (Mes/Año):</strong></td>
                         <td style="padding: 8px; border: 1px solid #ddd;">' . $cuota . '</td>
                     </tr>
                     <tr>
@@ -109,6 +119,256 @@ class envio_correo
 
         return $mensaje;
     }
+    public static function generar_asunto_notificacion_cargo()
+    {
+        return 'Nuevo cargo generado - Gestion Escuelas';
+    }
+
+    public static function generar_cuerpo_notificacion_cargo($datos)
+    {
+        toba::logger()->error($datos);
+        $alumno = htmlspecialchars($datos['alumno'], ENT_QUOTES, 'ISO-8859-1');
+        $tutor = htmlspecialchars($datos['tutor'], ENT_QUOTES, 'ISO-8859-1');
+        $cargo_nombre = htmlspecialchars($datos['cargo_nombre'], ENT_QUOTES, 'ISO-8859-1');
+        $descripcion = htmlspecialchars($datos['descripcion'], ENT_QUOTES, 'ISO-8859-1');
+        $importe = htmlspecialchars($datos['importe'], ENT_QUOTES, 'ISO-8859-1');
+        $fecha = htmlspecialchars($datos['fecha_generacion'], ENT_QUOTES, 'ISO-8859-1');
+        $periodo = htmlspecialchars($datos['periodo'], ENT_QUOTES, 'ISO-8859-1');
+
+        $nombre_institucion = htmlspecialchars($datos['nombre_institucion'], ENT_QUOTES, 'ISO-8859-1');
+
+        $detalle_deuda = '';
+        if (!empty($datos['detalle_deuda'])) {
+            $detalle_deuda = '
+                <h3 style="color: #5bc0de; margin-top: 20px;">Detalle de Deuda Actual</h3>
+                <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+                    <thead>
+                        <tr style="background-color: #5bc0de; color: #fff;">
+                            <th style="padding: 8px; border: 1px solid #ddd;">Concepto</th>
+                            <th style="padding: 8px; border: 1px solid #ddd;">Periodo</th>
+                            <th style="padding: 8px; border: 1px solid #ddd;">Importe</th>
+                            <th style="padding: 8px; border: 1px solid #ddd;">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>';
+            foreach ($datos['detalle_deuda'] as $deuda) {
+                $detalle_deuda .= '
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($deuda['concepto'], ENT_QUOTES, 'ISO-8859-1') . '</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($deuda['periodo'], ENT_QUOTES, 'ISO-8859-1') . '</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">$ ' . htmlspecialchars($deuda['importe'], ENT_QUOTES, 'ISO-8859-1') . '</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($deuda['estado'], ENT_QUOTES, 'ISO-8859-1') . '</td>
+                        </tr>';
+            }
+            $detalle_deuda .= '
+                    </tbody>
+                </table>';
+        }
+
+        $forma_pago = '';
+        if (!empty($datos['forma_pago'])) {
+            $forma_pago = '
+                <h3 style="color: #5bc0de; margin-top: 20px;">Forma de Pago Registrada</h3>
+                <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Medio de Pago:</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($datos['forma_pago']['medio_pago'], ENT_QUOTES, 'ISO-8859-1') . '</td>
+                    </tr>';
+            if (!empty($datos['forma_pago']['marca_tarjeta'])) {
+                $forma_pago .= '
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Marca:</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($datos['forma_pago']['marca_tarjeta'], ENT_QUOTES, 'ISO-8859-1') . '</td>
+                    </tr>';
+            }
+            if (!empty($datos['forma_pago']['entidad_bancaria'])) {
+                $forma_pago .= '
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Banco/Entidad:</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($datos['forma_pago']['entidad_bancaria'], ENT_QUOTES, 'ISO-8859-1') . '</td>
+                    </tr>';
+            }
+            $forma_pago .= '
+                </table>';
+        }
+
+        $mensaje = '
+            <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto;">
+                <div style="background-color: #5bc0de; color: #fff; padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
+                    <h2 style="margin: 0;">Nuevo Cargo Generado</h2>
+                </div>
+
+                <div style="padding: 20px; border: 1px solid #ddd; border-top: none;">
+                    <p>Estimado/a <strong>' . $tutor . '</strong>,</p>
+                    <p>Le informamos que se ha generado un nuevo cargo en la cuenta corriente del alumno/a <strong>' . $alumno . '</strong>.</p>
+
+                    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Tipo de Cargo:</strong></td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">' . $cargo_nombre . '</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Descripcion:</strong></td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">' . $descripcion . '</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Periodo:</strong></td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">' . $periodo . '</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Importe:</strong></td>
+                            <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #d9534f;">$ ' . $importe . '</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Fecha de Generacion:</strong></td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">' . $fecha . '</td>
+                        </tr>
+                    </table>
+
+                    ' . $detalle_deuda . '
+
+                    ' . $forma_pago . '
+
+                    <p style="margin-top: 20px;">Por favor, le solicitamos se regularice la situación a la brevedad. Si ya ha realizado el pago por otro medio, por favor envíe el comprobante por este medio o por correo para que podamos registrarlo correctamente, ya que en ocasiones se realiza el pago pero no recibimos la constancia necesaria.</p>
+                    <p>Ante cualquier consulta, no dude en comunicarse con la institución.</p>
+
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                    <p style="font-size: 12px; color: #999; text-align: center;">' . $nombre_institucion . ' - Sistema de Gestion de Escuelas</p>
+                </div>
+            </div>
+        ';
+
+        return $mensaje;
+    }
+
+
+    public static function generar_asunto_notificacion_cargos_multiples()
+    {
+        return 'Nuevos cargos generados - Gestion Escuelas';
+    }
+
+    public static function generar_cuerpo_notificacion_cargos_multiples($datos)
+    {
+        $tutor = htmlspecialchars($datos['tutor'], ENT_QUOTES, 'ISO-8859-1');
+        $nombre_institucion = htmlspecialchars($datos['nombre_institucion'], ENT_QUOTES, 'ISO-8859-1');
+
+        $alumnos_html = '';
+        foreach ($datos['alumnos'] as $al) {
+            $alumno = htmlspecialchars($al['alumno'], ENT_QUOTES, 'ISO-8859-1');
+            $cargo_nombre = htmlspecialchars($al['cargo_nombre'], ENT_QUOTES, 'ISO-8859-1');
+            $descripcion = htmlspecialchars($al['descripcion'], ENT_QUOTES, 'ISO-8859-1');
+            $importe = htmlspecialchars($al['importe'], ENT_QUOTES, 'ISO-8859-1');
+            $fecha = htmlspecialchars($al['fecha_generacion'], ENT_QUOTES, 'ISO-8859-1');
+            $periodo = htmlspecialchars($al['periodo'], ENT_QUOTES, 'ISO-8859-1');
+
+            $detalle_deuda = '';
+            if (!empty($al['detalle_deuda'])) {
+                $detalle_deuda = '
+                    <h4 style="color: #5bc0de;">Detalle de Deuda Actual</h4>
+                    <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+                        <thead>
+                            <tr style="background-color: #5bc0de; color: #fff;">
+                                <th style="padding: 8px; border: 1px solid #ddd;">Concepto</th>
+                                <th style="padding: 8px; border: 1px solid #ddd;">Periodo</th>
+                                <th style="padding: 8px; border: 1px solid #ddd;">Importe</th>
+                                <th style="padding: 8px; border: 1px solid #ddd;">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>';
+                foreach ($al['detalle_deuda'] as $deuda) {
+                    $detalle_deuda .= '
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($deuda['concepto'], ENT_QUOTES, 'ISO-8859-1') . '</td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($deuda['periodo'], ENT_QUOTES, 'ISO-8859-1') . '</td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">$ ' . htmlspecialchars($deuda['importe'], ENT_QUOTES, 'ISO-8859-1') . '</td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($deuda['estado'], ENT_QUOTES, 'ISO-8859-1') . '</td>
+                            </tr>';
+                }
+                $detalle_deuda .= '
+                        </tbody>
+                    </table>';
+            }
+
+            $forma_pago = '';
+            if (!empty($al['forma_pago'])) {
+                $forma_pago = '
+                    <h4 style="color: #5bc0de;">Forma de Pago Registrada</h4>
+                    <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Medio de Pago:</strong></td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($al['forma_pago']['medio_pago'], ENT_QUOTES, 'ISO-8859-1') . '</td>
+                        </tr>';
+                if (!empty($al['forma_pago']['marca_tarjeta'])) {
+                    $forma_pago .= '
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Marca:</strong></td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($al['forma_pago']['marca_tarjeta'], ENT_QUOTES, 'ISO-8859-1') . '</td>
+                        </tr>';
+                }
+                if (!empty($al['forma_pago']['entidad_bancaria'])) {
+                    $forma_pago .= '
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Banco/Entidad:</strong></td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($al['forma_pago']['entidad_bancaria'], ENT_QUOTES, 'ISO-8859-1') . '</td>
+                        </tr>';
+                }
+                $forma_pago .= '
+                    </table>';
+            }
+
+            $alumnos_html .= '
+                    <div style="margin-bottom: 30px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background-color: #fafafa;">
+                        <h3 style="color: #555; margin-top: 0;">' . $alumno . '</h3>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Tipo de Cargo:</strong></td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">' . $cargo_nombre . '</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Descripcion:</strong></td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">' . $descripcion . '</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Periodo:</strong></td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">' . $periodo . '</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Importe:</strong></td>
+                                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #d9534f;">$ ' . $importe . '</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Fecha de Generacion:</strong></td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">' . $fecha . '</td>
+                            </tr>
+                        </table>
+                        ' . $detalle_deuda . '
+                        ' . $forma_pago . '
+                    </div>';
+        }
+
+        $mensaje = '
+            <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto;">
+                <div style="background-color: #5bc0de; color: #fff; padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
+                    <h2 style="margin: 0;">Nuevos Cargos Generados</h2>
+                </div>
+
+                <div style="padding: 20px; border: 1px solid #ddd; border-top: none;">
+                    <p>Estimado/a <strong>' . $tutor . '</strong>,</p>
+                    <p>Se han generado los siguientes cargos en las cuentas corrientes de los alumnos a su cargo:</p>
+
+                    ' . $alumnos_html . '
+
+                    <p style="margin-top: 20px;">Por favor, le solicitamos se regularice la situación a la brevedad. Si ya ha realizado el pago por otro medio, por favor envíe el comprobante por este medio o por correo para que podamos registrarlo correctamente, ya que en ocasiones se realiza el pago pero no recibimos la constancia necesaria.</p>
+                    <p>Ante cualquier consulta, no dude en comunicarse con la institución.</p>
+
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                    <p style="font-size: 12px; color: #999; text-align: center;">' . $nombre_institucion . ' - Sistema de Gestion de Escuelas</p>
+                </div>
+            </div>
+        ';
+
+        return $mensaje;
+    }
 
     public static function generar_mensaje_whatsapp_rechazo($datos)
     {
@@ -118,11 +378,20 @@ class envio_correo
         $tutor = $datos['tutor'];
 
         $meses = array(
-            '01' => 'Enero', '02' => 'Febrero', '03' => 'Marzo', '04' => 'Abril',
-            '05' => 'Mayo', '06' => 'Junio', '07' => 'Julio', '08' => 'Agosto',
-            '09' => 'Septiembre', '10' => 'Octubre', '11' => 'Noviembre', '12' => 'Diciembre'
+            '01' => 'Enero',
+            '02' => 'Febrero',
+            '03' => 'Marzo',
+            '04' => 'Abril',
+            '05' => 'Mayo',
+            '06' => 'Junio',
+            '07' => 'Julio',
+            '08' => 'Agosto',
+            '09' => 'Septiembre',
+            '10' => 'Octubre',
+            '11' => 'Noviembre',
+            '12' => 'Diciembre'
         );
-        
+
         $mes_nro = substr($cuota_raw, 0, 2);
         $anio = substr($cuota_raw, 2);
         $mes_nombre = (isset($meses[$mes_nro])) ? $meses[$mes_nro] : 'Mes ' . $mes_nro;
@@ -132,11 +401,10 @@ class envio_correo
         $mensaje .= "Estimado/a *{$tutor}*\n\n";
         $mensaje .= "Le informamos que el debito automatico correspondiente a la cuota del alumno/a *{$alumno}* ha sido rechazado por la entidad bancaria.\n\n";
         $mensaje .= "*Detalle:*\n";
-        $mensaje .= "- *Cuota (Mes/AÃ±o):* {$cuota}\n";
+        $mensaje .= "- *Cuota (Mes/Año):* {$cuota}\n";
         $mensaje .= "- *Motivo:* {$error}\n\n";
         $mensaje .= "Por favor, le solicitamos se regularice la situacion a la brevedad. Si ya ha realizado el pago por otro medio, por favor *envie el comprobante por este medio o por correo* para que podamos registrarlo correctamente, ya que en ocasiones se realiza el pago pero no recibimos la constancia necesaria.";
 
         return $mensaje;
     }
 }
-?>

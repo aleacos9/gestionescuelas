@@ -1319,6 +1319,16 @@ class persona
         return $this->ultimo_dia_mes_cuota;
     }
 
+    public function get_descripcion_cuota()
+    {
+        return $this->descripcion_cuota;
+    }
+
+    public function get_cuota_completa()
+    {
+        return $this->cuota_completa;
+    }
+
     //---------------------------------------------------------------------
     //                     MÉTODOS
     //---------------------------------------------------------------------
@@ -1568,7 +1578,7 @@ class persona
                       ,at.id_entidad_bancaria
                       ,eb.nombre_corto as entidad_bancaria
                       ,at.id_medio_pago
-                      ,mp.nombre_corto as medio_pago
+                      ,mp.nombre as medio_pago
                       ,at.activo
                       ,(CASE WHEN at.activo = 'S' THEN 'Activo'
                              WHEN at.activo = 'N' THEN 'Inactivo'
@@ -2214,8 +2224,7 @@ class persona
             $alumnos_con_error['id_persona'] = $this->persona;
         }
         if (!empty($alumnos_con_error)) {
-            $this->mostrar_mensajes($alumnos_con_error);
-            return ['error' => true, 'mensaje' => 'Cargo no generado: error al validar generación del cargo.'];
+            return ['error' => true, 'mensaje' => 'Cargo no generado: error al validar generación del cargo.', 'id_persona' => $this->persona];
         } else {
             toba::notificacion()->agregar('Los cargos en los alumnos fueron generados con éxito.', 'info');
             return ['error' => false];
