@@ -87,3 +87,6 @@ SELECT altas_parametros_notificacion_cargos();
 
 --Alejandro feature/generacion-de-cargos-notificaciones 16/07/2026
 SELECT altas_tabla_correo_pendiente();
+
+--Alejandro feature/enviar-correo-electronico-al-generar-cargos 03/08/2026
+SELECT altas_tabla_comprobante_pendiente();

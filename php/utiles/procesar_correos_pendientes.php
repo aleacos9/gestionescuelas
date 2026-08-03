@@ -1,5 +1,38 @@
 #!/usr/bin/env php
 <?php
+/**
+ * Envia los correos encolados en correo_pendiente.
+ *
+ * La generacion de cargos ya no manda los correos en el momento —con 137 tutores
+ * se iba en timeout— sino que los deja encolados. Este script los saca.
+ *
+ * Para correrlo a mano:
+ *
+ *     php php/utiles/procesar_correos_pendientes.php
+ *
+ * Como se agenda en el cron: ver el bloque que sigue al cierre de este
+ * comentario. Va aparte porque una linea de crontab lleva barra-asterisco y eso
+ * cerraria este bloque.
+ */
+
+// ---------------------------------------------------------------------------
+// COMO SE AGENDA — crontab del servidor, no del repo
+// ---------------------------------------------------------------------------
+//
+//   # Envia los avisos encolados al generar cargos.
+//   */5 * * * * TOBA_DIR=/data/local/sistema TOBA_INSTANCIA=produccion TOBA_PROYECTO=gestionescuelas php /data/local/sistema/proyectos/gestionescuelas/php/utiles/procesar_correos_pendientes.php >> /var/log/gestionescuelas/correos.log 2>&1
+//
+// Por que cada 5 minutos y no cada 15: el lote es de 20 correos por corrida y una
+// generacion de cargos encola mas de 130. A 5 minutos la cola se vacia en poco
+// mas de media hora; a 15 tardaria casi dos.
+//
+// Las tres variables ya tienen valor por defecto abajo (/data/local/sistema,
+// desarrollo, gestionescuelas). Se pasan explicitas para que la linea del
+// crontab deje asentado contra que instancia corre: es el dato que despues nadie
+// encuentra.
+//
+// Ajustar la ruta si TOBA_DIR no es /data/local/sistema. El proyecto siempre
+// cuelga de $TOBA_DIR/proyectos/$TOBA_PROYECTO.
 
 if (!isset($_SERVER['TOBA_DIR'])) {
     $_SERVER['TOBA_DIR'] = '/data/local/sistema';

@@ -1136,3 +1136,43 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE 'plpgsql';
+
+
+--Alejandro feature/enviar-correo-electronico-al-generar-cargos 03/08/2026
+--Cola de comprobantes AFIP pendientes de emitir. Mismo patron que correo_pendiente:
+--el pago se graba y commitea, y la emision queda encolada para hacerla aparte con
+--reintento. El UNIQUE sobre id_transaccion_cc impide que un pago termine con dos
+--facturas. Las columnas cae y cae_vencimiento guardan lo que hoy vive solo en AFIP.
+CREATE OR REPLACE FUNCTION altas_tabla_comprobante_pendiente() RETURNS VOID AS
+$$
+BEGIN
+    IF NOT EXISTS ( SELECT '' FROM information_schema.tables WHERE table_name = 'comprobante_pendiente') THEN
+
+        CREATE TABLE comprobante_pendiente (
+            id_comprobante_pendiente SERIAL PRIMARY KEY,
+            id_transaccion_cc        INTEGER       NOT NULL UNIQUE
+                                                   REFERENCES transaccion_cuenta_corriente (id_transaccion_cc),
+            id_alumno_cc             INTEGER       NOT NULL
+                                                   REFERENCES alumno_cuenta_corriente (id_alumno_cc),
+            identificador_tutor      VARCHAR(20),
+            importe                  NUMERIC(15,2) NOT NULL,
+            fecha_servicio_desde     DATE,
+            fecha_servicio_hasta     DATE,
+            fecha_alta               TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+            procesado                CHAR(2)       DEFAULT 'NO',
+            fecha_procesado          TIMESTAMP,
+            intentos                 INTEGER       DEFAULT 0,
+            ultimo_error             TEXT,
+            punto_venta              INTEGER,
+            comprobante_tipo         INTEGER,
+            comprobante_numero       INTEGER,
+            cae                      VARCHAR(20),
+            cae_vencimiento          DATE
+        );
+
+        CREATE INDEX idx_comprobante_pendiente_procesado ON comprobante_pendiente(procesado, intentos);
+        CREATE INDEX idx_comprobante_pendiente_fecha ON comprobante_pendiente(fecha_alta);
+
+    END IF;
+END;
+$$ LANGUAGE 'plpgsql';
