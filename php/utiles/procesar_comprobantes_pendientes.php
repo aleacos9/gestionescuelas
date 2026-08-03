@@ -49,20 +49,28 @@
  */
 
 // ---------------------------------------------------------------------------
-// COMO SE AGENDA — crontab del servidor, no del repo
+// COMO SE AGENDA — crontab del HOST, no del contenedor
 // ---------------------------------------------------------------------------
+//
+// La imagen del sistema (docker/sistema/Dockerfile, php:7.4-apache) NO tiene el
+// paquete `cron` instalado y start.sh no levanta ningun demonio. Adentro del
+// contenedor no hay crontab: hay que agendarlo en el host y entrar con
+// `docker exec`.
+//
+// En el host, con `crontab -e`:
 //
 //   # Emite los comprobantes AFIP encolados. Cada 15 minutos alcanza: los pagos
 //   # se encolan de a uno y el lote es de 20 por corrida.
-//   */15 * * * * TOBA_DIR=/data/local/sistema TOBA_INSTANCIA=produccion TOBA_PROYECTO=gestionescuelas php /data/local/sistema/proyectos/gestionescuelas/php/utiles/procesar_comprobantes_pendientes.php >> /var/log/gestionescuelas/comprobantes.log 2>&1
+//   */15 * * * * docker exec <contenedor> php /data/local/sistema/proyectos/gestionescuelas/php/utiles/procesar_comprobantes_pendientes.php >> /var/log/gestionescuelas/comprobantes.log 2>&1
 //
-// Las tres variables ya tienen valor por defecto adentro del script
-// (/data/local/sistema, desarrollo, gestionescuelas). Se pasan explicitas para
-// que la linea del crontab deje asentado contra que instancia corre: es el dato
-// que despues nadie encuentra.
+// El nombre del contenedor lo arma docker-compose como ${PROYECTO_NOMBRE}-sistema.
+// Confirmarlo con: docker ps --format '{{.Names}}'
 //
-// Ajustar la ruta si TOBA_DIR no es /data/local/sistema. El proyecto siempre
-// cuelga de $TOBA_DIR/proyectos/$TOBA_PROYECTO.
+// No hacen falta variables de entorno: los valores por defecto que estan mas
+// abajo (/data/local/sistema, desarrollo, gestionescuelas) son los correctos.
+// La instalacion tiene una sola instancia, i__desarrollo, tambien en produccion.
+//
+// Crear el directorio de logs antes: mkdir -p /var/log/gestionescuelas
 //
 // Codigos de salida: 0 si salio todo bien, 1 si algo fallo o quedo trabado, para
 // que el cron avise sin que nadie tenga que mirar el log.

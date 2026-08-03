@@ -16,23 +16,31 @@
  */
 
 // ---------------------------------------------------------------------------
-// COMO SE AGENDA — crontab del servidor, no del repo
+// COMO SE AGENDA — crontab del HOST, no del contenedor
 // ---------------------------------------------------------------------------
 //
+// La imagen del sistema (docker/sistema/Dockerfile, php:7.4-apache) NO tiene el
+// paquete `cron` instalado y start.sh no levanta ningun demonio. Adentro del
+// contenedor no hay crontab: hay que agendarlo en el host y entrar con
+// `docker exec`.
+//
+// En el host, con `crontab -e`:
+//
 //   # Envia los avisos encolados al generar cargos.
-//   */5 * * * * TOBA_DIR=/data/local/sistema TOBA_INSTANCIA=produccion TOBA_PROYECTO=gestionescuelas php /data/local/sistema/proyectos/gestionescuelas/php/utiles/procesar_correos_pendientes.php >> /var/log/gestionescuelas/correos.log 2>&1
+//   */5 * * * * docker exec <contenedor> php /data/local/sistema/proyectos/gestionescuelas/php/utiles/procesar_correos_pendientes.php >> /var/log/gestionescuelas/correos.log 2>&1
+//
+// El nombre del contenedor lo arma docker-compose como ${PROYECTO_NOMBRE}-sistema.
+// Confirmarlo con: docker ps --format '{{.Names}}'
+//
+// No hacen falta variables de entorno: los valores por defecto que estan mas
+// abajo (/data/local/sistema, desarrollo, gestionescuelas) son los correctos.
+// La instalacion tiene una sola instancia, i__desarrollo, tambien en produccion.
 //
 // Por que cada 5 minutos y no cada 15: el lote es de 20 correos por corrida y una
 // generacion de cargos encola mas de 130. A 5 minutos la cola se vacia en poco
 // mas de media hora; a 15 tardaria casi dos.
 //
-// Las tres variables ya tienen valor por defecto abajo (/data/local/sistema,
-// desarrollo, gestionescuelas). Se pasan explicitas para que la linea del
-// crontab deje asentado contra que instancia corre: es el dato que despues nadie
-// encuentra.
-//
-// Ajustar la ruta si TOBA_DIR no es /data/local/sistema. El proyecto siempre
-// cuelga de $TOBA_DIR/proyectos/$TOBA_PROYECTO.
+// Crear el directorio de logs antes: mkdir -p /var/log/gestionescuelas
 
 if (!isset($_SERVER['TOBA_DIR'])) {
     $_SERVER['TOBA_DIR'] = '/data/local/sistema';
