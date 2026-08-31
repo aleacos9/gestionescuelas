@@ -1814,6 +1814,9 @@ class dao_consultas
      * - No fue actualizada ni en el mes vigente ni en el anterior.
      * - No tiene NINGÚN pago imputado. Alcanza con que la familia haya pagado algo
      *   de esa cuota, aunque sea parcial, para que no se actualice.
+     * - El alumno es regular. La deuda de quien ya no está en la escuela (egresados,
+     *   abandonos, pases) no se indexa salvo que se pida explícitamente con
+     *   $filtro['incluye_no_regulares'].
      *
      * Filtra además por cuota y año si vienen en $filtro. La cuota se almacena
      * como una cadena en formato 'MMYYYY', con el mes en dos dígitos. Para la cuota
@@ -1822,7 +1825,8 @@ class dao_consultas
      * La consulta que lo invoque debe tener alias 'tcc' para transaccion_cuenta_corriente
      * y 'acc' para alumno_cuenta_corriente.
      *
-     * @param array|null $filtro ['cuota' => int|string, 'anio' => int|string]
+     * @param array|null $filtro ['cuota' => int|string, 'anio' => int|string,
+     *                            'incluye_no_regulares' => bool]
      * @return string Condiciones SQL, sin la palabra WHERE.
      */
     public static function where_cuotas_actualizables($filtro = null)
@@ -1849,6 +1853,16 @@ class dao_consultas
                                         AND pagos.id_transaccion_cc <> tcc.id_transaccion_cc
                                         AND pagos.importe < 0
                                  )";
+
+        // Se resuelve con EXISTS y no con un JOIN a alumno para que la condicion sirva
+        // igual en el listado y en la CTE del UPDATE, que no joinea alumno.
+        if (empty($filtro['incluye_no_regulares'])) {
+            $where .= " AND EXISTS (SELECT 1
+                                    FROM alumno al
+                                    WHERE al.id_alumno = acc.id_alumno
+                                          AND al.regular = 'S'
+                                   )";
+        }
 
         if (isset($filtro['cuota']) && isset($filtro['anio'])) {
             $mes = str_pad((int) $filtro['cuota'], 2, '0', STR_PAD_LEFT);
