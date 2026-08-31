@@ -23,6 +23,7 @@ class ci_actualizar_importe_cuotas extends gestionescuelas_ext_ci
                       <li>Que no hayan sido abonadas parcial o totalmente</li>
                       <li>Cuotas ya vencidas (fecha anterior al primer dí­a del mes actual)</li>
                       <li>Que no hayan sido actualizadas en el mes vigente ni en el anterior</li>
+                      <li>Solo de alumnos regulares, salvo que se tilde <em>Incluir alumnos no regulares</em></li>
                     </ul>
                     <p>El valor de cuota que se aplicará a cada cuota adeudada es <strong>\${$valor}</strong></p>
                     HTML;
