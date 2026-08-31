@@ -1797,37 +1797,86 @@ class dao_consultas
     }
 
     /**
-     * Retorna un listado de cuotas que deben ser actualizadas por deuda.
+     * Criterio ÚNICO que define qué cuotas puede actualizar la operación
+     * «Actualizar importe cuotas impagas».
      *
-     * Filtra por cuota y año si se proporcionan en el parámetro $filtro.
-     * La cuota se almacena como una cadena en el formato 'MMYYYY', donde MM es el mes con dos dígitos.
-     * Si la cuota es 11, también se permite que acc.cuota esté vacía.
+     * Lo usan tanto el listado previo (get_listado_cuotas_para_actualizar_deuda)
+     * como el UPDATE que ejecuta la operación. Debe existir en UN SOLO lugar: si
+     * cada consulta arma su propio WHERE, el cuadro termina mostrando un conjunto
+     * de cuotas y la operación actualizando otro distinto.
      *
-     * La consulta selecciona cuotas que:
-     * - Corresponden a cargos pendientes (id_cargo_cuenta_corriente = 2).
-     * - No están pagadas ni tienen comprobantes o medios de pago asignados.
-     * - Tienen una fecha de transacción o generación anterior al mes actual.
-     * - No fueron actualizadas en el mes anterior.
-     * - No están completamente cubiertas por pagos existentes.
+     * Una cuota es actualizable cuando:
+     * - Corresponde a un cargo de cuota mensual (id_cargo_cuenta_corriente = 2).
+     * - Es un cargo pendiente con importe positivo (id_estado_cuota = 1).
+     * - No tiene ningún dato de pago cargado (comprobante, lote, autorización,
+     *   medio de pago, marca de tarjeta, punto de venta).
+     * - Ya venció: es anterior al primer día del mes actual.
+     * - No fue actualizada ni en el mes vigente ni en el anterior.
+     * - No tiene NINGÚN pago imputado. Alcanza con que la familia haya pagado algo
+     *   de esa cuota, aunque sea parcial, para que no se actualice.
+     *
+     * Filtra además por cuota y año si vienen en $filtro. La cuota se almacena
+     * como una cadena en formato 'MMYYYY', con el mes en dos dígitos. Para la cuota
+     * 11 se acepta también que acc.cuota esté vacía.
+     *
+     * La consulta que lo invoque debe tener alias 'tcc' para transaccion_cuenta_corriente
+     * y 'acc' para alumno_cuenta_corriente.
+     *
+     * @param array|null $filtro ['cuota' => int|string, 'anio' => int|string]
+     * @return string Condiciones SQL, sin la palabra WHERE.
+     */
+    public static function where_cuotas_actualizables($filtro = null)
+    {
+        $where = "acc.id_cargo_cuenta_corriente = 2
+                  AND tcc.id_estado_cuota = 1
+                  AND tcc.importe > 0
+                  AND tcc.numero_comprobante IS NULL
+                  AND tcc.numero_lote IS NULL
+                  AND tcc.numero_autorizacion IS NULL
+                  AND tcc.id_medio_pago IS NULL
+                  AND tcc.id_marca_tarjeta IS NULL
+                  AND tcc.punto_venta IS NULL
+                  AND tcc.comprobante_tipo IS NULL
+                  AND tcc.comprobante_numero IS NULL
+                  AND LEAST(COALESCE(tcc.fecha_transaccion, now()), COALESCE(acc.fecha_generacion_cc, now()))
+                          < date_trunc('month', current_date)
+                  AND (tcc.fecha_actualizacion_importe IS NULL
+                       OR tcc.fecha_actualizacion_importe < date_trunc('month', current_date - interval '1 month')
+                      )
+                  AND NOT EXISTS (SELECT 1
+                                  FROM transaccion_cuenta_corriente pagos
+                                  WHERE pagos.id_alumno_cc = tcc.id_alumno_cc
+                                        AND pagos.id_transaccion_cc <> tcc.id_transaccion_cc
+                                        AND pagos.importe < 0
+                                 )";
+
+        if (isset($filtro['cuota']) && isset($filtro['anio'])) {
+            $mes = str_pad((int) $filtro['cuota'], 2, '0', STR_PAD_LEFT);
+            $anio = (int) $filtro['anio'];
+            $cuota_completa = $mes . $anio;
+
+            if ((int) $filtro['cuota'] == 11) {
+                $where .= " AND (acc.cuota = '{$cuota_completa}' OR acc.cuota = '')";
+            } else {
+                $where .= " AND acc.cuota = '{$cuota_completa}'";
+            }
+        }
+
+        return $where;
+    }
+
+    /**
+     * Retorna el listado de cuotas que la operación va a actualizar.
+     *
+     * Usa el mismo criterio que el UPDATE, definido en where_cuotas_actualizables(),
+     * así lo que el usuario ve en el cuadro es exactamente lo que se va a modificar.
      *
      * @param array|null $filtro ['cuota' => int|string, 'anio' => int|string]
      * @return array Resultado de la consulta SQL.
      */
     public static function get_listado_cuotas_para_actualizar_deuda($filtro = null)
     {
-        $where = '';
-
-        if (isset($filtro['cuota']) && isset($filtro['anio'])) {
-            $mes = str_pad($filtro['cuota'], 2, '0', STR_PAD_LEFT); // asegura que tenga 2 dígitos
-            $anio = $filtro['anio'];
-            $cuota_completa = $mes . $anio;
-
-            if ($filtro['cuota'] == 11) {
-                $where .= " AND (acc.cuota = '{$cuota_completa}' OR acc.cuota = '')";
-            } else {
-                $where .= " AND acc.cuota = '{$cuota_completa}'";
-            }
-        }
+        $where = self::where_cuotas_actualizables($filtro);
 
         $sql = "SELECT (p.apellidos || ', ' || p.nombres) as alumno
                       ,acc.cuota
@@ -1838,37 +1887,10 @@ class dao_consultas
                     JOIN alumno_cuenta_corriente acc ON tcc.id_alumno_cc = acc.id_alumno_cc
                     JOIN alumno a ON acc.id_alumno = a.id_alumno
                     JOIN persona p ON a.id_persona = p.id_persona
-                WHERE acc.id_cargo_cuenta_corriente = 2
-                    AND tcc.id_estado_cuota = 1
-                    AND tcc.importe > 0
-                    AND tcc.numero_comprobante IS NULL
-                    AND tcc.numero_lote IS NULL
-                    AND tcc.numero_autorizacion IS NULL
-                    AND tcc.id_medio_pago IS NULL
-                    AND tcc.id_marca_tarjeta IS NULL
-                    AND tcc.punto_venta IS NULL
-                    AND tcc.comprobante_tipo IS NULL
-                    AND tcc.comprobante_numero IS NULL
-                    AND LEAST(COALESCE(tcc.fecha_transaccion, now()), COALESCE(acc.fecha_generacion_cc, now()))
-                             < date_trunc('month', current_date)
-                    AND (tcc.fecha_actualizacion_importe IS NULL
-                         OR tcc.fecha_actualizacion_importe < date_trunc('month', current_date - interval '1 month')
-                        )
-                    AND NOT EXISTS (SELECT 1
-                                    FROM transaccion_cuenta_corriente pagos
-                                    WHERE pagos.id_alumno_cc = tcc.id_alumno_cc
-                                          AND pagos.id_transaccion_cc <> tcc.id_transaccion_cc
-                                          AND pagos.importe < 0
-                                    GROUP BY pagos.id_alumno_cc
-                                    HAVING SUM(pagos.importe) * -1 >= tcc.importe
-                                   )
-                    $where
-                GROUP BY p.apellidos
+                WHERE $where
+                ORDER BY p.apellidos
                         ,p.nombres
                         ,acc.cuota
-                        ,acc.descripcion
-                        ,tcc.importe
-                        ,tcc.id_transaccion_cc
                    ";
 
         toba::logger()->debug(__METHOD__." : ".$sql);
