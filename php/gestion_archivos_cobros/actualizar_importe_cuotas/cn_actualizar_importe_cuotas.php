@@ -3,6 +3,7 @@ class cn_actualizar_importe_cuotas extends gestionescuelas_cn
 {
     protected $datos_formulario;
     protected $cantidad_actualizadas = 0;
+    protected $importe_vigente;
 
     public function set_datos_formulario($datos)
     {
@@ -15,8 +16,39 @@ class cn_actualizar_importe_cuotas extends gestionescuelas_cn
         $this->actualizar_importe_cuotas_adeudadas();
     }
 
+    /**
+     * El importe vigente se resuelve y valida ANTES de tocar nada.
+     *
+     * El UPDATE embebia `SELECT CAST(valor AS numeric) FROM parametros_sistema`
+     * dentro de si mismo, y ese subselect no distingue un importe de un
+     * disparate. `catalogo_de_parametros()` solo controla que el parametro
+     * exista y no sea NULL, asi que un cero cargado por error en Parametros del
+     * sistema pasaba entero y escribia importe = 0 en todas las cuotas
+     * alcanzadas: la deuda de esas familias desaparecia, sin un error, sin un
+     * aviso, y sin forma de deshacerlo desde el sistema. Un valor negativo las
+     * dejaba a favor.
+     *
+     * Verificado contra la base: con el parametro en '0' el subselect devuelve 0
+     * y el UPDATE lo escribe. Con el parametro vacio Postgres corta con
+     * "invalid input syntax for type numeric", y si falta o es NULL el CI ya no
+     * deja llegar hasta aca.
+     */
     public function validar()
     {
+        // El trim es para no rechazar un valor bueno por un espacio invisible
+        // cargado sin querer: es lo mas dificil de diagnosticar desde la pantalla.
+        $valor = trim(dao_consultas::catalogo_de_parametros('importe_mensual_cuota'));
+
+        if (! is_numeric($valor) || (float) $valor <= 0) {
+            throw new toba_error(
+                "El valor de cuota configurado no sirve para actualizar la deuda: "
+                . "el parametro 'importe_mensual_cuota' vale '{$valor}'. "
+                . "Tiene que ser un importe mayor a cero. "
+                . "Corregilo en Administracion -> Parametros del sistema y volve a intentar."
+            );
+        }
+
+        $this->importe_vigente = (float) $valor;
     }
 
     private function actualizar_importe_cuotas_adeudadas()
@@ -24,6 +56,10 @@ class cn_actualizar_importe_cuotas extends gestionescuelas_cn
         // El criterio vive en un solo lugar, compartido con el listado previo del cuadro.
         // Ver dao_consultas::where_cuotas_actualizables().
         $where = dao_consultas::where_cuotas_actualizables($this->datos_formulario);
+
+        // Ya paso por validar(): es un numero mayor a cero. Se formatea con
+        // sprintf para que un float no entre al SQL en notacion cientifica.
+        $importe = sprintf('%.2f', $this->importe_vigente);
 
         $sql = "WITH cuotas_a_actualizar AS (
                         SELECT tcc.id_transaccion_cc
@@ -34,12 +70,7 @@ class cn_actualizar_importe_cuotas extends gestionescuelas_cn
                     )
                     UPDATE transaccion_cuenta_corriente tcc
                     SET
-                        importe = (
-                            SELECT CAST(valor AS numeric)
-                            FROM parametros_sistema
-                            WHERE parametro = 'importe_mensual_cuota'
-                            LIMIT 1
-                        ),
+                        importe = {$importe},
                         importe_actualizado = true,
                         fecha_ultima_modificacion = current_timestamp,
                         fecha_actualizacion_importe = current_timestamp
