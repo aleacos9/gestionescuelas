@@ -34,7 +34,10 @@ class ci_deuda_corriente extends ci_cuenta_corriente
     {
         if (!empty($this->s__alumno_editar)) {
             $persona = new persona($this->s__alumno_editar);
-            $this->s__datos_deuda_corriente = $persona->get_datos_deuda_corriente();
+            // Consolidada: una linea por cuota con el saldo rotulado 'Debe' o
+            // 'A favor'. Los otros dos usos de esta clase NO se tocan: calculan
+            // el saldo actualizado y necesitan los movimientos uno por uno.
+            $this->s__datos_deuda_corriente = $persona->get_deuda_corriente_consolidada();
             $this->s__nombre_alumno = $persona->get_nombre_completo_alumno();
             $this->s__nivel_actual_cursada = $persona->get_nivel_actual_cursada();
             $this->s__grado_actual_cursada = $persona->get_grado_actual_cursada();

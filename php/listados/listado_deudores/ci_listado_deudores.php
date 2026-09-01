@@ -28,7 +28,8 @@ class ci_listado_deudores extends ci_abm_personas
     {
         if (!empty($this->s__persona_editar)) {
             $persona = new persona($this->s__persona_editar);
-            $this->s__datos_deuda_corriente = $persona->get_datos_deuda_corriente();
+            // Consolidada: una linea por cuota con el saldo rotulado.
+            $this->s__datos_deuda_corriente = $persona->get_deuda_corriente_consolidada();
             $this->s__nombre_alumno = $persona->get_nombre_completo_alumno();
         }
     }

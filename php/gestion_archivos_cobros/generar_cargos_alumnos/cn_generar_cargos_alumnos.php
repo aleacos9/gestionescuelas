@@ -445,7 +445,10 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
 
         $detalle_deuda = array();
         if (dao_consultas::catalogo_de_parametros("envia_detalle_deuda_en_correo") == 'SI') {
-            $datos_deuda = $persona->get_datos_deuda_corriente();
+            // Consolidada: una linea por cuota con el saldo rotulado. Con los
+            // movimientos crudos, una cuota con saldo a favor le llegaba a la
+            // familia listada como deuda.
+            $datos_deuda = $persona->get_deuda_corriente_consolidada();
             foreach ($datos_deuda as $item) {
                 $id_cargo = $item['id_cargo_cuenta_corriente'] ?? 0;
                 $concepto = $item['concepto'];
@@ -562,7 +565,10 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
 
         $detalle_deuda = array();
         if (dao_consultas::catalogo_de_parametros("envia_detalle_deuda_en_correo") == 'SI') {
-            $datos_deuda = $persona->get_datos_deuda_corriente();
+            // Consolidada: una linea por cuota con el saldo rotulado. Con los
+            // movimientos crudos, una cuota con saldo a favor le llegaba a la
+            // familia listada como deuda.
+            $datos_deuda = $persona->get_deuda_corriente_consolidada();
             foreach ($datos_deuda as $item) {
                 $id_cargo = $item['id_cargo_cuenta_corriente'] ?? 0;
                 $concepto = $item['concepto'];
