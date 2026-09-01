@@ -1021,6 +1021,67 @@ class persona
         return $this->datos_deuda_corriente;
     }
 
+    /**
+     * La deuda corriente con una linea por cuota, y el saldo rotulado.
+     *
+     * `get_datos_deuda_corriente()` devuelve los MOVIMIENTOS: el cargo y cada
+     * uno de sus pagos, por separado. Eso sirve para auditar, pero no para
+     * decirle a una familia cuanto debe. Cuando un pago supera al cargo que
+     * salda, el saldo de esa cuota queda a favor, y esa linea negativa aparecia
+     * mezclada entre las demas como si fuera deuda: en la generacion de cargos
+     * del 01/09/2026 salieron correos avisando una deuda a familias que en
+     * realidad tenian plata a favor.
+     *
+     * Aca cada cuota se resuelve en una sola linea con su saldo neto, y el
+     * estado dice lo que ese saldo significa: 'Debe' o 'A favor'. Es el mismo
+     * criterio que usa el sistema nuevo en `unaLineaPorCuota()`, para que las
+     * dos versiones le digan lo mismo a la misma familia.
+     *
+     * NO se oculta el saldo a favor: la familia tiene derecho a saber que tiene
+     * plata a favor. Lo que no puede es leerlo como deuda.
+     *
+     * 'Generada' y 'Aprobada' son vocabulario de la base y no le dicen nada a un
+     * tutor; una vez que la linea es un saldo, se nombra como saldo.
+     *
+     * @return array Una fila por cuota, con las mismas claves que los movimientos.
+     */
+    public function get_deuda_corriente_consolidada()
+    {
+        toba::logger()->info("get_deuda_corriente_consolidada");
+
+        $por_cuota = array();
+
+        foreach ($this->datos_deuda_corriente as $fila) {
+            $id = $fila['id_alumno_cc'];
+
+            if (! isset($por_cuota[$id])) {
+                $fila['importe'] = (float) $fila['importe'];
+                $fila['importe_actualizado'] = (float) ($fila['importe_actualizado'] ?? 0);
+                $por_cuota[$id] = $fila;
+                continue;
+            }
+
+            $por_cuota[$id]['importe'] += (float) $fila['importe'];
+            $por_cuota[$id]['importe_actualizado'] += (float) ($fila['importe_actualizado'] ?? 0);
+
+            // El motivo de rechazo vive en el movimiento del rechazo, no en el
+            // del cargo: si se conserva solo el primero se pierde justo el dato
+            // por el que alguien abre esta pantalla.
+            if (empty($por_cuota[$id]['motivo_rechazo']) && ! empty($fila['motivo_rechazo'])) {
+                $por_cuota[$id]['motivo_rechazo'] = $fila['motivo_rechazo'];
+            }
+        }
+
+        foreach ($por_cuota as $id => $fila) {
+            // Los importes son numeric(15,2): sumarlos como flotantes deja residuos.
+            $por_cuota[$id]['importe'] = round($fila['importe'], 2);
+            $por_cuota[$id]['importe_actualizado'] = round($fila['importe_actualizado'], 2);
+            $por_cuota[$id]['estado_cuota'] = ($por_cuota[$id]['importe'] < 0) ? 'A favor' : 'Debe';
+        }
+
+        return array_values($por_cuota);
+    }
+
     public function get_saldo_deuda_corriente()
     {
         toba::logger()->info("get_saldo_deuda_corriente");
@@ -1736,13 +1797,12 @@ class persona
                                             LEFT OUTER JOIN marca_tarjeta mt on mt.id_marca_tarjeta = subconsulta_cuenta_corriente.id_marca_tarjeta
                                       WHERE p.id_persona = {$this->persona}
                                       GROUP BY acc.cuota, acc.id_cargo_cuenta_corriente,acc.id_alumno_cc
-                                      -- Solo lo que se DEBE. Con `<> 0` entraban tambien las cuotas
-                                      -- con saldo a favor, y esta consulta alimenta el detalle de
-                                      -- deuda del correo de generacion de cargos y el listado de
-                                      -- deudores: a una familia con plata a favor le llegaba ese
-                                      -- importe listado como deuda. Las otras dos consultas de deuda
-                                      -- de esta misma clase ya usan `> 0`.
-                                      HAVING SUM(subconsulta_cuenta_corriente.importe) > 0
+                                      -- Los cargos cuyo saldo no cierra en cero, en cualquier
+                                      -- sentido: lo que se debe y lo que esta a favor. Un saldo a
+                                      -- favor NO se oculta, se rotula. De eso se encarga
+                                      -- consolidar_deuda_por_cuota(), que es lo que ven el correo,
+                                      -- el portal del tutor y el listado de deudores.
+                                      HAVING SUM(subconsulta_cuenta_corriente.importe) <> 0
                                      ) subconsulta_where
                                 WHERE subconsulta_where.id_alumno_cc = acc.id_alumno_cc)
                 ORDER BY acc.id_alumno_cc, subconsulta_cuenta_corriente.id_transaccion_cc;
