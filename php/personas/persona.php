@@ -1736,7 +1736,13 @@ class persona
                                             LEFT OUTER JOIN marca_tarjeta mt on mt.id_marca_tarjeta = subconsulta_cuenta_corriente.id_marca_tarjeta
                                       WHERE p.id_persona = {$this->persona}
                                       GROUP BY acc.cuota, acc.id_cargo_cuenta_corriente,acc.id_alumno_cc
-                                      HAVING SUM(subconsulta_cuenta_corriente.importe) <> 0
+                                      -- Solo lo que se DEBE. Con `<> 0` entraban tambien las cuotas
+                                      -- con saldo a favor, y esta consulta alimenta el detalle de
+                                      -- deuda del correo de generacion de cargos y el listado de
+                                      -- deudores: a una familia con plata a favor le llegaba ese
+                                      -- importe listado como deuda. Las otras dos consultas de deuda
+                                      -- de esta misma clase ya usan `> 0`.
+                                      HAVING SUM(subconsulta_cuenta_corriente.importe) > 0
                                      ) subconsulta_where
                                 WHERE subconsulta_where.id_alumno_cc = acc.id_alumno_cc)
                 ORDER BY acc.id_alumno_cc, subconsulta_cuenta_corriente.id_transaccion_cc;
