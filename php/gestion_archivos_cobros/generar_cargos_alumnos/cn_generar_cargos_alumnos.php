@@ -35,6 +35,8 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
         $this->resumen['cargos_no_generados'] = 0;
         $this->resumen['alumnos_duplicados'] = array();
         $this->resumen['alumnos_sin_email'] = array();
+        $this->resumen['alumnos_sin_cursada'] = array();
+        $this->resumen['alumnos_fin_de_ciclo'] = array();
         $this->notificaciones = array();
 
         if (isset($this->datos_formulario)) {
@@ -85,6 +87,9 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
                 if ($this->datos_formulario['forma_generacion'] == 'I') {
                     throw new toba_error("Al alumno {$persona->get_nombre_completo_alumno()} no le corresponde la generación de la inscripción.");
                 }
+                // En generación grupal no hay excepción que mostrar, así que el
+                // alumno se acumula para que el resumen diga por qué quedó afuera.
+                $this->resumen['alumnos_fin_de_ciclo'][] = $this->describir_alumno($persona);
                 $this->resumen['cargos_no_generados']++;
                 return;
             }
@@ -180,6 +185,10 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
             if (is_null($siguiente_grado)) {
                 //Caso 4: siguiente grado es null y cargo CUOTA_MENSUAL
                 toba::logger()->info("No se generará cargo mensual para el alumno {$persona->get_id_alumno()} ya que su siguiente grado de cursada es null.");
+                // Sin cursada no hay grado, y sin grado no se puede saber qué
+                // corresponde cobrarle. Hasta ahora el motivo solo quedaba en el
+                // log: el operador veía "no generados: 1" y nada más.
+                $this->resumen['alumnos_sin_cursada'][] = $this->describir_alumno($persona);
                 $this->resumen['cargos_no_generados']++;
                 return;
             }
@@ -330,6 +339,28 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
     }
 
     /**
+     * Cómo se nombra a un alumno en el resumen: apellido, nombre y DNI.
+     *
+     * El DNI va porque en la escuela hay hermanos y apellidos repetidos, y un
+     * resumen que dice solo el nombre obliga a adivinar de cuál se trata.
+     *
+     * @param persona $persona
+     * @return string
+     */
+    private function describir_alumno($persona)
+    {
+        $nombre = $persona->get_nombre_completo_alumno();
+
+        foreach ($persona->get_documentos() as $doc) {
+            if ($doc['id_tipo_documento'] == 8) {
+                return $nombre . ' - DNI ' . $doc['identificacion'];
+            }
+        }
+
+        return $nombre;
+    }
+
+    /**
      * Muestra un resumen de la generación de cargos procesados.
      *
      * Este método construye un mensaje que incluye el total de alumnos procesados,
@@ -363,6 +394,24 @@ class cn_generar_cargos_alumnos extends gestionescuelas_cn
             $mensaje .= "<br /><br /><strong>Los siguientes alumnos ya tienen el cargo generado para el período seleccionado:</strong><ul>";
             foreach ($this->resumen['alumnos_duplicados'] as $dup) {
                 $mensaje .= "<li>{$dup}</li>";
+            }
+            $mensaje .= "</ul>";
+        }
+
+        //Alumnos sin cursada cargada: sin grado no se sabe qué cobrarles
+        if (!empty($this->resumen['alumnos_sin_cursada'])) {
+            $mensaje .= "<br /><br /><strong>A los siguientes alumnos no se les generó el cargo porque no tienen la cursada cargada:</strong><ul>";
+            foreach ($this->resumen['alumnos_sin_cursada'] as $nom) {
+                $mensaje .= "<li>{$nom}</li>";
+            }
+            $mensaje .= "</ul>Cargue el grado y la división en <em>Personas &rarr; Gestión académica</em> y vuelva a generar el cargo.";
+        }
+
+        //Alumnos que terminaron el ciclo: no les corresponde la inscripción
+        if (!empty($this->resumen['alumnos_fin_de_ciclo'])) {
+            $mensaje .= "<br /><br /><strong>A los siguientes alumnos no les corresponde la inscripción porque terminaron el ciclo:</strong><ul>";
+            foreach ($this->resumen['alumnos_fin_de_ciclo'] as $nom) {
+                $mensaje .= "<li>{$nom}</li>";
             }
             $mensaje .= "</ul>";
         }
