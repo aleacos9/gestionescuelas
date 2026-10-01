@@ -140,7 +140,7 @@ class envio_correo
         $detalle_deuda = '';
         if (!empty($datos['detalle_deuda'])) {
             $detalle_deuda = '
-                <h3 style="color: #5bc0de; margin-top: 20px;">Detalle de Deuda Actual</h3>
+                <h3 style="color: #5bc0de; margin-top: 20px;">Estado de su cuenta</h3>
                 <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
                     <thead>
                         <tr style="background-color: #5bc0de; color: #fff;">
@@ -264,7 +264,7 @@ class envio_correo
             $detalle_deuda = '';
             if (!empty($al['detalle_deuda'])) {
                 $detalle_deuda = '
-                    <h4 style="color: #5bc0de;">Detalle de Deuda Actual</h4>
+                    <h4 style="color: #5bc0de;">Estado de su cuenta</h4>
                     <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
                         <thead>
                             <tr style="background-color: #5bc0de; color: #fff;">
